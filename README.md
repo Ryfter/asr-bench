@@ -94,7 +94,7 @@ With explicit model selection:
 python asr_bench.py --corpus ./test-corpus --models small,medium,large-v3
 ```
 
-Output goes to stdout (markdown) and `./results/<timestamp>.md`.
+Output goes to stdout (markdown) and `./report/<timestamp>.md`.
 
 ### CPU-only run
 
@@ -110,8 +110,8 @@ asr-bench/
 ├── SPEC.md              ← full roadmap including WhisperX + Canary-Qwen
 ├── requirements.txt
 ├── asr_bench.py         ← the script
-├── test-corpus/         ← sample (empty by default — drop your audio in)
-└── results/             ← timestamped markdown outputs (gitignored)
+├── test-corpus/         ← bring-your-own (gitignored except README)
+└── report/              ← timestamped markdown outputs (gitignored)
 ```
 
 ## Ground-truth strategy — read this before trusting the WER numbers

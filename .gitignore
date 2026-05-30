@@ -7,12 +7,19 @@ __pycache__/
 venv/
 
 # Output
+report/
 results/
 *.mp3
 *.wav
 *.mp4
-*.whisper.vtt
+*.vtt
 *.comparison.md
+
+# test-corpus is bring-your-own — only README + an optional manifest should be tracked.
+test-corpus/*
+!test-corpus/README.md
+!test-corpus/manifest.json
+!test-corpus/.gitkeep
 
 # OS
 .DS_Store

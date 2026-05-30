@@ -656,7 +656,7 @@ def main() -> int:
     ap.add_argument(
         "--output",
         default=None,
-        help="Where to save the markdown report. Default: ./results/<timestamp>.md",
+        help="Where to save the markdown report. Default: ./report/<timestamp>.md",
     )
     ap.add_argument(
         "--limit",
@@ -733,10 +733,10 @@ def main() -> int:
     # Save
     output_path = Path(args.output) if args.output else None
     if output_path is None:
-        results_dir = Path(__file__).resolve().parent / "results"
-        results_dir.mkdir(exist_ok=True)
+        report_dir = Path(__file__).resolve().parent / "report"
+        report_dir.mkdir(exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-        output_path = results_dir / f"{ts}.md"
+        output_path = report_dir / f"{ts}.md"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(md, encoding="utf-8")
     print(f"\nSaved report to {output_path}")
