@@ -565,6 +565,30 @@ def render_markdown(
         )
     lines.append("")
 
+    # ---- Per-clip view: each clip first, with one row per model ----
+    if results and results[0].clips:
+        lines.append("## Per-clip view")
+        lines.append("")
+        lines.append("Each clip's table shows one row per model. Compare how the engines stack up on the *same* audio.")
+        lines.append("")
+        clip_count = len(results[0].clips)
+        for i in range(clip_count):
+            sample = results[0].clips[i]
+            audio_min = sample.audio_sec / 60.0
+            lines.append(f"### {sample.audio} — {audio_min:.1f} min")
+            lines.append("")
+            lines.append("| Model | WER% | RTFx | Transcribe time | VRAM peak |")
+            lines.append("|---|---|---|---|---|")
+            for r in results:
+                if i < len(r.clips):
+                    c = r.clips[i]
+                    wer_pct = f"{c.wer * 100:.1f}"
+                    vram = fmt_bytes(c.vram_peak_bytes) if c.vram_peak_bytes else ("n/a" if not _HAS_NVML else "0")
+                    lines.append(
+                        f"| {r.display} | {wer_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
+                    )
+            lines.append("")
+
     # ---- Per-model breakdown: each model gets a table showing per-clip rows + overall ----
     lines.append("## Per-model breakdown")
     lines.append("")
