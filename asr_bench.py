@@ -631,7 +631,11 @@ def main() -> int:
         description="Benchmark local Whisper variants on your own audio.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    ap.add_argument("--corpus", required=True, help="Path to a folder of (audio, reference) pairs.")
+    ap.add_argument(
+        "--corpus",
+        default=str(Path(__file__).resolve().parent / "test-corpus"),
+        help="Path to a folder of (audio, reference) pairs. Defaults to ./test-corpus next to the script.",
+    )
     ap.add_argument(
         "--models",
         default="small,medium,large-v3,large-v3-turbo",
