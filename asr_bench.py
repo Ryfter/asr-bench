@@ -441,8 +441,8 @@ def run_model(model_id: str, pairs: List[Pair], device: str, compute_type: str) 
         disk_bytes=model_disk_bytes(fw_name), load_sec=load_sec,
     )
 
-    for pair in pairs:
-        print(f"  transcribing {pair.audio.name}...", flush=True)
+    for clip_idx, pair in enumerate(pairs, start=1):
+        print(f"  [{clip_idx}/{len(pairs)}] transcribing {pair.audio.name}...", flush=True)
         ref_text = load_reference_text(pair.reference)
         ref_origin, ref_label = detect_reference_origin(pair.reference)
 
@@ -458,12 +458,26 @@ def run_model(model_id: str, pairs: List[Pair], device: str, compute_type: str) 
         )
         text_parts: List[str] = []
         cue_tuples: List[Tuple[float, float, str]] = []
+        duration_sec = float(audio_info.duration) or 1.0
+        last_pct_printed = -10.0  # so first segment can trigger 0% line; tunable
         for seg in segments:
             text_parts.append(seg.text)
             cue_tuples.append((float(seg.start), float(seg.end), seg.text))
             cur = gpu_used_bytes()
             if cur > vram_peak:
                 vram_peak = cur
+            # Streaming progress: print every 10% of audio crossed so the user can
+            # see the run is alive (transcription is otherwise silent for minutes).
+            pct = (float(seg.end) / duration_sec) * 100.0
+            if pct - last_pct_printed >= 10.0:
+                elapsed = time.time() - t0
+                eta = (duration_sec - float(seg.end)) / max(float(seg.end), 1.0) * elapsed
+                print(
+                    f"    {pct:5.1f}%  audio {int(seg.end):>5d}s/{int(duration_sec):>5d}s  "
+                    f"elapsed {elapsed:5.1f}s  eta {eta:5.1f}s",
+                    flush=True,
+                )
+                last_pct_printed = pct
         transcribe_sec = time.time() - t0
         hypothesis = " ".join(text_parts).strip()
 
