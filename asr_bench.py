@@ -17,10 +17,74 @@ import os
 import re
 import sys
 import time
+
+# Windows console defaults to cp1252 and chokes on most non-ASCII glyphs.
+# Force UTF-8 on stdout/stderr so the progress + report render correctly.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
+
+
+def _add_nvidia_dll_directories() -> None:
+    """On Windows, make the nvidia-cublas-cu12 + nvidia-cudnn-cu12 wheel DLL
+    dirs visible to ctranslate2's C++ loader. We use TWO mechanisms because the
+    Python `os.add_dll_directory()` flag doesn't always reach `LoadLibrary`
+    calls from native code:
+
+    1. Prepend the dirs to PATH — universal, works for any LoadLibrary call.
+    2. Call os.add_dll_directory() — belt-and-suspenders for pure-Python loads.
+
+    No-op on non-Windows or when the wheels aren't installed."""
+    try:
+        import sysconfig
+        import site
+        candidates: List[str] = []
+        for key in ("purelib", "platlib"):
+            sp = sysconfig.get_paths().get(key)
+            if sp:
+                candidates.append(sp)
+        user_sp = site.getusersitepackages() if hasattr(site, "getusersitepackages") else None
+        if isinstance(user_sp, str):
+            candidates.append(user_sp)
+        elif isinstance(user_sp, list):
+            candidates.extend(user_sp)
+        # Look for nvidia/*/bin under each site-packages root.
+        nvidia_bins: List[str] = []
+        seen: set = set()
+        for sp in candidates:
+            for sub in ("cublas", "cudnn", "cuda_runtime", "cuda_nvrtc"):
+                p = Path(sp) / "nvidia" / sub / "bin"
+                if p.is_dir():
+                    sp_str = str(p)
+                    if sp_str not in seen:
+                        nvidia_bins.append(sp_str)
+                        seen.add(sp_str)
+        if not nvidia_bins:
+            return
+        # Universal: prepend to PATH so the OS loader finds the DLLs.
+        prepend = os.pathsep.join(nvidia_bins)
+        os.environ["PATH"] = prepend + os.pathsep + os.environ.get("PATH", "")
+        # Belt-and-suspenders: also register with Python's loader.
+        if hasattr(os, "add_dll_directory"):
+            for p in nvidia_bins:
+                try:
+                    os.add_dll_directory(p)
+                except (FileNotFoundError, OSError):
+                    pass
+    except Exception:
+        pass
+
+
+# Path is needed inside the helper above; safe to import early.
+from pathlib import Path  # noqa: E402
+
+_add_nvidia_dll_directories()
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+# Path is imported earlier above for _add_nvidia_dll_directories — already in scope.
 
 # ---- Optional VRAM tracking via NVIDIA NVML ---------------------------------
 try:
@@ -68,6 +132,30 @@ MODELS: Dict[str, Dict] = {
         "notes": "Distilled large-v3. Accuracy close to large at medium-class speed.",
     },
 }
+
+
+# ---- Reference origin detection ---------------------------------------------
+_PANOPTO_FILENAME_RE = re.compile(r"_Captions_[A-Za-z]+(?:\s*\([^)]+\))?(?:\s*\(\d+\))?\.txt$")
+_ASR_HEADER_RE = re.compile(r"\[Auto-generated transcript", re.IGNORECASE)
+
+
+def detect_reference_origin(path: Path) -> Tuple[str, str]:
+    """Return (origin, label) for a reference file.
+
+    origin: 'panopto-asr' | 'asr-generic' | 'unknown'
+    label: short human-readable string for the report
+    """
+    name = path.name
+    if _PANOPTO_FILENAME_RE.search(name):
+        return ("panopto-asr", "Panopto auto-generated captions")
+    head = ""
+    try:
+        head = path.read_text(encoding="utf-8", errors="replace")[:2000]
+    except Exception:
+        pass
+    if _ASR_HEADER_RE.search(head):
+        return ("asr-generic", "ASR-generated captions (auto-detected from header)")
+    return ("unknown", "user-provided reference (gold unless --proxy-anyway)")
 
 
 # ---- Reference / hypothesis text loading ------------------------------------
@@ -126,16 +214,33 @@ class Pair:
 
 
 def discover_pairs(corpus: Path) -> List[Pair]:
-    """Find (audio, reference) pairs in three supported layouts."""
+    """Find (audio, reference) pairs in three supported layouts.
+
+    Deduplication rule: if both a .mp4 and a same-stem .mp3 exist (common when
+    an extraction step left an mp3 leftover), prefer the .mp4 and skip the mp3.
+    The user benchmarks the source-of-truth video; ad-hoc extractions are noise.
+    """
     manifest = corpus / "manifest.json"
     if manifest.exists():
         data = json.loads(manifest.read_text(encoding="utf-8"))
         return [Pair(corpus / c["audio"], corpus / c["reference"]) for c in data["clips"]]
 
+    # Pre-compute which stems have a primary video (.mp4/.webm) so we can skip
+    # secondary audio files that just shadow them.
+    PRIMARY_EXTS = {".mp4", ".webm", ".m4a"}
+    SECONDARY_EXTS = {".mp3", ".wav", ".flac", ".ogg"}
+    primary_stems = {
+        p.stem.lower()
+        for p in corpus.iterdir()
+        if p.is_file() and p.suffix.lower() in PRIMARY_EXTS
+    }
+
     pairs: List[Pair] = []
     for audio in sorted(corpus.iterdir()):
         if not audio.is_file() or audio.suffix.lower() not in AUDIO_EXTS:
             continue
+        if audio.suffix.lower() in SECONDARY_EXTS and audio.stem.lower() in primary_stems:
+            continue  # mp4 sibling already covers this stem
         # Layout A: sibling with same stem + .txt / .srt / .vtt
         for ext in (".txt", ".srt", ".vtt"):
             sibling = audio.with_suffix(ext)
@@ -197,12 +302,55 @@ def fmt_bytes(n: Optional[int]) -> str:
     return f"{f:.1f}TB"
 
 
+# ---- VTT output -------------------------------------------------------------
+def _fmt_vtt_time(seconds: float) -> str:
+    if seconds < 0:
+        seconds = 0
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = seconds - (h * 3600) - (m * 60)
+    return f"{h:02d}:{m:02d}:{s:06.3f}"
+
+
+def write_whisper_vtt(audio_path: Path, model_label: str, segments: List[Tuple[float, float, str]]) -> Path:
+    """Write a WebVTT file next to the audio, named to mirror Panopto's pattern.
+
+    Audio:  <base>_default.mp4  (or any audio extension)
+    Output: <base>_Captions_<Model>.vtt
+    If the stem doesn't end with `_default`, the bare stem is used.
+    """
+    stem = audio_path.stem
+    base = stem[: -len("_default")] if stem.endswith("_default") else stem
+    safe_model = re.sub(r"[^A-Za-z0-9._-]+", "-", model_label).strip("-")
+    out = audio_path.parent / f"{base}_Captions_{safe_model}.vtt"
+    lines: List[str] = ["WEBVTT", ""]
+    for i, (start, end, text) in enumerate(segments, start=1):
+        text = text.strip()
+        if not text:
+            continue
+        lines.append(str(i))
+        lines.append(f"{_fmt_vtt_time(start)} --> {_fmt_vtt_time(end)}")
+        lines.append(text)
+        lines.append("")
+    out.write_text("\n".join(lines), encoding="utf-8")
+    return out
+
+
 # ---- VRAM tracking ----------------------------------------------------------
 def gpu_used_bytes() -> int:
     if not _HAS_NVML or _NVML_DEVICE_COUNT == 0:
         return 0
     handle = pynvml.nvmlDeviceGetHandleByIndex(0)
     return pynvml.nvmlDeviceGetMemoryInfo(handle).used
+
+
+# ---- Helpers ----------------------------------------------------------------
+def _model_label(model_id: str) -> str:
+    """small -> Small, large-v3 -> LargeV3, large-v3-turbo -> LargeV3Turbo.
+
+    Used for filename suffixes (`_Captions_<Label>.vtt`) and short report cells.
+    """
+    return "".join(p.capitalize() for p in model_id.split("-"))
 
 
 # ---- Per-model run ----------------------------------------------------------
@@ -217,6 +365,9 @@ class ClipResult:
     reference_normalized: str
     hypothesis_normalized: str
     wer: float
+    vtt_path: Optional[str] = None
+    reference_origin: str = "unknown"
+    reference_label: str = ""
 
 
 @dataclass
@@ -293,6 +444,7 @@ def run_model(model_id: str, pairs: List[Pair], device: str, compute_type: str) 
     for pair in pairs:
         print(f"  transcribing {pair.audio.name}...", flush=True)
         ref_text = load_reference_text(pair.reference)
+        ref_origin, ref_label = detect_reference_origin(pair.reference)
 
         # Track peak VRAM during this clip's transcription
         vram_baseline = gpu_used_bytes()
@@ -305,13 +457,19 @@ def run_model(model_id: str, pairs: List[Pair], device: str, compute_type: str) 
             beam_size=5,
         )
         text_parts: List[str] = []
+        cue_tuples: List[Tuple[float, float, str]] = []
         for seg in segments:
             text_parts.append(seg.text)
+            cue_tuples.append((float(seg.start), float(seg.end), seg.text))
             cur = gpu_used_bytes()
             if cur > vram_peak:
                 vram_peak = cur
         transcribe_sec = time.time() - t0
         hypothesis = " ".join(text_parts).strip()
+
+        # Write the per-model VTT next to the source audio so it stands alongside
+        # Panopto's own caption file.
+        vtt_path = write_whisper_vtt(pair.audio, _model_label(model_id), cue_tuples)
 
         ref_norm = normalize_for_wer(ref_text)
         hyp_norm = normalize_for_wer(hypothesis)
@@ -341,6 +499,9 @@ def run_model(model_id: str, pairs: List[Pair], device: str, compute_type: str) 
                 reference_normalized=ref_norm,
                 hypothesis_normalized=hyp_norm,
                 wer=wer_val,
+                vtt_path=str(vtt_path),
+                reference_origin=ref_origin,
+                reference_label=ref_label,
             )
         )
 
@@ -361,68 +522,105 @@ def render_markdown(
     gold_label: str,
 ) -> str:
     now = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+
+    # Collect distinct reference-origin labels across all clips so we can surface
+    # auto-detected proxies prominently if any are present.
+    ref_origins: Dict[str, int] = {}
+    if results:
+        for c in results[0].clips:
+            key = c.reference_label or "(unlabeled)"
+            ref_origins[key] = ref_origins.get(key, 0) + 1
+
     lines: List[str] = []
     lines.append("# ASR Benchmark Results")
     lines.append("")
     lines.append(f"- **Date:** {now}")
     lines.append(f"- **Corpus:** `{corpus_path}`")
-    lines.append(f"- **Reference quality:** {gold_label}")
+    lines.append(f"- **Reference quality (declared):** {gold_label}")
+    if ref_origins:
+        for label, count in ref_origins.items():
+            lines.append(f"- **Reference origin (detected):** {label} — {count} clip(s)")
     lines.append(f"- **Device:** {args.device}")
     lines.append(f"- **Compute type:** {args.compute_type}")
     lines.append(f"- **Clips:** {len(results[0].clips) if results else 0}")
     if results:
         total_audio_min = results[0].total_audio_sec / 60.0
         lines.append(f"- **Total audio:** {total_audio_min:.1f} min")
-    lines.append(f"- **VRAM tracking:** {'on (NVML)' if _HAS_NVML else 'off (nvidia-ml-py3 not installed or no NVIDIA GPU)'}")
+    lines.append(f"- **VRAM tracking:** {'on (NVML)' if _HAS_NVML else 'off — install nvidia-ml-py'}")
     lines.append("")
 
-    # Aggregate table
-    lines.append("## Aggregate")
+    # ---- Headline: one row per model, the numbers Kevin asked for ----
+    lines.append("## Headline")
     lines.append("")
-    lines.append(
-        "| Model | Params | Disk | WER% | RTFx | Wall clock | Peak VRAM | Load | Notes |"
-    )
-    lines.append("|---|---|---|---|---|---|---|---|---|")
+    lines.append("| Model | Params | Disk | Overall WER% | RTFx | Total time | Peak VRAM | Notes |")
+    lines.append("|---|---|---|---|---|---|---|---|")
     for r in results:
         wall_clock = f"{r.total_transcribe_sec:.1f}s"
         wer_pct = f"{r.avg_wer * 100:.1f}" if r.clips else "—"
         rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
         vram = fmt_bytes(r.peak_vram_bytes) if r.peak_vram_bytes else ("n/a" if not _HAS_NVML else "0")
         disk = fmt_bytes(r.disk_bytes)
-        load = f"{r.load_sec:.1f}s" if r.load_sec else "—"
         lines.append(
-            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {rtfx} | {wall_clock} | {vram} | {load} | {r.notes} |"
+            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {rtfx} | {wall_clock} | {vram} | {r.notes} |"
         )
     lines.append("")
 
-    # Per-clip detail
-    if results and results[0].clips:
-        lines.append("## Per-clip detail")
+    # ---- Per-model breakdown: each model gets a table showing per-clip rows + overall ----
+    lines.append("## Per-model breakdown")
+    lines.append("")
+    lines.append("Each model's table lists every clip plus an **OVERALL** row aggregating that model's run.")
+    lines.append("")
+    for r in results:
+        lines.append(f"### {r.display}")
         lines.append("")
-        clip_count = len(results[0].clips)
-        for i in range(clip_count):
-            sample = results[0].clips[i]
-            audio_min = sample.audio_sec / 60.0
-            lines.append(f"### {sample.audio} — {audio_min:.1f} min")
-            lines.append("")
-            lines.append("| Model | WER% | RTFx | Transcribe time | VRAM peak |")
-            lines.append("|---|---|---|---|---|")
-            for r in results:
-                if i < len(r.clips):
-                    c = r.clips[i]
-                    wer_pct = f"{c.wer * 100:.1f}"
-                    vram = fmt_bytes(c.vram_peak_bytes) if c.vram_peak_bytes else ("n/a" if not _HAS_NVML else "0")
-                    lines.append(
-                        f"| {r.display} | {wer_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
-                    )
-            lines.append("")
+        lines.append("| Clip | Audio | WER% | RTFx | Transcribe time | VRAM peak |")
+        lines.append("|---|---|---|---|---|---|")
+        for c in r.clips:
+            wer_pct = f"{c.wer * 100:.1f}"
+            vram = fmt_bytes(c.vram_peak_bytes) if c.vram_peak_bytes else ("n/a" if not _HAS_NVML else "0")
+            audio_label = f"{c.audio_sec / 60:.1f} min"
+            lines.append(
+                f"| {c.audio} | {audio_label} | {wer_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
+            )
+        # Overall row
+        overall_audio = f"{r.total_audio_sec / 60:.1f} min"
+        overall_wer = f"{r.avg_wer * 100:.1f}" if r.clips else "—"
+        overall_rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
+        overall_vram = fmt_bytes(r.peak_vram_bytes) if r.peak_vram_bytes else ("n/a" if not _HAS_NVML else "0")
+        lines.append(
+            f"| **OVERALL** | **{overall_audio}** | **{overall_wer}** | **{overall_rtfx}** | **{r.total_transcribe_sec:.1f}s** | **{overall_vram}** |"
+        )
+        lines.append("")
 
-    # Footnotes
+    # ---- Generated VTT files ----
+    if results and any(c.vtt_path for c in results[0].clips):
+        lines.append("## Generated VTT outputs")
+        lines.append("")
+        lines.append("Each model writes a WebVTT caption file next to the source audio:")
+        lines.append("")
+        for r in results:
+            written: List[str] = []
+            for c in r.clips:
+                if c.vtt_path:
+                    written.append(Path(c.vtt_path).name)
+            if written:
+                lines.append(f"- **{r.display}**:")
+                for name in written:
+                    lines.append(f"  - `{name}`")
+        lines.append("")
+
+    # ---- Reproducibility footnote ----
     lines.append("## Reproducibility")
     lines.append("")
     lines.append(f"- Command: `python asr_bench.py --corpus '{corpus_path}' --models {','.join(args.models)} --device {args.device} --compute-type {args.compute_type}`")
     lines.append(f"- Reference normalization: lowercase, strip punctuation (keep apostrophes), collapse whitespace.")
     lines.append(f"- WER computed via [jiwer](https://github.com/jitsi/jiwer).")
+    if any(c.reference_origin in {"panopto-asr", "asr-generic"} for r in results for c in r.clips):
+        lines.append(
+            "- **Reference origin warning:** at least one clip's reference was auto-detected as ASR-generated "
+            "(Panopto captions or similar). WER numbers should be read as *relative divergence* between engines, "
+            "not absolute accuracy."
+        )
     lines.append("")
     return "\n".join(lines)
 
@@ -460,6 +658,17 @@ def main() -> int:
         default=None,
         help="Where to save the markdown report. Default: ./results/<timestamp>.md",
     )
+    ap.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Only process the first N clip pairs. Handy for smoke runs over a big corpus.",
+    )
+    ap.add_argument(
+        "--include",
+        default=None,
+        help="Regex; only include clips whose audio filename matches.",
+    )
     args = ap.parse_args()
 
     corpus = Path(args.corpus).resolve()
@@ -475,6 +684,12 @@ def main() -> int:
         return 2
 
     pairs = discover_pairs(corpus)
+    if args.include:
+        include_re = re.compile(args.include, re.IGNORECASE)
+        pairs = [p for p in pairs if include_re.search(p.audio.name)]
+    if args.limit is not None:
+        pairs = pairs[: args.limit]
+
     if not pairs:
         print(f"ERROR: no (audio, reference) pairs discovered in {corpus}", file=sys.stderr)
         print("See test-corpus/README.md for supported layouts.", file=sys.stderr)
@@ -482,7 +697,7 @@ def main() -> int:
 
     print(f"Discovered {len(pairs)} clip(s) under {corpus}:")
     for p in pairs:
-        print(f"  - {p.audio.name} ({p.audio.stat().st_size / 1e6:.1f}MB) ← ref {p.reference.name}")
+        print(f"  - {p.audio.name} ({p.audio.stat().st_size / 1e6:.1f}MB) <- ref {p.reference.name}")
 
     # Device resolution
     device = args.device
@@ -494,7 +709,17 @@ def main() -> int:
         args.compute_type = "float16" if device == "cuda" else "int8"
     args.models = requested
 
-    gold_label = "**gold (hand-corrected)**" if args.gold else "**proxy** (auto-generated reference — WER is relative divergence, not absolute accuracy)"
+    # Auto-detect ASR-shaped references; surface even if the user passed --gold.
+    auto_origins = {detect_reference_origin(p.reference)[0] for p in pairs}
+    asr_detected = any(o in {"panopto-asr", "asr-generic"} for o in auto_origins)
+    if args.gold and asr_detected:
+        gold_label = "**gold (claimed via --gold)** ⚠️ but auto-detection flagged at least one reference as ASR-generated — verify before trusting WER as absolute"
+    elif args.gold:
+        gold_label = "**gold (hand-corrected, declared via --gold)**"
+    elif asr_detected:
+        gold_label = "**proxy** (auto-detected ASR-generated reference — WER is relative divergence, not absolute accuracy)"
+    else:
+        gold_label = "**proxy** (default: pass --gold if your reference is hand-corrected)"
     print(f"Reference quality: {gold_label}")
 
     results: List[ModelResult] = []

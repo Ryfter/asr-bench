@@ -1,0 +1,2205 @@
+1
+00:00:00,060 --> 00:00:06,450
+[Auto-generated transcript. Edits may have been applied for clarity.]
+Let's get started here. Okay. So welcome to, um, week 14.
+
+2
+00:00:06,450 --> 00:00:10,139
+We're getting close to the end of the class. We have a few more weeks here.
+
+3
+00:00:10,140 --> 00:00:13,080
+Uh, we're going to be looking at choosing visuals and decluttering.
+
+4
+00:00:13,740 --> 00:00:20,340
+Uh, these this is two chapters out of the Netflix book, and then we're going to be looking a little bit today starting the final paper.
+
+5
+00:00:20,970 --> 00:00:26,520
+Uh, we've got an engage assignment we'll do in class, uh, either today or probably on Friday.
+
+6
+00:00:27,060 --> 00:00:30,360
+And uh, you've got two tech assignments do this week.
+
+7
+00:00:30,360 --> 00:00:35,850
+So instead of one of the two. So we're kind of crunching a lot in this week to get through a bunch of stuff.
+
+8
+00:00:36,420 --> 00:00:39,590
+Um, these aren't usually too bad of ones.
+
+9
+00:00:39,600 --> 00:00:45,270
+They're just getting you dialed in and a couple of skills you're going to need for the final project.
+
+10
+00:00:45,690 --> 00:00:49,440
+Formatting, visuals. You definitely need to know how to do this to clean visuals up.
+
+11
+00:00:49,440 --> 00:00:55,500
+Make them look better. Remember the highlight that the whole concept of an explanatory analysis.
+
+12
+00:00:55,950 --> 00:01:01,410
+When you explain to people you need it well polished. That's where, uh, formatting visuals come in.
+
+13
+00:01:01,740 --> 00:01:09,389
+And then filtering is just learning the different filtering methods and slicing methods so that you can use those more effectively.
+
+14
+00:01:09,390 --> 00:01:21,140
+A lot of. A lot of what we do with, uh, business intelligence, data analytics is we learn what to slice out or filter out and reduce that noise.
+
+15
+00:01:21,150 --> 00:01:24,260
+So that's why this week's actually a pretty important week.
+
+16
+00:01:24,270 --> 00:01:25,910
+These assignments are really important.
+
+17
+00:01:26,510 --> 00:01:32,930
+Um, so yes, you've got the two tech assignments, um, report visualizations and then creating hierarchies and formatting.
+
+18
+00:01:33,290 --> 00:01:37,470
+And then we'll talk a little bit about, um, the final project.
+
+19
+00:01:37,500 --> 00:01:42,980
+Uh, we'll start we'll touch on it this week. Next week is when you'll actually get the files and start on it.
+
+20
+00:01:43,940 --> 00:01:53,390
+So we've got some definitions that I would like to start off with this week, um, that we'll be talking about, uh, basically today and Friday.
+
+21
+00:01:53,810 --> 00:01:58,700
+So the first one is cognitive load. It's the mental effort required to process information.
+
+22
+00:01:59,210 --> 00:02:02,210
+High cognitive load can hinder understanding.
+
+23
+00:02:02,210 --> 00:02:07,070
+This is actually a very important one to understand. It's something that, um.
+
+24
+00:02:08,390 --> 00:02:13,570
+It's something that is a good way to think about all your presentations.
+
+25
+00:02:13,580 --> 00:02:19,790
+Anything you present to anybody. Think about how much work it takes them to to understand it.
+
+26
+00:02:20,450 --> 00:02:25,730
+The more effort that they have to put into understanding something, the more cognitive load you're giving them,
+
+27
+00:02:26,120 --> 00:02:30,980
+the less likely they're going to retain it or even try to learn it.
+
+28
+00:02:31,010 --> 00:02:36,140
+That's the other thing. Uh, one of the issues is I made a mistake or kind of made a mistake here.
+
+29
+00:02:36,410 --> 00:02:42,080
+There's a lot of text here. This text, it, uh, creates a high cognitive load.
+
+30
+00:02:42,590 --> 00:02:48,889
+So just be aware of that is what we were talking about. Cognitive load. That's we're talking about it's, uh, psychology, uh, kind of term.
+
+31
+00:02:48,890 --> 00:02:53,959
+My daughter's a psychology major, and she saw me work on the set aside.
+
+32
+00:02:53,960 --> 00:03:00,250
+She's like, why are you talking about psychology in your IT class? So that's where if you want to get deeper into this, that's where you go.
+
+33
+00:03:00,260 --> 00:03:07,370
+That's that's the group that studies this. We you'll learn enough about it to understand it, to be able to be able.
+
+34
+00:03:07,580 --> 00:03:16,220
+Uh, let me rephrase that. You will learn enough about it to be a more effective presenter and be able to explain your ideas better again.
+
+35
+00:03:16,610 --> 00:03:18,790
+Remember the very first day of class we walked in here?
+
+36
+00:03:18,920 --> 00:03:27,110
+You know, the basic story of the class is someday you'll walk into a boardroom and it'll be your idea versus somebody else.
+
+37
+00:03:27,110 --> 00:03:32,239
+What will be the difference? Data analysis. Nice looking, good looking visuals.
+
+38
+00:03:32,240 --> 00:03:34,490
+Being able to communicate clearly with data.
+
+39
+00:03:34,880 --> 00:03:41,750
+And also this whole idea of cognitive load, knowing what to, uh, show and what not to show is very, very important.
+
+40
+00:03:43,800 --> 00:03:51,090
+So a couple of the, um, the next two are, are terminology that will help get everybody on the same page graphs,
+
+41
+00:03:51,090 --> 00:03:55,470
+visual displays that interact with our visual system for faster processing.
+
+42
+00:03:56,100 --> 00:04:04,110
+That is just graphs. And then we have table structures that allow detailed comparison of multiple data points more aligned with our verbal processing.
+
+43
+00:04:04,680 --> 00:04:10,979
+Graphs are very easy to reduce cognitive load with tables produce a lot of cognitive load.
+
+44
+00:04:10,980 --> 00:04:18,410
+So something to keep in mind. Clutter is nonessential. Visual elements that do not contribute to understanding these increased cognitive load.
+
+45
+00:04:18,420 --> 00:04:24,690
+Again there's that term day to day ratio maximizing the amount of ink used to represent data compared to non-data ink,
+
+46
+00:04:24,690 --> 00:04:30,509
+which minimizes clutter data increase. So this really comes from the days that we had newspapers every day.
+
+47
+00:04:30,510 --> 00:04:35,400
+So it's a little outdated in terms of the specific terminology.
+
+48
+00:04:35,790 --> 00:04:38,840
+But in the digital world the concepts still hold true.
+
+49
+00:04:38,850 --> 00:04:42,030
+Again, minimizing clutter, reducing cognitive load.
+
+50
+00:04:42,450 --> 00:04:48,569
+And then we have the, excuse me, the gestalt principles of visual perception.
+
+51
+00:04:48,570 --> 00:04:55,230
+It's a set of theories to describe how humans naturally organize visual elements into groups or unified wholes when perceiving objects.
+
+52
+00:04:55,830 --> 00:05:02,190
+These principles emphasize that the whole of something is perceived as more than just the sum of its parts, and we'll go through those.
+
+53
+00:05:02,190 --> 00:05:08,159
+It'll make a lot more sense when you actually see this. And that's and that is actually different when we talk about cognitive load.
+
+54
+00:05:08,160 --> 00:05:10,739
+Reading these requires a high carb load.
+
+55
+00:05:10,740 --> 00:05:15,240
+When we start seeing, especially when you start seeing these, it'll make a lot more sense will be a lot simpler.
+
+56
+00:05:16,110 --> 00:05:20,790
+So choosing an effective visual um, I just went through this the Sunday.
+
+57
+00:05:20,790 --> 00:05:32,620
+So this is actually up to date. There are 45 visualizations in power BI, or at least 45 icons in the pain.
+
+58
+00:05:33,190 --> 00:05:36,790
+That does include a bunch of like non-visual items.
+
+59
+00:05:36,790 --> 00:05:42,129
+That's your slicer, your Q&A, and a couple of others, so they're always adjusting it.
+
+60
+00:05:42,130 --> 00:05:47,260
+There's a couple that they've deprecated recently. Um, that number is in flux.
+
+61
+00:05:47,770 --> 00:05:51,070
+Uh, the previous set of slides, I think they had 47.
+
+62
+00:05:51,550 --> 00:05:55,959
+Uh, then there's 27 additional visualizations created by Microsoft alone.
+
+63
+00:05:55,960 --> 00:06:02,830
+There's all sorts of other companies to build these. Um, if you click the get More visuals, it's the three dots at the end of the visualization pane.
+
+64
+00:06:03,370 --> 00:06:07,510
+Um, you can get to these and there are literally hundreds more.
+
+65
+00:06:07,540 --> 00:06:13,029
+Um, there's a ton of different visualizations and they all have different capabilities.
+
+66
+00:06:13,030 --> 00:06:18,459
+So if you are using power BI really outside this class, we don't get into it really in this class.
+
+67
+00:06:18,460 --> 00:06:24,670
+But outside this class, any business environment, if there is, if there's visuals or there's things that you need,
+
+68
+00:06:25,030 --> 00:06:29,590
+realize that that you can get a whole ton more visuals by clicking the three dots.
+
+69
+00:06:30,310 --> 00:06:33,730
+Um, and this is just an example here.
+
+70
+00:06:34,570 --> 00:06:38,379
+So I just click that link. This is what will pop out.
+
+71
+00:06:38,380 --> 00:06:42,010
+This is not just Microsoft.
+
+72
+00:06:42,490 --> 00:06:45,760
+So these are all different uh, companies I'm in.
+
+73
+00:06:46,810 --> 00:06:57,780
+Let's hear. Um. This is going to work, right?
+
+74
+00:07:09,510 --> 00:07:13,350
+Yeah. It's actually. Are you guys visuals?
+
+75
+00:07:14,310 --> 00:07:19,770
+Yeah. So I'm going to work great. It's a lot easier to do it through the app, but there's you have over here.
+
+76
+00:07:19,770 --> 00:07:24,479
+You see this like Map or Mac LLC. These are the names of the companies.
+
+77
+00:07:24,480 --> 00:07:28,410
+And there's a whole bunch that are done by Microsoft. Like I said, there's like 27.
+
+78
+00:07:28,950 --> 00:07:33,120
+So it's a good way to extend the capabilities of.
+
+79
+00:07:34,390 --> 00:07:37,690
+Of the application of the visuals, and there's a lot more to it than that.
+
+80
+00:07:39,340 --> 00:07:46,450
+So getting into the book, uh, text and tables, if you have 1 or 2 numbers, it may be advantageous just to display the numbers.
+
+81
+00:07:46,480 --> 00:07:49,810
+That's what cards are for. If you you've seen cards before.
+
+82
+00:07:50,200 --> 00:07:57,370
+That's that's where you would use a card. You don't want to have you don't need a visual like a real graph to show 1 or 2 numbers.
+
+83
+00:07:57,970 --> 00:08:02,890
+Uh, tables are another way to show numbers. And honestly, under tables I'd also put matrix.
+
+84
+00:08:03,430 --> 00:08:09,040
+Uh, matrix is just, uh, glorified pivot tables is the power BI version of pivot table.
+
+85
+00:08:09,040 --> 00:08:10,090
+Might be the best way to put it.
+
+86
+00:08:11,210 --> 00:08:18,230
+Uh, heat map is a type of table that uses color saturation to quickly add meaning by drawing the eyes to elements quickly.
+
+87
+00:08:18,500 --> 00:08:22,130
+By using colors, we can see which time slots are the most used at which theater.
+
+88
+00:08:22,700 --> 00:08:27,739
+This is just an example. Um, there's, uh, power BI does have different heat maps.
+
+89
+00:08:27,740 --> 00:08:31,400
+I've added more since even I built this slide that actually work.
+
+90
+00:08:31,670 --> 00:08:35,960
+You know better, they work as well as this. They can show things a little differently.
+
+91
+00:08:37,200 --> 00:08:40,880
+Uh. Graphs. There are large number of graphs and visualizations you can use.
+
+92
+00:08:40,890 --> 00:08:45,210
+The author of the book breaks them into points, lines, bars, area, and pie.
+
+93
+00:08:46,260 --> 00:08:51,120
+Um, the posters I've been showing you guys for the past, you know, since the beginning of class.
+
+94
+00:08:51,720 --> 00:08:55,860
+Uh, the Financial Times poster, they break it down into seven different categories,
+
+95
+00:08:56,280 --> 00:09:00,190
+and there is yet another visual that you'll see that kind of breaks them down in different ways.
+
+96
+00:09:00,210 --> 00:09:05,310
+It's what it does is this gives you different ways to think about your data and what you're trying to convey.
+
+97
+00:09:07,320 --> 00:09:10,860
+Um, scatterplots. These showed the relationship between two items.
+
+98
+00:09:11,280 --> 00:09:14,430
+You met the data on x and the y axis simultaneously.
+
+99
+00:09:14,850 --> 00:09:18,540
+So this scatter plot shows the showing time and tickets purchased.
+
+100
+00:09:19,020 --> 00:09:22,620
+Uh, scatter plots are very good at showing rogue data as well.
+
+101
+00:09:23,370 --> 00:09:27,569
+So out of curiosity, those three in the top right are those rogue data.
+
+102
+00:09:27,570 --> 00:09:31,260
+Are the outliers. Are they part, uh, legitimate part of the data set?
+
+103
+00:09:33,130 --> 00:09:36,310
+What? Outliers? They're not outliers.
+
+104
+00:09:37,060 --> 00:09:40,210
+So what's going on here is these are showing times.
+
+105
+00:09:40,660 --> 00:09:46,320
+So figure from noon to 2 to 4. We're only getting 500 tickets in the evening though.
+
+106
+00:09:46,330 --> 00:09:51,040
+That's when we get the most ticket sales. So in this instance these are not outliers.
+
+107
+00:09:51,520 --> 00:09:55,900
+But if I was just looking I'm like you guys have had I don't know what 10s.
+
+108
+00:09:55,930 --> 00:09:58,030
+Look at this. I don't expect you to really do it.
+
+109
+00:09:58,030 --> 00:10:05,650
+But if I was building this visual and I saw this, I would definitely dig into it thinking it's an outlier at first because it does look that way.
+
+110
+00:10:05,680 --> 00:10:11,120
+Yeah. Hmm? No, this is all legitimate data.
+
+111
+00:10:11,140 --> 00:10:16,730
+What it is is. So the the movie ticket database that you guys have been using.
+
+112
+00:10:17,480 --> 00:10:21,590
+You have different showing times and it's how many tickets are shown at each time.
+
+113
+00:10:22,040 --> 00:10:28,610
+If you ever go into a movie theater earlier in the day, you'll notice there's a far fewer people than there are in the evening.
+
+114
+00:10:29,120 --> 00:10:32,840
+And that's really all this is showing. Just when people generally are going to go to the theater.
+
+115
+00:10:33,380 --> 00:10:39,350
+Um, and that's literally that's exactly what this is shown. So it's not that none of these are outliers, it's just showing the actual data.
+
+116
+00:10:39,500 --> 00:10:44,220
+An outlier would be. I don't know. I don't even know what an outlier on this would be.
+
+117
+00:10:44,240 --> 00:10:50,810
+Maybe be something like way high, because somebody put a zero at the end of all the numbers and it launched it way higher.
+
+118
+00:10:53,760 --> 00:10:57,780
+Uh, line line graphs and slope graphs. You're going to use lines a lot.
+
+119
+00:10:57,930 --> 00:11:04,800
+Uh, I would say, uh, bar graphs, column graphs and line graphs are probably the three most used visuals,
+
+120
+00:11:05,310 --> 00:11:09,240
+or at least they should be the three most used visuals. A lot of people put pie charts in there.
+
+121
+00:11:09,240 --> 00:11:10,790
+Don't use pie charts, you know, void it.
+
+122
+00:11:11,190 --> 00:11:17,400
+There are a lot of issues with pie charts that if you don't use them precisely, um, they just don't produce good results.
+
+123
+00:11:21,250 --> 00:11:25,240
+Main lines are used to plot continuous data and mainly time data.
+
+124
+00:11:25,570 --> 00:11:27,129
+This is another key thing.
+
+125
+00:11:27,130 --> 00:11:33,550
+I get a lot of students that will use it in place of what I would call a histogram, which is basically a glorified column chart.
+
+126
+00:11:34,210 --> 00:11:40,510
+Um. It. You think of it as you've got data that is tied together day to day.
+
+127
+00:11:40,510 --> 00:11:44,410
+Uh, unit to unit. There's there's different ways to show continuity.
+
+128
+00:11:44,710 --> 00:11:50,470
+That's what this is meant to do. It's not to show discrete separate items.
+
+129
+00:11:50,470 --> 00:11:59,860
+So if you've got, you know, product A has 100 units sold and product B has a, you know, 50 and product C has 130.
+
+130
+00:12:00,550 --> 00:12:05,290
+I've see a lot of students will put a line chart between those. And it's it doesn't convey meaning.
+
+131
+00:12:05,290 --> 00:12:09,430
+It actually confuses the meaning because it's not contiguous data.
+
+132
+00:12:09,760 --> 00:12:14,590
+They are separate data points. Line graphs are all about continuous data.
+
+133
+00:12:15,190 --> 00:12:19,870
+So line graphs can show a single or multiple series of data you're seeing here.
+
+134
+00:12:20,020 --> 00:12:24,130
+Uh top right. This is multiple series down. Here's technically multiple series two.
+
+135
+00:12:24,940 --> 00:12:30,100
+Uh slip graphs are useful to show two time periods and the relative difference across those categories.
+
+136
+00:12:30,910 --> 00:12:37,990
+So this is showing 2014 2015. This could be 2014 to 2020 and just show the difference between those two years.
+
+137
+00:12:38,530 --> 00:12:42,459
+Oops. And um yeah. And that's how subgraphs work.
+
+138
+00:12:42,460 --> 00:12:47,200
+These are very simple. The great thing about slope graphs are very very simple to convert it to show.
+
+139
+00:12:47,590 --> 00:12:54,310
+And the meaning is very obvious, especially when you use colors to designate what is the most interesting parts of it.
+
+140
+00:12:55,710 --> 00:12:58,710
+So remember, lines are for contiguous data.
+
+141
+00:12:58,740 --> 00:13:02,910
+You're pretty much your data. Uh, is the easiest thing to think about.
+
+142
+00:13:03,270 --> 00:13:09,780
+But there are others. Like if you've got several batches in a day that could be considered contiguous data, things like that.
+
+143
+00:13:10,350 --> 00:13:14,690
+But if it's separate items, completely separate items, they don't go on a bar chart.
+
+144
+00:13:14,700 --> 00:13:21,990
+So if it's showing, you know, units from two different, um, two different lines, that would not be contiguous for data.
+
+145
+00:13:22,650 --> 00:13:28,260
+So bars, vertical bar chart, waterfall chart, horizontal bar chart and then the stack variations of those.
+
+146
+00:13:28,980 --> 00:13:34,980
+Um they limit the amount of or you want to limit the amount of information conveyed in a single chart.
+
+147
+00:13:35,010 --> 00:13:40,740
+This is very important. I see column charts and bar charts get way out of hand.
+
+148
+00:13:41,100 --> 00:13:46,530
+Students. Well, not just students. People get really crazy with them and they try to convey too much meaning in them.
+
+149
+00:13:47,250 --> 00:13:50,309
+Um, bars can be too wide. They can be too narrow.
+
+150
+00:13:50,310 --> 00:13:56,010
+Or just write the Goldilocks principle. Generally speaking, I do not change that.
+
+151
+00:13:56,580 --> 00:14:03,299
+I really can't think of a time that I have ever changed the width of, of the bar charts or the columns, just because by default,
+
+152
+00:14:03,300 --> 00:14:11,430
+what, uh, Excel puts in what power BI puts in is generally a really good version of them, the right width.
+
+153
+00:14:11,430 --> 00:14:18,120
+Right. Um, basically the right area to show, uh, vertical and horizontal bar charts come in two varieties normal and clustered.
+
+154
+00:14:18,630 --> 00:14:23,030
+Uh, for best unbiased results, start at zero uses zero baseline.
+
+155
+00:14:23,040 --> 00:14:31,410
+There are times that you do want to use, uh, zoom in and maybe not use that, but if you do, make sure you call it out so that it's obvious.
+
+156
+00:14:32,080 --> 00:14:34,110
+Um, order also matters when using bar charts,
+
+157
+00:14:34,110 --> 00:14:41,999
+especially clustered bar charts with more than one data series making it when you start conveying more than just one item.
+
+158
+00:14:42,000 --> 00:14:46,470
+So like if you've got values in our grouping, this becomes very, very important.
+
+159
+00:14:48,290 --> 00:14:53,050
+A waterfall. Charts. Waterfall charts are good for pulling apart pieces of a stacked bar chart.
+
+160
+00:14:53,120 --> 00:14:55,700
+They're also good at showing increases and decreases over time.
+
+161
+00:14:56,450 --> 00:15:02,540
+Uh, these charts show yearly sales of tickets, so you can see this is a per year basis.
+
+162
+00:15:02,540 --> 00:15:10,100
+How much we sold where when we use this waterfall chart, we can see 2019 was a really big year 2016 very low.
+
+163
+00:15:11,980 --> 00:15:12,430
+Excuse me.
+
+164
+00:15:12,430 --> 00:15:20,770
+And that's how these tickets and that's basically how these all these ticket sales work and this shows, this shows basically a waterfall in action.
+
+165
+00:15:21,250 --> 00:15:27,340
+Usually when you have a waterfall chart, you've got numbers that are going up and numbers that are going down in different periods.
+
+166
+00:15:27,880 --> 00:15:34,000
+So that is the one weakness of this visual doesn't really show how they normally work where you have ups and downs.
+
+167
+00:15:35,110 --> 00:15:43,270
+But you can see how by they are, um, deconstructing this stacked bar chart, it actually conveys more meaning, I think better.
+
+168
+00:15:45,160 --> 00:15:48,880
+Uh, horizontal bar charts. So horizontal bar charts are easy to read left to right.
+
+169
+00:15:48,890 --> 00:15:53,480
+This reduces the cognitive load in using them. The stacked horizontal bar charts.
+
+170
+00:15:53,480 --> 00:15:58,459
+By utilizing the sum of 100%, you can represent data like you would with a pie chart.
+
+171
+00:15:58,460 --> 00:16:07,160
+So that's what this is showing. You can also easily compare across stacked charts easily, which is not easily done with pie charts.
+
+172
+00:16:07,670 --> 00:16:16,940
+So this here we are showing the different, um, uh, theaters here and how many, how much sales we had on a per year basis.
+
+173
+00:16:16,940 --> 00:16:22,610
+Each of these is years, and each is the number of sales per, uh, theater.
+
+174
+00:16:23,360 --> 00:16:27,860
+And you can see how easy it is to compare these, uh, with each other.
+
+175
+00:16:28,400 --> 00:16:32,180
+If we move over to a pie chart, it becomes a lot more difficult.
+
+176
+00:16:33,520 --> 00:16:37,569
+And. And that'll bring us into the idea of area and pie charts.
+
+177
+00:16:37,570 --> 00:16:41,910
+They are similar concepts. Areas generally difficult to show.
+
+178
+00:16:41,920 --> 00:16:47,650
+The author suggest using it to show an order of magnitude differences, like in figure 2.2.
+
+179
+00:16:47,680 --> 00:16:55,570
+Here. Uh, in the Financial Times we have different visualizations they recommend for showing orders of magnitude.
+
+180
+00:16:56,350 --> 00:17:01,240
+Uh, it really depends what your needs are and which kind of visuals you would use.
+
+181
+00:17:01,900 --> 00:17:05,150
+Pie charts are useful for shoring up our app, right?
+
+182
+00:17:05,170 --> 00:17:08,170
+Pie charts are useful for showing a whole two part relationship.
+
+183
+00:17:08,800 --> 00:17:14,650
+A pie chart must sum to 100%. If it does not sum to 100%, it's misleading data.
+
+184
+00:17:14,650 --> 00:17:16,480
+There are ways to break it out.
+
+185
+00:17:16,750 --> 00:17:27,160
+Um, I've got links, I think this week that, uh, take you to information on pie charts that if you really want to get really in-depth, you can.
+
+186
+00:17:27,760 --> 00:17:33,370
+But suffice it to say, if you don't want to get really in-depth into pie charts, use them at 100%.
+
+187
+00:17:33,580 --> 00:17:39,550
+Always have 100% data. Don't use um, a segment of the data to to be represented in there.
+
+188
+00:17:40,210 --> 00:17:47,800
+Um, and then comparing multiple pie charts does create cognitive load because it's very difficult to understand these.
+
+189
+00:17:47,800 --> 00:17:52,900
+It's a lot easier with the chart going down. Um.
+
+190
+00:17:54,100 --> 00:17:58,410
+So it's. Oh, yeah. Come on.
+
+191
+00:17:58,950 --> 00:18:03,780
+That's what you do. So, yeah, in the, um, what's it called?
+
+192
+00:18:03,870 --> 00:18:07,390
+The resources folder. The resources sites, folders.
+
+193
+00:18:07,410 --> 00:18:14,730
+Uh, for this week, I've got a whole ton of links for the chart guide that Netflix put together.
+
+194
+00:18:15,990 --> 00:18:19,590
+What we're going through here is a very, very, very surface.
+
+195
+00:18:19,590 --> 00:18:21,390
+Look, if you want to get really in-depth.
+
+196
+00:18:22,080 --> 00:18:32,040
+Her and her team go really in-depth to a level that I will never go that crazy for, but they go really in-depth into using different visualizations.
+
+197
+00:18:32,580 --> 00:18:40,920
+I would highly recommend reading the ones for like a bar charts, for line charts, the ones that you use regularly.
+
+198
+00:18:41,520 --> 00:18:50,310
+And this would also be a good place where you could grab all those, stick them into a notebook LM and have all that information in there as long.
+
+199
+00:18:50,580 --> 00:18:54,580
+And also you guys have the book in PDF format. Upload the book into the notebook.
+
+200
+00:18:54,620 --> 00:19:03,299
+Elin. Amazing, amazing resource there. So we've talked about how to use visualizations or what visualizations to use.
+
+201
+00:19:03,300 --> 00:19:06,320
+And let's talk a little bit about what to avoid 3D.
+
+202
+00:19:06,830 --> 00:19:16,639
+Do not use 3D. It distorts this, uh, size of visualization to make 2D items appear to be 3D that adds cognitive load.
+
+203
+00:19:16,640 --> 00:19:19,700
+And as always, extraneous cognitive load is bad.
+
+204
+00:19:21,500 --> 00:19:29,750
+The one and only time I could ever see using a 3D chart is if you are using a 3D interface, like using virtual reality goggles,
+
+205
+00:19:29,750 --> 00:19:35,990
+something that you actually have stereoscopic visualization and can literally move the model around.
+
+206
+00:19:36,320 --> 00:19:41,000
+That would be the only time I could say that using 3D models acceptable.
+
+207
+00:19:41,630 --> 00:19:46,459
+Uh, never use it on a two dimensional screen. Many people overuse pie charts.
+
+208
+00:19:46,460 --> 00:19:51,200
+Different visualizations can usually be used to show the parts of the whole relationship better than a pie chart.
+
+209
+00:19:51,890 --> 00:19:56,420
+One of the earlier sets of slides with the Financial Times, uh, stuff.
+
+210
+00:19:56,420 --> 00:20:01,940
+I actually showed a bunch of different methods to show to convey the part, the whole relationship.
+
+211
+00:20:02,330 --> 00:20:07,430
+There are a whole bunch of different ways to do it, and most of them are superior to the pie chart.
+
+212
+00:20:07,430 --> 00:20:14,780
+The one that is inferior is a, uh, donut chart. Uh, don't a church take what is bad in a pie chart and increases the problem?
+
+213
+00:20:14,780 --> 00:20:20,270
+People have trouble with the area of an angle of a pie piece. Measuring the length of an arc is even worse.
+
+214
+00:20:20,630 --> 00:20:29,209
+The one time that I do find it acceptable is if you're using that as a way to convey additional meaning for a specific number.
+
+215
+00:20:29,210 --> 00:20:35,870
+If you're showing a number in the center of the pie chart or the donut chart with the information around it,
+
+216
+00:20:36,080 --> 00:20:42,010
+that is the one time that I think it is actually effective. Uh, avoid secondary axis.
+
+217
+00:20:42,010 --> 00:20:46,090
+Having labels on the left and different labels on the right is confusing for many.
+
+218
+00:20:46,450 --> 00:20:49,870
+The book goes through several methods to use align bar chart better.
+
+219
+00:20:50,440 --> 00:20:52,590
+Power BI does have a bar and line chart.
+
+220
+00:20:52,600 --> 00:21:01,059
+This is the one and only time that having a line chart that is not showing contiguous data is okay, because it actually does break this rule.
+
+221
+00:21:01,060 --> 00:21:06,219
+It is showing a secondary axis, but when done right, it actually is not bad.
+
+222
+00:21:06,220 --> 00:21:12,190
+But you have to be very deliberate in your use so that you don't have an increase in cognitive load.
+
+223
+00:21:13,670 --> 00:21:18,920
+And remember, rules are meant to be broken, but you really have to understand why you're breaking the rules.
+
+224
+00:21:19,130 --> 00:21:24,740
+I do photography and there's a thing called rule of thirds you that you all that you basically use.
+
+225
+00:21:25,130 --> 00:21:29,570
+Most cell phone cameras will a lot will have a rule of thirds overlay pop up.
+
+226
+00:21:30,050 --> 00:21:33,680
+And it is a good rule for subject placement.
+
+227
+00:21:34,040 --> 00:21:36,319
+But there are times you do not want to use that,
+
+228
+00:21:36,320 --> 00:21:42,350
+and having experience of learning when to break the rules is also a part of just getting your knowledge.
+
+229
+00:21:42,980 --> 00:21:50,330
+Um, and I would say, just don't ever use 3D. I told you guys the one exception, uh, there's really not any other reason to do that.
+
+230
+00:21:50,330 --> 00:21:55,100
+And I've looked there's not really a good 3D modeling software out there.
+
+231
+00:21:55,100 --> 00:22:05,839
+Uh, there was for a while, many years ago, there was a basically a way to move power BI into 3D world, and that's basically been abandoned.
+
+232
+00:22:05,840 --> 00:22:11,540
+I have not seen updates in that for like six years. Um, ethical visualization.
+
+233
+00:22:11,550 --> 00:22:20,000
+So the book points out a fairly famous, at least in visualization circles, uh, example of a news report that shows how much taxes would go up.
+
+234
+00:22:20,510 --> 00:22:23,540
+Taxes would go up 4.6% overall.
+
+235
+00:22:23,540 --> 00:22:30,109
+The graph on the new shows zoomed in to the 34 to 42% segment of the graph graph.
+
+236
+00:22:30,110 --> 00:22:35,450
+And that's, uh, skewed the perception of the change. So that's showing it over here on the left.
+
+237
+00:22:36,050 --> 00:22:39,890
+When viewed from a zero. There isn't a huge visualization over here on the right.
+
+238
+00:22:40,370 --> 00:22:46,350
+Um. So that is and that's where the rule that a bar chart must start at zero.
+
+239
+00:22:46,770 --> 00:22:55,350
+I did put a caveat here. Be careful because by default Excel will zoom in on this segment and not start at zero.
+
+240
+00:22:55,950 --> 00:22:59,400
+Um, Netflix does go in depth on this. So I'm just talking about a little bit.
+
+241
+00:23:02,100 --> 00:23:06,450
+Um, I actually dove into this on my own to.
+
+242
+00:23:07,840 --> 00:23:12,100
+Uh, to see how Excel works. Like I said, Excel zooms in further.
+
+243
+00:23:12,490 --> 00:23:17,980
+This was on a news report. I did work at Idaho Public Television for 14 years.
+
+244
+00:23:18,100 --> 00:23:19,300
+In my experience,
+
+245
+00:23:19,780 --> 00:23:29,380
+the people that create these visuals are not necessarily trained in how to create maybe what we call perfectly ethical visualizations.
+
+246
+00:23:30,040 --> 00:23:39,790
+So there is a very good chance that this, um, this news report was not meant to be, uh, uh, exaggerating the changes.
+
+247
+00:23:40,270 --> 00:23:44,100
+It's just that the person that created the visualization did not know any better.
+
+248
+00:23:44,110 --> 00:23:49,479
+I would not be surprised if that was the case, because this is the natural.
+
+249
+00:23:49,480 --> 00:23:53,540
+The natural. Um. Way that Excel works.
+
+250
+00:23:56,680 --> 00:24:01,690
+Okay. So now we're going to take this over to power BI. How do we how do we make these tweaks.
+
+251
+00:24:01,690 --> 00:24:06,460
+How do we use or how do we, um, optimize our visualizations in power BI?
+
+252
+00:24:07,240 --> 00:24:11,260
+We go into the format visual uh, section or pane right here.
+
+253
+00:24:11,260 --> 00:24:18,160
+It's under the visualization pane. And we can click this icon here to format visuals.
+
+254
+00:24:19,300 --> 00:24:22,390
+Um, actually, let me fire up power BI really quick.
+
+255
+00:24:25,060 --> 00:24:37,510
+I just want to make sure this is correct. Sorry.
+
+256
+00:24:37,780 --> 00:24:44,250
+That's it. Take one second. Okay.
+
+257
+00:24:44,910 --> 00:24:49,049
+So for a while this this is the icon. So this is the icon of the online version.
+
+258
+00:24:49,050 --> 00:24:53,850
+You see that it's slightly different but it's um actually they did change it again.
+
+259
+00:24:53,850 --> 00:24:57,540
+I didn't realize that for a long time. This was that looks like a paint roller.
+
+260
+00:24:57,540 --> 00:25:02,399
+So they do like to change icons, but essentially it's your build visual.
+
+261
+00:25:02,400 --> 00:25:06,479
+Is this one your format? Uh, visual is this one.
+
+262
+00:25:06,480 --> 00:25:11,490
+And then there is a conditional one that you don't see all the time over here.
+
+263
+00:25:11,490 --> 00:25:14,970
+And that is um, add further analysis to your visual.
+
+264
+00:25:15,930 --> 00:25:21,030
+Okay. I just want to make sure those that hadn't changed and looks like it has changed a slightly,
+
+265
+00:25:21,510 --> 00:25:28,649
+but it still is in the same location in the middle of those three. Okay, so with format elements we can turn various elements on or off.
+
+266
+00:25:28,650 --> 00:25:37,229
+We can change the size, font, back font, background of text pieces, change the scale and each axis of a graph, uh, turn data values on or off.
+
+267
+00:25:37,230 --> 00:25:42,209
+I really like data values on for the most part reposition, resize, orient,
+
+268
+00:25:42,210 --> 00:25:47,970
+etc. change the color of all bars or lines, or change the color one specific bar or line to add emphasis.
+
+269
+00:25:48,360 --> 00:25:56,520
+And we'll get into why you want to do that in data to increase show coming up, uh, change text size, font, etc. and turn your borders on or off.
+
+270
+00:25:57,210 --> 00:26:01,950
+Um, so this is an older version of this.
+
+271
+00:26:01,950 --> 00:26:09,720
+That's one of the reasons the colors are different. It was an earlier theme that we used several years ago, but this is kind of showing how it works.
+
+272
+00:26:10,050 --> 00:26:20,670
+If you go into the format visuals pane for the the bar chart here, it starts with a, it actually starts with a pretty good basic, um.
+
+273
+00:26:21,650 --> 00:26:25,670
+Basic format. What it comes out is actually not bad, but.
+
+274
+00:26:26,740 --> 00:26:32,260
+Um, we can optimize it. We can do things like change our titles a little bit, make them look a little bit better.
+
+275
+00:26:32,680 --> 00:26:37,300
+We can go through. And this shows you basically just working on the title.
+
+276
+00:26:37,690 --> 00:26:42,460
+You can see in here all the different parts that just work with the title itself.
+
+277
+00:26:43,180 --> 00:26:47,680
+Uh, generally speaking, don't put a background on it, but you can if you want.
+
+278
+00:26:47,680 --> 00:26:54,610
+But just generally you don't want to do that. But this shows you how you can tweak things around, optimize and make them look better.
+
+279
+00:26:54,610 --> 00:26:58,059
+And like I said, this is all for one specific item.
+
+280
+00:26:58,060 --> 00:27:03,310
+We have this all over for all the different parts of visualization as well.
+
+281
+00:27:04,570 --> 00:27:09,760
+Uh, these are some different formatting options for a, uh, for a chart like this.
+
+282
+00:27:10,270 --> 00:27:15,420
+We can change the visualizations on the, um, the y axis there on the left.
+
+283
+00:27:15,430 --> 00:27:19,719
+We can change the range of values. Uh, we can change how the values are shown.
+
+284
+00:27:19,720 --> 00:27:30,030
+We can even show a turn on or off the title. A lot of times I will turn titles off and move what they are into the, uh, default.
+
+285
+00:27:30,040 --> 00:27:38,590
+So, um, the axis title, I will turn off, but I will put what I'm talking about in the overall title just to help clean it up a little bit.
+
+286
+00:27:39,400 --> 00:27:45,010
+Um, so we've got this visual, will this visual on the y axis adjust this part?
+
+287
+00:27:45,010 --> 00:27:50,260
+Basically this part here. The general visual for the title is going to work here.
+
+288
+00:27:50,680 --> 00:27:56,440
+We've got data labels. So instead of just having the chart we actually name what the items are in the chart.
+
+289
+00:27:56,980 --> 00:28:00,250
+And then for the x axis we can also change how that works.
+
+290
+00:28:00,670 --> 00:28:05,500
+So again there's a lot of granularity when you are modifying these visuals.
+
+291
+00:28:05,950 --> 00:28:08,980
+That is a big part of this week's lessons.
+
+292
+00:28:09,370 --> 00:28:14,380
+And it is something that I'm going to expect you to be highly efficient or proficient at.
+
+293
+00:28:14,710 --> 00:28:18,430
+When you're doing the final project, you have to change the visualizations.
+
+294
+00:28:18,910 --> 00:28:23,020
+Use what we're talking about in class. So we're talking about some of this stuff.
+
+295
+00:28:23,620 --> 00:28:30,639
+Really think about the dating ratio when you're creating visuals, at least for the explanatory visuals.
+
+296
+00:28:30,640 --> 00:28:36,709
+So the very final project. Uh, we get into filtering.
+
+297
+00:28:36,710 --> 00:28:45,860
+So power by filtering. Um. The art of analysis is focus filtering allows us to focus on only the relevant subset of data that we are interested in.
+
+298
+00:28:46,430 --> 00:28:53,540
+When we set up a visual, we can also set up one or more filters to specify which rows or records of data to include in the visual.
+
+299
+00:28:53,840 --> 00:28:56,959
+So we could do things like, say, only use Idaho made products.
+
+300
+00:28:56,960 --> 00:29:00,080
+Now this is for a this is all theoretical.
+
+301
+00:29:00,080 --> 00:29:02,540
+This is not actually in the current set that I know of.
+
+302
+00:29:03,080 --> 00:29:10,100
+Only include the appliances production category, only include orders over $1,000, things like that we can filter down.
+
+303
+00:29:10,580 --> 00:29:15,889
+So um, yeah. So we can filter down and get further in there.
+
+304
+00:29:15,890 --> 00:29:19,520
+And also you guys have used slicers. A slicer is a form of a filter,
+
+305
+00:29:19,970 --> 00:29:27,200
+but it's used in line of filter is something you put into a report and then maybe publish it so other people can use it.
+
+306
+00:29:27,710 --> 00:29:31,460
+They wouldn't have access to the filters. It's based on what you create.
+
+307
+00:29:31,850 --> 00:29:37,760
+But if you put a slicer and then then they can do their own filtering within the parameters you give them.
+
+308
+00:29:39,130 --> 00:29:43,480
+Uh, power BI filtering. There are three levels of power BI filtering.
+
+309
+00:29:43,480 --> 00:29:48,620
+This is very important. You know, you get, uh, everybody that's kind of ignoring me.
+
+310
+00:29:48,620 --> 00:29:55,310
+I would highly recommend rewatching this part, because this part will bite you when you're doing the your, uh, visualizations.
+
+311
+00:29:55,730 --> 00:30:01,879
+There's three levels of filter, uh, filters. Um, you can see where it says visual level.
+
+312
+00:30:01,880 --> 00:30:05,540
+So this is any specific visual has its own filters.
+
+313
+00:30:06,080 --> 00:30:10,340
+We also can do all of the filters on a specific page in power BI.
+
+314
+00:30:10,820 --> 00:30:18,559
+And we can also do a filter on all pages. If you make a filter on all pages this can screw up every single page.
+
+315
+00:30:18,560 --> 00:30:21,110
+After that, if you're not really paying attention.
+
+316
+00:30:21,110 --> 00:30:26,510
+I see students do this particular one and this one every semester where they only want to do one visual.
+
+317
+00:30:26,840 --> 00:30:31,330
+They, uh, drag it. They drag the information into one of these two.
+
+318
+00:30:31,340 --> 00:30:36,700
+Not up here. And that can create a problem. So please, please be aware of that.
+
+319
+00:30:38,620 --> 00:30:40,640
+And then there's different filtering approaches.
+
+320
+00:30:40,660 --> 00:30:47,050
+There is basically and you guys have seen a bunch of these, I hope by now there is basic filtering, which you I know you've seen before,
+
+321
+00:30:47,440 --> 00:30:53,890
+there is advanced filtering where you can say it contains within these numbers is is not those are different um,
+
+322
+00:30:55,030 --> 00:30:58,960
+uh, different functions to see, you know, to choose what's there.
+
+323
+00:30:59,290 --> 00:31:02,730
+There's also top in. So show the top or the bottom. It's called top.
+
+324
+00:31:02,810 --> 00:31:07,120
+It also shows the bottom. Select uh measure to determine the top or bottom.
+
+325
+00:31:07,570 --> 00:31:12,670
+So in this one here we're showing the top five tickets purchased instead of top.
+
+326
+00:31:12,670 --> 00:31:17,170
+We could choose bottom. It allows us to look at the like say the best selling that we're selling.
+
+327
+00:31:17,830 --> 00:31:21,190
+And I do want to point out the worst selling is not always the worst thing.
+
+328
+00:31:21,190 --> 00:31:26,829
+The top selling is not always the best. A lot of times when you've got ads, it will, uh,
+
+329
+00:31:26,830 --> 00:31:33,610
+bump up the perception of a product and you'll see a lot more sales that may be much higher than normal.
+
+330
+00:31:33,610 --> 00:31:40,990
+So just something to keep in mind when you're looking at top and bottom in, um, I will say too, over here on basic filtering.
+
+331
+00:31:41,320 --> 00:31:43,240
+One of the things I do if I see a blank,
+
+332
+00:31:43,240 --> 00:31:49,420
+I'll do a select all and uncheck blank because there's no usually there's no good reason to have blank, uh, items in there.
+
+333
+00:31:50,930 --> 00:31:55,700
+Um, so the visualization skills you're going to be working on this week.
+
+334
+00:31:55,880 --> 00:31:58,250
+Uh, you're going to be looking at tables and sorting them.
+
+335
+00:31:58,580 --> 00:32:06,320
+Clustered column chart, stacked bar charts, maps, text matrix, line charts, cards or, um, and tree maps.
+
+336
+00:32:06,920 --> 00:32:12,050
+The power BI skills formatting text titles and headers. Again, from this week on out,
+
+337
+00:32:12,140 --> 00:32:19,160
+it's going to be important that you do think about your visualizations and how they look when you're doing the assignments.
+
+338
+00:32:19,580 --> 00:32:22,840
+Don't leave them default. Clean them up. Make them look better.
+
+339
+00:32:22,850 --> 00:32:30,530
+That's what you're learning to do. And unlike Excel, you can tweak visuals really, really fast.
+
+340
+00:32:30,530 --> 00:32:31,340
+And power BI.
+
+341
+00:32:31,850 --> 00:32:40,220
+Um, it's this is really one of power BI superpowers that you can make things look really good, really, really fast in just like a minute or two.
+
+342
+00:32:40,850 --> 00:32:47,479
+Um, adding filter slicers, intro to navigating hierarchies, uh, field trade, types of visual dependance of values.
+
+343
+00:32:47,480 --> 00:32:51,580
+Access groups. Details. Tooltips. Uh let's see.
+
+344
+00:32:51,580 --> 00:32:55,480
+And then we're going to get into clutter is your enemy. This is the next chapter.
+
+345
+00:32:55,930 --> 00:33:00,040
+Um, the previous. Yeah. Previous chapters, chapter two. Now we're moving into chapter three.
+
+346
+00:33:00,610 --> 00:33:05,650
+This is where we talk about this is where the author introduces cognitive load.
+
+347
+00:33:06,130 --> 00:33:11,120
+But the reason why I gave you guys that was the first, um, uh,
+
+348
+00:33:11,140 --> 00:33:17,230
+definition I gave you guys in that early slide was because we do talk about it pretty much throughout from chapter two on.
+
+349
+00:33:18,610 --> 00:33:25,180
+So cognitive load. Any time we take in information, we experience cognitive load.
+
+350
+00:33:25,810 --> 00:33:30,970
+Every slide I put in front of you guys, you guys are getting cognitive load off of that.
+
+351
+00:33:31,660 --> 00:33:36,130
+It's the mental effort that is required to learn new information.
+
+352
+00:33:36,850 --> 00:33:44,680
+We want to avoid extraneous cognitive load or process or easy process that takes a mental or sorry.
+
+353
+00:33:44,980 --> 00:33:47,620
+We want to avoid extraneous or process oh sorry.
+
+354
+00:33:47,650 --> 00:33:53,680
+Or processes that take mental resources, but don't add to the audience's understanding of the information.
+
+355
+00:33:54,010 --> 00:33:58,690
+Many times tables add a lot of cognitive load without much in the way of payoff.
+
+356
+00:33:59,470 --> 00:34:03,380
+So just to let you know, cognitive load is just part of life.
+
+357
+00:34:03,400 --> 00:34:09,490
+It's. And as a presenter, it's our job to reduce that cognitive load.
+
+358
+00:34:10,030 --> 00:34:17,000
+Uh, it's our job to make visualizations easier to understand so that you can glance at them and at least get the gist of it.
+
+359
+00:34:17,020 --> 00:34:24,190
+If not, you know, understand it really quickly. Um, there isn't, uh, an aspect of this, too.
+
+360
+00:34:24,580 --> 00:34:29,420
+If a visual looks easy to understand, your audience will try to understand it.
+
+361
+00:34:29,440 --> 00:34:36,530
+It can be. It can have a high cognitive load, but if it looks simple, they will apply the cognitive load to figure it out.
+
+362
+00:34:36,550 --> 00:34:39,940
+It's kind of a weird thing that will happen there. Um.
+
+363
+00:34:41,340 --> 00:34:44,219
+And if it's. But if it also looks complex.
+
+364
+00:34:44,220 --> 00:34:50,340
+But the audience member is really interested in understanding that they will also expend that cognitive load to use it.
+
+365
+00:34:52,160 --> 00:34:55,969
+Okay, so I wanted to show you guys cognitive load in action.
+
+366
+00:34:55,970 --> 00:34:59,360
+So think about this. Uh, which one?
+
+367
+00:34:59,540 --> 00:35:03,859
+And you're, you're basically here it. And, um, what I'm going to do here.
+
+368
+00:35:03,860 --> 00:35:05,600
+Sorry. I'm having some troubles here.
+
+369
+00:35:06,110 --> 00:35:14,570
+I will explain what this visual is, what it looks like, and, um, and just think about how long it takes you to figure out what it is.
+
+370
+00:35:14,900 --> 00:35:18,020
+If you would just kind of, like, put your hand up when you figure out what I'm talking about.
+
+371
+00:35:18,770 --> 00:35:25,850
+Okay. So this is a two dimensional shape. The shape is made up of four sides and has four angles.
+
+372
+00:35:26,980 --> 00:35:35,850
+All four sides are the same length. Um, all four angles are the same and all four corner angles equal 90 degrees.
+
+373
+00:35:36,360 --> 00:35:42,690
+Okay, so you guys got it pretty quickly. So, um, is this what you were thinking of?
+
+374
+00:35:47,360 --> 00:35:51,740
+This. This fits all of that. It's two dimensional. Uh, it's made up of four sides.
+
+375
+00:35:52,310 --> 00:35:55,700
+It's has four angles of four sides of the same length.
+
+376
+00:35:56,750 --> 00:36:05,600
+So, um. Yeah. This is probably what you guys were thinking of, but this is just showing how this is where cognitive load is.
+
+377
+00:36:05,600 --> 00:36:09,230
+It takes a lot of cognitive load to to understand what I was talking about.
+
+378
+00:36:09,530 --> 00:36:12,740
+But when I bring up this, it's just really easy. It's really obvious.
+
+379
+00:36:13,190 --> 00:36:16,400
+Or if I was really meaning this, this would be very obvious as well.
+
+380
+00:36:18,250 --> 00:36:21,319
+Uh, so that kind of gives you an idea of when we're talking about cognitive load.
+
+381
+00:36:21,320 --> 00:36:26,600
+That's what we're talking about, that that mental effort it took you to visualize and figure out what I was talking about.
+
+382
+00:36:26,690 --> 00:36:32,629
+And then even then, know, I kind of tricked you guys and used a visual that technically, is this correct?
+
+383
+00:36:32,630 --> 00:36:38,300
+But it's not what would have come to mind. So, uh, clutter, it's the enemy to cognitive load.
+
+384
+00:36:40,090 --> 00:36:45,160
+Clutter is any visual element takes up space, but does not increase your understanding.
+
+385
+00:36:46,480 --> 00:36:53,440
+Clutter makes visuals more complicated than necessary, and clutter can make visuals seem more complicated than they actually are.
+
+386
+00:36:53,950 --> 00:36:58,870
+In turn, this will reduce someone's opinion of your presentation as well.
+
+387
+00:36:59,980 --> 00:37:06,970
+So if you want people to think better of, you have cleaner, better looking visualizations or better presentations as well.
+
+388
+00:37:07,750 --> 00:37:12,550
+Um, again, clutter can create a poor user experience.
+
+389
+00:37:13,090 --> 00:37:17,709
+Um, and if the audience finds the visualization difficult to understand,
+
+390
+00:37:17,710 --> 00:37:23,770
+or has a lot of information that is not presented cleanly, it can reduce the overall impact of the presentation.
+
+391
+00:37:25,020 --> 00:37:30,960
+That's why it's very important to think about this stuff when you're creating present, when you're working on presentations.
+
+392
+00:37:32,160 --> 00:37:37,200
+So proximity this is the are these are the signature style principles of visual perception.
+
+393
+00:37:37,650 --> 00:37:43,500
+Proximity items that are close together. Similarities items that are perceived as related or belong to a group.
+
+394
+00:37:44,040 --> 00:37:48,150
+Enclosure. Items that are in close together. Closure items that construct a whole.
+
+395
+00:37:48,510 --> 00:37:55,020
+Continuity items when looked at, create the smoothest path and connection items that are physically connected.
+
+396
+00:37:55,680 --> 00:38:03,390
+Um, we pretty much. This is basically how we associate, uh, items in a visual,
+
+397
+00:38:03,840 --> 00:38:11,700
+and this just puts meaning to those so that you can think of them with intention when you when you are creating visualizations.
+
+398
+00:38:12,240 --> 00:38:18,180
+So proximity when items are in close proximity and others further away, those that are close together are viewed as a group.
+
+399
+00:38:18,570 --> 00:38:22,050
+These items appear as three groups based on proximity.
+
+400
+00:38:23,960 --> 00:38:29,630
+And you can also use these, uh, principles to draw the eye, the eyes through a visualization as well.
+
+401
+00:38:29,900 --> 00:38:35,600
+To get them from to jump from proximity to proximity, similarity items that are similar color,
+
+402
+00:38:35,600 --> 00:38:40,210
+shape, size, or orientation are perceived as related or belonging together.
+
+403
+00:38:40,460 --> 00:38:46,730
+The orange are perceived to be together, and it can be used to draw lines and break up space.
+
+404
+00:38:47,090 --> 00:38:50,730
+So this is another way we can use it. Um, enclosure.
+
+405
+00:38:50,740 --> 00:38:56,320
+This is like physically enclosure. Seeing the pieces together, even like shading can convey enclosure.
+
+406
+00:38:56,740 --> 00:39:04,020
+So this gray background shows enclosure, the blue dots. Um, even just a line like a box around it will show enclosure as well.
+
+407
+00:39:04,030 --> 00:39:07,470
+Those are two different ways. Um, closure.
+
+408
+00:39:07,530 --> 00:39:11,970
+People like things to be simple and fit constructs that are in our heads.
+
+409
+00:39:12,240 --> 00:39:15,960
+We see a set of individual elements as a single recognizable shape.
+
+410
+00:39:16,440 --> 00:39:22,770
+So in this instance, do we need the shading and the outline to convey that all of this goes together?
+
+411
+00:39:23,100 --> 00:39:28,200
+We really don't. And this is much cleaner. There's less visual clutter right there.
+
+412
+00:39:28,770 --> 00:39:38,130
+Um, so you guys saw, um, that, uh, what was called the, um, scatter plot where we had the lines all over.
+
+413
+00:39:38,640 --> 00:39:42,240
+And I don't think you guys actually saw the lines being connected.
+
+414
+00:39:42,540 --> 00:39:48,180
+That's one of the reasons why you see, uh, outliers instead of it being one continuous item.
+
+415
+00:39:48,540 --> 00:39:53,699
+And that is where closure continuity can be very important to group things together.
+
+416
+00:39:53,700 --> 00:39:58,240
+Make a little bit more obvious. So continuity.
+
+417
+00:39:58,250 --> 00:40:02,930
+It's similar to closure, but um, and we see continuity even if it doesn't exist.
+
+418
+00:40:03,530 --> 00:40:07,700
+So in number one, ah I see the bars line up in number one.
+
+419
+00:40:07,700 --> 00:40:12,770
+But um, uh, in these number two, number three, basically number two is what we see.
+
+420
+00:40:13,130 --> 00:40:17,630
+But number three could be what it actually shows where those bars do not actually touch.
+
+421
+00:40:17,900 --> 00:40:22,760
+They're separate. There are two separate elements. But that is what closure does because it's touching that.
+
+422
+00:40:22,760 --> 00:40:26,270
+It looks like it's all, um, connected there.
+
+423
+00:40:27,870 --> 00:40:32,309
+Uh, connection. So, uh, connection or items that are physically connected together.
+
+424
+00:40:32,310 --> 00:40:37,920
+This is one of the strongest properties behind enclosure. It helps bring order as the graphs below show.
+
+425
+00:40:37,920 --> 00:40:43,309
+So. This is this is, I think, the same chart that you saw earlier.
+
+426
+00:40:43,310 --> 00:40:49,670
+It's just I've moved the numbers around for one. Midnight's actually on the end instead of being at the beginning right before noon.
+
+427
+00:40:50,210 --> 00:40:56,060
+And there's a couple other time slots thrown in here, but this is showing the connection here.
+
+428
+00:40:56,060 --> 00:40:59,900
+So looking at this you could say these are outliers.
+
+429
+00:40:59,900 --> 00:41:03,920
+But if we put a line we show that they are connected. They're connected together.
+
+430
+00:41:04,430 --> 00:41:07,969
+And that brings it all and that brings it more together better.
+
+431
+00:41:07,970 --> 00:41:11,630
+So. I would not recommend using this chart here.
+
+432
+00:41:11,660 --> 00:41:16,860
+I would recommend the right one that shows that connection there. Uh, alignment.
+
+433
+00:41:16,860 --> 00:41:22,800
+So how we align text matters whether you center text or when you center text, it just gets jumbled.
+
+434
+00:41:23,370 --> 00:41:24,720
+It isn't clean.
+
+435
+00:41:24,780 --> 00:41:32,140
+Um, like when you use left or right justification, you generally use left or right, depending on the needs of the elements on that page.
+
+436
+00:41:32,160 --> 00:41:36,030
+By creating an edge, you create a cleaner look to your visual.
+
+437
+00:41:36,070 --> 00:41:39,980
+This kind of shows, that is. Um, eye tracking.
+
+438
+00:41:39,990 --> 00:41:45,060
+This is kind of an interesting one. When reading, we tend to follow a Z, or at least multiple z patterns.
+
+439
+00:41:45,720 --> 00:41:50,880
+That means that most people will see what is in the upper left first, then go to the right and then down to the left.
+
+440
+00:41:51,510 --> 00:41:57,600
+You can use visual tricks, contrast light and uh, light and dark focus to adjust how the eyes track.
+
+441
+00:41:58,170 --> 00:42:05,700
+So while the Z shape is the natural, we can use visual elements, those Gestalt principles, to adjust how the eye tracks through.
+
+442
+00:42:05,700 --> 00:42:16,380
+Um, a visual, uh, text at a 45 degree angle reduces reading speed by 52% 90 degrees, reduces it to 105%.
+
+443
+00:42:17,160 --> 00:42:24,180
+That is the reason why that's one of the big reasons right here, is the reason why bar charts generally are superior to columns.
+
+444
+00:42:24,660 --> 00:42:34,560
+Because columns, uh, a lot of columns, not all, but a lot of columns will show, uh, you the text either vertically or, uh, at a 45 degree angle.
+
+445
+00:42:35,220 --> 00:42:37,830
+There are a lot to that will show it horizontally.
+
+446
+00:42:37,830 --> 00:42:43,739
+But, uh, if it is shown at an angle, it becomes a lot harder to read and takes a lot longer to read.
+
+447
+00:42:43,740 --> 00:42:48,150
+And when you're trying to reduce as much cognitive load is as possible,
+
+448
+00:42:48,570 --> 00:42:54,180
+switching the visualization will still convey the same meaning without having that extra load.
+
+449
+00:42:55,350 --> 00:43:00,060
+Uh, whitespace to whitespace allows your eyes to rest. You don't want to overfill a page.
+
+450
+00:43:00,570 --> 00:43:04,260
+Some people add data to fill space. You just do not want to do that.
+
+451
+00:43:04,770 --> 00:43:08,520
+Whitespace is akin to a pause when you're looking through something visually.
+
+452
+00:43:08,850 --> 00:43:11,850
+It allows your. It gives your eyes a little rest.
+
+453
+00:43:12,450 --> 00:43:18,480
+Uh, leave your margins free. Keep visuals in the main body. And, uh, the first slide in this many lecture had a lot of whitespace.
+
+454
+00:43:19,290 --> 00:43:23,899
+Um. Uh, let's see here.
+
+455
+00:43:23,900 --> 00:43:30,170
+Um, and wipe space. Uh, it's just space on a page that doesn't have anything you can think of.
+
+456
+00:43:30,170 --> 00:43:34,970
+Like the margins are this way. The area between lines is also considered white space.
+
+457
+00:43:35,510 --> 00:43:42,020
+Again, it lets the eyes rest actively. Strategically, to move your eyes around a page as well highlight certain aspects,
+
+458
+00:43:42,020 --> 00:43:47,480
+or can be used to cordon off pieces to allow you to digest parts of a page in chunks.
+
+459
+00:43:47,900 --> 00:43:54,620
+So there's a lot of different advanced techniques you can use using these different principles, these ideas.
+
+460
+00:43:55,400 --> 00:43:59,240
+So talking about contrast, it helps show your audience where to focus.
+
+461
+00:43:59,720 --> 00:44:06,640
+A lack of contrast is a form of visual clutter. If a piece of information is really important, make it stand out.
+
+462
+00:44:06,650 --> 00:44:12,590
+Don't just let it sit there. While contrast is associated with lighting, color can also be shapes and sizes.
+
+463
+00:44:12,980 --> 00:44:17,450
+If something is unique, it is in contrast to those things around it.
+
+464
+00:44:18,200 --> 00:44:23,269
+Um, so just to put in perspective, if your audience is forced to play Where's Waldo?
+
+465
+00:44:23,270 --> 00:44:27,020
+Or where's the data with your visualizations, you've lost your audience.
+
+466
+00:44:27,320 --> 00:44:35,300
+You have to increase, um, you've increased the cognitive load and made finding data that they want, that you want them to easily access hard to find.
+
+467
+00:44:38,550 --> 00:44:48,350
+See here. Um. Okay, I think I'm going to go through the day to the ink ratio.
+
+468
+00:44:48,370 --> 00:44:55,300
+Yeah, we have enough time. I'm going to go through the day to day ink ratio, and then I'm going to save the rest of the slides for Friday.
+
+469
+00:44:55,780 --> 00:44:58,300
+Um, we'll also be doing the engage assignments part of this.
+
+470
+00:44:58,870 --> 00:45:06,400
+So the data uh ratio, once you've chosen a visual, what is the effect of decluttering it to tell an effective story?
+
+471
+00:45:08,390 --> 00:45:16,130
+So, uh, Edward Tufte, uh, did the seminal book The Visual Display of Quantitative Information in 2001.
+
+472
+00:45:16,760 --> 00:45:24,799
+As he says above all else, show the data, the max ratio of data into total ink used in the print graphic.
+
+473
+00:45:24,800 --> 00:45:25,530
+This, um,
+
+474
+00:45:25,610 --> 00:45:35,719
+that is what the data increase show is data Inc is when we are communicating Non-data ink provides some needed context or it's just a distraction.
+
+475
+00:45:35,720 --> 00:45:42,080
+Eliminate or de-emphasize or exist in or lines lighter colors, uh, components like colors,
+
+476
+00:45:42,080 --> 00:45:45,440
+borders, lines, blah blah blah that are not needed to understand the data.
+
+477
+00:45:45,440 --> 00:45:49,520
+So eliminate or de-emphasize components that are not needed to understand the data.
+
+478
+00:45:49,850 --> 00:45:53,750
+That is key here. So on the left this has a lot of day to day.
+
+479
+00:45:53,780 --> 00:45:59,719
+This is a lot of um, uh, what is uh, total ink to the amount of data.
+
+480
+00:45:59,720 --> 00:46:08,660
+This one on the right really emphasizes the data, the actual line, it, uh, removes the grid, it lightens all the stuff on the sides.
+
+481
+00:46:08,930 --> 00:46:15,860
+It makes the data itself stand out. And that's what we really do care about, is that we have high data ink.
+
+482
+00:46:15,860 --> 00:46:25,790
+Low non-data ink. So this was this is a series of um, or this is a series of slides made by Darkhorse Analytics.
+
+483
+00:46:26,390 --> 00:46:31,730
+It's really interesting. It kind of shows how we can go from something that honestly looks good.
+
+484
+00:46:31,730 --> 00:46:38,570
+This really does look good, but how we can take this and clean it up using the concepts of the day to day ratio.
+
+485
+00:46:39,920 --> 00:46:43,550
+So the first thing we do, we go from this. First thing we do is remove the background.
+
+486
+00:46:43,580 --> 00:46:47,210
+It just cleans it up. Now everything pops in the middle of this.
+
+487
+00:46:48,630 --> 00:46:53,280
+Then we can remove the redundant labels. We've gone from, you know, uh, four different foods.
+
+488
+00:46:53,280 --> 00:46:59,910
+We've removed the, um, the calories or the, um, uh, the access titles here.
+
+489
+00:47:00,600 --> 00:47:04,950
+We can also remove the borders. Again, we're emphasizing the data in the center.
+
+490
+00:47:06,280 --> 00:47:12,160
+Um. Let's see here. So does anybody want to hazard a guess?
+
+491
+00:47:12,170 --> 00:47:16,600
+What. What do we. So let's start here. What are we doing right here? What is this visualization for?
+
+492
+00:47:16,610 --> 00:47:21,390
+What are we trying to represent? Yeah.
+
+493
+00:47:23,520 --> 00:47:28,860
+Okay. So that that's, um, that is a very good explanation.
+
+494
+00:47:29,340 --> 00:47:36,540
+And then we'll be showing we'll use, uh, this whole concept here and show you really what we're really focused on.
+
+495
+00:47:37,450 --> 00:47:40,959
+So we've removed the borders again. We're focusing on the data further.
+
+496
+00:47:40,960 --> 00:47:45,220
+Now we're going to focus it even further. Now what do you think we're trying to show.
+
+497
+00:47:49,520 --> 00:47:53,180
+Yeah. And as a comparison to others, what I would also say.
+
+498
+00:47:53,840 --> 00:47:57,229
+So now these are still 3D. We can remove those 3D effects.
+
+499
+00:47:57,230 --> 00:48:02,510
+Again it cleans it up. It's not tricking our brains into seeing three dimension here.
+
+500
+00:48:03,230 --> 00:48:08,660
+We can remove this building it. Basically we can lighten things, push it more into the background.
+
+501
+00:48:09,020 --> 00:48:13,579
+We still have the context. But honestly, what we care about is this part right here.
+
+502
+00:48:13,580 --> 00:48:18,110
+This is really the part we really care about. We can also lighten those lines.
+
+503
+00:48:18,110 --> 00:48:21,110
+We can push them even further into the back. Or you know what?
+
+504
+00:48:22,070 --> 00:48:28,340
+But we can just remove them completely. I tend to do this. I remove them completely and it cleans it up better.
+
+505
+00:48:28,340 --> 00:48:32,180
+And then look at that. I can put the actual numbers on these.
+
+506
+00:48:32,420 --> 00:48:35,480
+I love data labels. I think they're the best thing ever.
+
+507
+00:48:35,840 --> 00:48:43,559
+I use them all the time. So now we've created a visualization that gives us the it emphasizes bacon.
+
+508
+00:48:43,560 --> 00:48:53,250
+So that's what we want. So that's what the story's about is about how many calories in bacon are in 100g of, uh, or how many calories, 100g of bacon.
+
+509
+00:48:53,640 --> 00:48:58,380
+And then we can compare that to different foods like French fries, potato chips, pizza and chili dogs.
+
+510
+00:48:59,010 --> 00:49:05,129
+And that is really what we're going for here. So this kind of shows that we went from this which is very busy.
+
+511
+00:49:05,130 --> 00:49:13,290
+It's got a lot of clutter. It's got a lot of visual clutter to it, to something that is very, very clean and easy to understand.
+
+512
+00:49:14,070 --> 00:49:18,900
+So remember less is more effective, it's more attractive, and it is more impactful.
+
+513
+00:49:22,720 --> 00:49:27,510
+Um, I do want to point out to this can be used in tables.
+
+514
+00:49:27,520 --> 00:49:31,960
+I did not have this table. I do not know where it comes from just to put that out there.
+
+515
+00:49:32,410 --> 00:49:36,520
+But, um, by using this with tables, we can clean the table up.
+
+516
+00:49:36,520 --> 00:49:40,930
+We can go from something that is very convoluted and, um,
+
+517
+00:49:41,380 --> 00:49:50,710
+dense with information or dense with clutter of information and really and we go over here, we can really emphasize what we really care about.
+
+518
+00:49:52,090 --> 00:49:55,989
+So now I want you guys to fire up can't open up canvas.
+
+519
+00:49:55,990 --> 00:50:00,639
+We're going to work on the data to ink ratio now. So this what we've been talking about.
+
+520
+00:50:00,640 --> 00:50:10,810
+This engage assignment allows you to actually do it will give it uh 10 or 12 minutes about to the in the class to finish this.
+
+521
+00:50:10,810 --> 00:50:17,410
+I will work on it as well. Um this is the extent of the instructions.
+
+522
+00:50:17,410 --> 00:50:22,810
+Don't overthink it. Basically, you want to take the, um, the visual here.
+
+523
+00:50:23,380 --> 00:50:31,090
+Uh, the story is the fourth quarter was good for all products, but it was fantastic for books with sales, uh, doubling.
+
+524
+00:50:31,690 --> 00:50:35,290
+Uh, first you want to declutter this, cleaned it up, and then you want to tell the story.
+
+525
+00:50:35,290 --> 00:50:39,009
+So what is our primary focus? What are the significant others.
+
+526
+00:50:39,010 --> 00:50:46,330
+And then is there in everyone else. And that is what this engage assignment is all about.
+
+527
+00:50:47,740 --> 00:50:51,640
+So that means that open.
+
+528
+00:50:55,330 --> 00:51:02,080
+I'm just going to come here. Go to modules. Yeah.
+
+529
+00:51:15,080 --> 00:51:19,810
+I can't believe I already am. Week 14. Okay.
+
+530
+00:51:20,140 --> 00:51:25,080
+So I'm going to download the file. Open it.
+
+531
+00:51:25,470 --> 00:51:29,730
+You can easily do this on the online version as well. You do not need to use the desktop version.
+
+532
+00:51:30,330 --> 00:51:38,010
+Um, the only reason I'm using the desktop version is because I think I've used this, um, quite a few times.
+
+533
+00:51:52,810 --> 00:51:58,480
+I know that if you come in here. Um. Uh.
+
+534
+00:51:59,460 --> 00:52:02,900
+Hard to find, but I've done it a bunch of times. Oh, it's Asgardian.
+
+535
+00:52:02,910 --> 00:52:10,440
+That's right. There are notes in engage. Yeah, so you can see that I've done it a bunch of times online.
+
+536
+00:52:10,440 --> 00:52:14,250
+I really don't want to do it, and I don't want another version of it online.
+
+537
+00:52:19,700 --> 00:52:23,840
+Because most of the time I do show you guys online not using this.
+
+538
+00:52:24,710 --> 00:52:28,520
+Okay, so just said, you know, you're not going to need the data and you're just going to do this.
+
+539
+00:52:28,940 --> 00:52:34,040
+And the idea here is just kind of figure, try to figure out how what you can do with this to clean it up.
+
+540
+00:52:34,100 --> 00:52:39,290
+Uh, based on the slides, we've had the last few slides talking about the day to day ratio.
+
+541
+00:52:39,410 --> 00:52:42,660
+Just kind of go through it, and I'm going to go through it too.
+
+542
+00:52:42,680 --> 00:52:49,400
+So you can if you want to kind of see what I'm doing and uh, try to do the same things you can or go your own direction.
+
+543
+00:52:49,730 --> 00:52:54,320
+My version is my version is my version. It's not necessarily the only version.
+
+544
+00:53:41,907 --> 00:53:45,447
+I just want to show you this is what I came up with. You do?
+
+545
+00:53:45,687 --> 00:53:50,547
+I go very far with this. Trying to, like, uh, squeeze out every ounce of dated increase.
+
+546
+00:53:50,547 --> 00:53:59,157
+You want it to clean it up? Um, this is the first year of actually put in, um, or first time put in, like, labels directly on the lines.
+
+547
+00:53:59,517 --> 00:54:04,287
+There's ways of doing it inside of power BI, but they all kind of they don't do a good job of it.
+
+548
+00:54:04,797 --> 00:54:11,427
+But I just realized I could just put a text box in there. So this is just using a lot of, you know, tweaks just to clean it up.
+
+549
+00:54:11,907 --> 00:54:17,216
+This is all done in, you know, 15, 20 minutes ish that went from, you know,
+
+550
+00:54:17,217 --> 00:54:23,876
+what we had before to that monstrosity to being able to clean it up really well, make it look really good.
+
+551
+00:54:23,877 --> 00:54:27,687
+So just to show just to kind of show you guys what you know, what you're able to do.
+

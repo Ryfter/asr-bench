@@ -1,0 +1,2461 @@
+1
+00:00:01,260 --> 00:00:04,800
+[Auto-generated transcript. Edits may have been applied for clarity.]
+Okay. We're going to be talking about the improving the impact of visualizations.
+
+2
+00:00:04,980 --> 00:00:11,940
+We're going to be talking about your dashboards. We're also going to be looking at, uh, the last chapter in the book, chapter eight,
+
+3
+00:00:11,940 --> 00:00:16,530
+kind of the story, kind of where it brings all of what we've been talking about together.
+
+4
+00:00:17,290 --> 00:00:20,570
+Um, I did want to point one thing out really quick.
+
+5
+00:00:20,580 --> 00:00:26,760
+I discovered this, a student brought this up to me last week, and I finally got it figured out over the last couple of days.
+
+6
+00:00:27,570 --> 00:00:32,730
+Um, there are the supplier name is in two different places.
+
+7
+00:00:34,420 --> 00:00:39,940
+Uh, in the data here. So actually this part this get that up there.
+
+8
+00:00:40,480 --> 00:00:43,870
+Okay. So the student data is in two different places.
+
+9
+00:00:43,960 --> 00:00:47,080
+Uh, the one that's incorrect, which is this one here.
+
+10
+00:00:47,440 --> 00:00:55,370
+You're going to see a blank in the supplier name. And that comes from the supplier list where you would think the data would be correct.
+
+11
+00:00:55,390 --> 00:01:00,330
+It's not unfortunately. Uh, the supplier name should not be blamed.
+
+12
+00:01:00,340 --> 00:01:07,260
+And basically Marie Marie Curie, uh, should have all of those blanks for some.
+
+13
+00:01:07,270 --> 00:01:13,900
+I don't know what happened when they were that this is an actual data set and when they were, um.
+
+14
+00:01:15,480 --> 00:01:21,180
+Removing some of the the aspects of it that could maybe be used for competitive advantage by their competitors.
+
+15
+00:01:21,740 --> 00:01:30,210
+I they miss something got messed up there. This chart here with the supplier name comes from the actual transaction data.
+
+16
+00:01:30,540 --> 00:01:35,490
+So supplier name down there. That one is correct. The other one is incorrect.
+
+17
+00:01:35,500 --> 00:01:39,090
+So just be aware of that. If you're trying to use these.
+
+18
+00:01:39,450 --> 00:01:42,820
+One will come in correct. One will come in. Incorrect.
+
+19
+00:01:42,900 --> 00:01:46,260
+So I just want to make sure you guys are aware of that.
+
+20
+00:01:46,620 --> 00:01:53,379
+Yeah. Um.
+
+21
+00:01:53,380 --> 00:01:56,410
+When you. Well, the, um.
+
+22
+00:01:58,400 --> 00:02:06,880
+So I believe. Let me see here. So the supplier I.D., I believe the supplier I.
+
+23
+00:02:06,890 --> 00:02:10,520
+This might still be there. Oh, no. That's right. These are not there.
+
+24
+00:02:11,330 --> 00:02:18,920
+Let me see if they're here. Um. I believe that all of this is in there in some way, shape or form.
+
+25
+00:02:20,220 --> 00:02:27,910
+It's. So yeah.
+
+26
+00:02:27,910 --> 00:02:35,380
+So this one here has the right one. And this supplier ID is what would be tied to uh, the other thing it should.
+
+27
+00:02:36,830 --> 00:02:42,110
+If you run into problems, there's ways of doing two way filtering.
+
+28
+00:02:43,030 --> 00:02:46,830
+And if need be. Um. Honestly, fixing the data set is really easy.
+
+29
+00:02:46,840 --> 00:02:50,370
+I can, I can re fix the data set if you really want to work on that.
+
+30
+00:02:50,380 --> 00:02:57,250
+I just hate tweaking it at this point for everybody. But if you want to work with it this way, um, it's a really easy fix as well.
+
+31
+00:03:00,100 --> 00:03:06,329
+Yeah. Okay. Don't worry about it. Um, it's too late for you to figure that out, so.
+
+32
+00:03:06,330 --> 00:03:10,950
+Yeah, I'm showing you now for the for the part B.
+
+33
+00:03:11,460 --> 00:03:14,670
+Um. Yeah. And you?
+
+34
+00:03:14,880 --> 00:03:22,500
+Yeah. You did not know that beforehand. I literally just, I think figured it out like late the day before yesterday and played around with
+
+35
+00:03:22,500 --> 00:03:29,879
+it a little bit yesterday just to kind of get a solid understanding of it. So yeah, I will not I absolutely will not hold that against you at all.
+
+36
+00:03:29,880 --> 00:03:35,460
+So don't worry about that okay. Uh, so, yeah, be aware of that.
+
+37
+00:03:35,910 --> 00:03:41,460
+And now we can go back to this. So we're going to be talking about, uh, Netflix chapter five.
+
+38
+00:03:41,850 --> 00:03:47,700
+Now, I feel like chapter five brings together all the stuff we've been talking about and kind of shows you how it all interacts.
+
+39
+00:03:48,510 --> 00:03:55,710
+Number, uh, chapter eight is the final project. It's bringing it all together, showing what a presentation bringing this all together would look like.
+
+40
+00:03:56,430 --> 00:04:00,000
+Um, we'll also talk a little bit about the final project as well.
+
+41
+00:04:00,360 --> 00:04:04,370
+If I am able to get through this quick enough, you should have time to work in groups at the end.
+
+42
+00:04:04,380 --> 00:04:10,260
+I was, uh, last class. They got about 15 minutes, so you guys should have plenty of time to just kind of get started.
+
+43
+00:04:10,590 --> 00:04:14,190
+And really, the engage assignment for today will get you started there.
+
+44
+00:04:14,850 --> 00:04:19,170
+Uh, so do this week. You've got chapter five from Netflix, chapter eight from Netflix.
+
+45
+00:04:19,590 --> 00:04:25,780
+Plus you've got to engage assignments. The one that's due today that really what I'm looking for is just that you, uh,
+
+46
+00:04:25,800 --> 00:04:29,730
+proofs that you guys have gotten together and are able to contact each other.
+
+47
+00:04:29,740 --> 00:04:33,420
+That's really what today's engage assignment that what the heart of what I'm looking for is.
+
+48
+00:04:33,930 --> 00:04:41,340
+And then on Friday, you will fill out the worksheet, uh, on the big idea that will help also focus you.
+
+49
+00:04:41,610 --> 00:04:45,150
+And then you'll have plenty of time. Pretty much all next class to work together.
+
+50
+00:04:46,640 --> 00:04:51,140
+Uh, on finals week. You've got a short written report, 1 to 2 pages.
+
+51
+00:04:51,170 --> 00:04:54,710
+Try to keep it closer to one rather than two. You're also going to have the dashboard.
+
+52
+00:04:55,250 --> 00:04:59,020
+Everything stems from the dashboard you're creating. You create the dashboard.
+
+53
+00:04:59,030 --> 00:05:02,660
+You create the short written report to talk about it.
+
+54
+00:05:03,080 --> 00:05:11,300
+Uh, you create the uh, uh, presentation to showcase the dashboard and the insights it has.
+
+55
+00:05:11,330 --> 00:05:17,050
+You've come up with using the dashboard. Uh, then you're going to evaluate the presentations during class.
+
+56
+00:05:17,060 --> 00:05:22,910
+It'll be a Google form. And then you're also going to do another peer assessment and evaluate your teammates next week.
+
+57
+00:05:23,510 --> 00:05:28,610
+Course evaluations are going on. They're going to close really soon. So you really need to do this ASAP.
+
+58
+00:05:29,150 --> 00:05:35,809
+Um, everybody gets five points extra credit as long as the class has 90% of active participation.
+
+59
+00:05:35,810 --> 00:05:42,060
+I know I've got a couple of students that are not active in the class anymore, so those don't count against, uh, that 90%.
+
+60
+00:05:42,080 --> 00:05:47,990
+Just let you know. Um, just plug in. I actually use this to, you know, tweak the class around.
+
+61
+00:05:48,590 --> 00:05:51,709
+Uh, so if you give me a good, you know, if you have a good criticism, you know,
+
+62
+00:05:51,710 --> 00:05:55,610
+good constructive criticism or just ideas, I always take those into account.
+
+63
+00:05:57,940 --> 00:06:02,440
+Uh, so think like a designer. This is our chapter five of the book.
+
+64
+00:06:03,090 --> 00:06:06,130
+Affordances, accessibility and esthetics.
+
+65
+00:06:06,550 --> 00:06:12,310
+So affordances are aspects inherent to the design that make it obvious how it is used.
+
+66
+00:06:13,030 --> 00:06:17,170
+A knob affords turning, a button affords pushing or.
+
+67
+00:06:17,410 --> 00:06:24,610
+Uh, yeah, pushing. Accessibility is a design that is usable by people of widely varying technical skills.
+
+68
+00:06:24,610 --> 00:06:30,580
+You don't have to be an expert in the topic to be able to you to use an accessible visualization.
+
+69
+00:06:32,020 --> 00:06:39,390
+Esthetics are visually pleasing or pretty visualizations and understand the concept that form follows functions.
+
+70
+00:06:39,400 --> 00:06:43,150
+This is a design, a product design principle.
+
+71
+00:06:43,510 --> 00:06:47,469
+So think about what we want our audience to be able to do with our data.
+
+72
+00:06:47,470 --> 00:06:51,250
+That is our function. And then we want to create the visualization for that.
+
+73
+00:06:51,250 --> 00:06:57,329
+That is our form. So affordances when using the visual.
+
+74
+00:06:57,330 --> 00:07:04,020
+So in the design world, affordances define the possible uses by its design in a um.
+
+75
+00:07:04,170 --> 00:07:11,640
+In the real world, a button is designed to be pushed. An add to cart button is used to be clicked on or pushed on, um, virtually.
+
+76
+00:07:12,300 --> 00:07:18,360
+In a visual, we can highlight the important stuff, eliminate distractions, and create a hierarchy of information.
+
+77
+00:07:18,900 --> 00:07:26,160
+Um, follow standard affordances, and don't confuse your audience by using standard design choices in strange ways.
+
+78
+00:07:27,910 --> 00:07:34,540
+This is very important because sometimes people will not really think it through and they just throw stuff on because, you know, you're your students,
+
+79
+00:07:34,540 --> 00:07:41,770
+you're just trying to get through the assignment that I will not mark you down for that if you're not cleaning things up and using things properly.
+
+80
+00:07:44,060 --> 00:07:47,720
+And this is the very obvious stuff. It's not edge case stuff that may go either way.
+
+81
+00:07:48,930 --> 00:07:53,290
+Uh, this is understanding that if you have a button in there that's meant to be clicked, you need to click it.
+
+82
+00:07:53,310 --> 00:07:58,320
+It's not something you would slide if it was a slider. It would have different visualizations, that kind of thing.
+
+83
+00:07:59,510 --> 00:08:05,210
+So, um, for the most part, this is this does not come up with visualizations, but be aware of that.
+
+84
+00:08:06,570 --> 00:08:11,220
+Highlight the important stuff. Don't highlight more than about 10% of the visual design.
+
+85
+00:08:12,090 --> 00:08:16,530
+I've talked about being intentional with your design.
+
+86
+00:08:16,560 --> 00:08:21,810
+Be intentional with what you do throughout the second half of the class.
+
+87
+00:08:22,320 --> 00:08:31,440
+This is very important. That's the reason why you want to think about this 10%, um, guideline you by keeping it under 10%,
+
+88
+00:08:32,190 --> 00:08:36,000
+your highlights are impactful as you start as you use them more.
+
+89
+00:08:36,660 --> 00:08:40,170
+They get diluted and they're no longer as impactful as they were before.
+
+90
+00:08:40,170 --> 00:08:48,060
+So use bold, use italics. Use underlining for titles, labels, captions, short word sequences to differentiate those elements.
+
+91
+00:08:48,600 --> 00:08:53,309
+Bold stands out more than italics, and both are preferred to underlining.
+
+92
+00:08:53,310 --> 00:08:55,920
+Underlining adds noise and reduces legibility.
+
+93
+00:08:56,760 --> 00:09:03,480
+Uh, the other issue with with an underlying is that from an affordances perspective, a lot of people, uh,
+
+94
+00:09:03,690 --> 00:09:10,950
+look at a underline and think, click this, this is a link to click even if it's not you know, we're used in the website.
+
+95
+00:09:10,950 --> 00:09:19,020
+It's it's a blue underline link that is a link. But a lot of websites don't follow that those affordances perfectly.
+
+96
+00:09:19,350 --> 00:09:27,990
+They may not be blue. They'll be a different color but have underline. So that's an area that there's an affordance there that can confuse people.
+
+97
+00:09:28,530 --> 00:09:34,080
+Be aware of that. If you're not if it's not a link, it shouldn't be an issue most of the time.
+
+98
+00:09:34,440 --> 00:09:38,490
+And don't use like the blue they use on links that that is confusing.
+
+99
+00:09:39,950 --> 00:09:43,930
+Case and typeface, so uppercase and short word sequences is easily scanned.
+
+100
+00:09:43,940 --> 00:09:49,040
+Avoid using different fonts is highlighting since it can disrupt esthetics.
+
+101
+00:09:49,700 --> 00:09:54,470
+By and far I use two fonts, one for the title, one for the text.
+
+102
+00:09:54,830 --> 00:10:01,280
+Sometimes I'm using an older template here, sometimes the template, or there's a bunch of different.
+
+103
+00:10:01,340 --> 00:10:07,280
+I should go back. Second, there's a bunch of different templates or fonts in the template that I don't use,
+
+104
+00:10:07,280 --> 00:10:12,080
+but sometimes they will pop up in weird places that I didn't notice them before.
+
+105
+00:10:12,380 --> 00:10:19,850
+But I really do try to keep it down to two fonts. Sometimes I might use a separate font in very specific ways, but it's very rare.
+
+106
+00:10:21,800 --> 00:10:27,890
+I like more important stuff. So color works well for highlighting and generally in concert with other techniques like bolding.
+
+107
+00:10:28,550 --> 00:10:35,030
+Inverting elements is also good at attracting attention, but it does add a lot of noise to the to the design.
+
+108
+00:10:35,570 --> 00:10:39,080
+It makes it a little harder to figure out what else going on there.
+
+109
+00:10:39,800 --> 00:10:43,220
+Increased size is another way to signal importance and attract attention.
+
+110
+00:10:43,580 --> 00:10:50,990
+And as Netflix says in the book, blinking and flashing work as well, but avoid them since they tend to be more annoying and distracting than helpful.
+
+111
+00:10:51,320 --> 00:10:54,950
+We are talking about using data for explanatory purposes.
+
+112
+00:10:55,640 --> 00:11:03,260
+If I was building a dashboard looking for defects or something going wrong, sure, I'd probably use flashing elements to say hey,
+
+113
+00:11:03,260 --> 00:11:10,370
+pay attention to this now, but it would only do that when something actually went wrong, so just be aware of that.
+
+114
+00:11:11,370 --> 00:11:19,380
+Uh, let's see here. So and really at this point, you guys have learned all sorts of creative attributes and how to use them.
+
+115
+00:11:19,920 --> 00:11:23,370
+This is really bringing them together.
+
+116
+00:11:23,370 --> 00:11:29,100
+How how to get them to work in concert with each other so that they have more impact overall.
+
+117
+00:11:31,000 --> 00:11:37,250
+Eliminate distractions. Declutter. What we deemphasize can be more important than what we include to highlight.
+
+118
+00:11:37,270 --> 00:11:42,730
+Not all data is equally important. Use your space and audience's attention wisely.
+
+119
+00:11:43,690 --> 00:11:51,849
+Summarize when detail is not needed. Sometimes you may have a bunch of say you're looking at a bunch of different data over a timeline.
+
+120
+00:11:51,850 --> 00:11:54,880
+You've got a bunch of different, I don't know, lines going through.
+
+121
+00:11:55,480 --> 00:12:02,200
+You can take an average of those, you know, group them together, create an average, put them into a gray in the background.
+
+122
+00:12:02,200 --> 00:12:06,760
+That works probably better than having an array of things in the background.
+
+123
+00:12:07,390 --> 00:12:09,940
+So understand when to summarize when not to.
+
+124
+00:12:09,940 --> 00:12:14,050
+If you only have a couple, you probably don't need to summarize, but you've got a bunch of stuff that can be distracting.
+
+125
+00:12:14,440 --> 00:12:17,620
+Try to some. See if you can summarize if it makes sense to summarize it.
+
+126
+00:12:18,370 --> 00:12:23,740
+Remove elements that don't support the the message or serve the purpose of communication.
+
+127
+00:12:24,900 --> 00:12:28,070
+Be brutal when you're thinking along these lines.
+
+128
+00:12:28,080 --> 00:12:31,140
+What is not needed? If it's not needed, cut it.
+
+129
+00:12:32,100 --> 00:12:36,360
+Any extraneous information, any extra information is distracting.
+
+130
+00:12:36,360 --> 00:12:40,770
+It distracts from your point from what you're trying to convey.
+
+131
+00:12:42,580 --> 00:12:47,410
+So cut remove stuff that is not needed to convey the message.
+
+132
+00:12:47,980 --> 00:12:51,130
+Make it very plain what you're trying to communicate.
+
+133
+00:12:52,240 --> 00:12:56,830
+Push necessary but non messaging impacting items to the background.
+
+134
+00:12:57,880 --> 00:13:00,940
+So sometimes it is good to have this information honestly.
+
+135
+00:13:01,030 --> 00:13:04,120
+For me, a lot of times when I'm looking at what to cut and what not to cut,
+
+136
+00:13:04,900 --> 00:13:14,770
+it comes down to this point what is absolutely necessary to give context and meaning and what is just extra and, uh, distracting.
+
+137
+00:13:15,280 --> 00:13:22,110
+So think about this when you're building stuff out. This is an example from the book.
+
+138
+00:13:22,560 --> 00:13:27,910
+It conveys the exact same meaning. The one on the left is a little more convoluted.
+
+139
+00:13:27,930 --> 00:13:35,340
+This is what I would normally expect to see from students. Most students will do this and call it good and move on because.
+
+140
+00:13:35,490 --> 00:13:44,600
+Because it conveys the meaning they need. The one on the right conveys the exact same meaning in a much, much cleaner way.
+
+141
+00:13:45,410 --> 00:13:49,370
+Usually, to do a better job is going to take a little extra work.
+
+142
+00:13:49,820 --> 00:13:53,090
+But at the end of the day, you will see big payoffs.
+
+143
+00:13:53,090 --> 00:13:56,149
+You will see in classes higher scores.
+
+144
+00:13:56,150 --> 00:14:01,030
+You will see because it just looks better. People like pretty things.
+
+145
+00:14:01,040 --> 00:14:04,760
+It's just it's part of our nature. So it's it's going to.
+
+146
+00:14:04,940 --> 00:14:08,360
+Score you better points in the work world.
+
+147
+00:14:08,810 --> 00:14:15,230
+Things like this is that's the polish that most other people don't do that will set you apart.
+
+148
+00:14:16,280 --> 00:14:19,890
+And make you basically make you more, uh.
+
+149
+00:14:21,700 --> 00:14:29,859
+Or I wouldn't say needed, but, um, more desirable in your workplace, people will want to have you work on things for them,
+
+150
+00:14:29,860 --> 00:14:35,950
+which will get your name out more and get you get higher visibility for what you are capable of doing.
+
+151
+00:14:36,490 --> 00:14:43,030
+So it's a really good way. This is this is honestly something that does not take a bunch of extra work, takes a little extra work, but not a ton.
+
+152
+00:14:43,600 --> 00:14:50,260
+And the dividends you will see is going will be huge in your professional life and also in your academic life.
+
+153
+00:14:52,030 --> 00:14:57,910
+The hierarchy of information. Uh, storytelling with data has this example of super categories you've seen before.
+
+154
+00:14:57,940 --> 00:15:04,509
+Uh, for uh, for groupings, uh, high satisfaction, few issues, high satisfaction, many issues.
+
+155
+00:15:04,510 --> 00:15:07,780
+It's just, uh, for for quadrant system.
+
+156
+00:15:08,730 --> 00:15:14,309
+Um, how it's used here. We can see this is what we're looking at.
+
+157
+00:15:14,310 --> 00:15:17,880
+The high satisfaction, few issues, high satisfaction, many issues.
+
+158
+00:15:18,420 --> 00:15:21,690
+And we're seeing the areas that fall into these.
+
+159
+00:15:21,690 --> 00:15:25,830
+And our eyes are drawn to this because it's in red and highlighted there.
+
+160
+00:15:26,430 --> 00:15:29,670
+So again, you can see where our eyes are drawn there.
+
+161
+00:15:29,970 --> 00:15:33,920
+And also understand that experience will dictate how we view items too.
+
+162
+00:15:33,930 --> 00:15:40,200
+In this section, the author talks about having her husband look at this visual and he looked at it from the top left,
+
+163
+00:15:40,200 --> 00:15:48,930
+going down because he's used to seeing her visuals and the impact of the bold and the contrast doesn't affect him like it does most people.
+
+164
+00:15:50,370 --> 00:15:55,620
+Uh, making your visual accessible. So accessible design allows anyone to understand your visual.
+
+165
+00:15:56,010 --> 00:16:03,030
+Do not overcomplicate anything. If your audience perceives it as hard to do, they will spend less time doing it.
+
+166
+00:16:04,140 --> 00:16:09,660
+That is very important to understand. Make it a legible, easily read font.
+
+167
+00:16:10,230 --> 00:16:14,250
+Keep it clean. Use visual affordances. Use straightforward language.
+
+168
+00:16:14,580 --> 00:16:17,819
+Simple language over complex. Fewer words over more.
+
+169
+00:16:17,820 --> 00:16:24,690
+And define specialized language. Remove unnecessary complexity if making the choice to simple again.
+
+170
+00:16:24,720 --> 00:16:27,720
+Be brutal in your simplicity. Simplicity.
+
+171
+00:16:28,380 --> 00:16:32,760
+Cut things down. Make it obvious. Make it plain for your audience to understand.
+
+172
+00:16:34,420 --> 00:16:41,630
+Also, when you're using simple language over complex understand, your audience does not want to be patronized.
+
+173
+00:16:41,650 --> 00:16:47,379
+They don't want you to use such simple language that they, um, they feel your your infants,
+
+174
+00:16:47,380 --> 00:16:52,720
+you know, you want there's a Goldilocks zone in there that you will have to develop over time.
+
+175
+00:16:53,650 --> 00:17:03,070
+It's a pretty wide area of of what's acceptable is not being too technical and not being too simplistic.
+
+176
+00:17:03,340 --> 00:17:09,130
+It's a pretty wide range that you have to play, and it's usually not hard to stay in there.
+
+177
+00:17:09,550 --> 00:17:19,000
+But as you gain more experience, you'll probably learn how to gauge where inside that range you should be should be at for each presentation you do.
+
+178
+00:17:21,990 --> 00:17:28,380
+The other thing you can do is get feedback. Share your presentation with somebody and ask them what do they think?
+
+179
+00:17:28,770 --> 00:17:32,850
+Are you overcomplicating anything? Are you oversimplifying anything?
+
+180
+00:17:34,920 --> 00:17:42,020
+Titles make amazing calls to actions. You should be using titles as a call to action as much as possible.
+
+181
+00:17:42,030 --> 00:17:47,410
+Put verbs in your titles. Use your titles to tell you this story.
+
+182
+00:17:47,740 --> 00:17:52,750
+You can use it to label, introduce, explain, reinforce, highlight, recommend, and more.
+
+183
+00:17:52,750 --> 00:17:59,530
+As the book talks about charts, need titles and every axis needs a axis needs a title.
+
+184
+00:17:59,860 --> 00:18:03,010
+There are exceptions in some circumstances, I will admit.
+
+185
+00:18:03,370 --> 00:18:06,640
+For me, the second part I disagree with with the author.
+
+186
+00:18:07,180 --> 00:18:09,940
+I tend to follow the day to day ratio a little tighter,
+
+187
+00:18:10,390 --> 00:18:20,830
+and most of the time I can cut the axis titles as long as I put it in the in the actual title of the visualization.
+
+188
+00:18:20,860 --> 00:18:25,270
+So there we there are ways of doing it that are a little different than what she recommends.
+
+189
+00:18:25,300 --> 00:18:28,780
+I like I said, I don't think every axis needs a title.
+
+190
+00:18:29,850 --> 00:18:36,650
+Um, there's a lot of them that are obvious by what's there, like the one we had in the to ratio.
+
+191
+00:18:36,990 --> 00:18:41,310
+You had all the different foodstuffs. You did not need to have an access title labeled food.
+
+192
+00:18:41,760 --> 00:18:48,100
+We know that bacon and pizza and French fries are food. So understand where you need to use these and where you don't.
+
+193
+00:18:48,130 --> 00:18:53,440
+That's it. It's not a hard area to learn about or think about.
+
+194
+00:18:53,460 --> 00:18:58,860
+Just think about it a little bit. Um, annotate important or interesting points directly on the graph itself.
+
+195
+00:18:59,310 --> 00:19:04,860
+I showed you a couple of weeks ago where I actually wrote directly on the graph, uh, that I was showing you,
+
+196
+00:19:04,860 --> 00:19:11,460
+like how many to draw your eyes to, how many, uh, words people use to explain various or to.
+
+197
+00:19:13,210 --> 00:19:18,700
+What was it? How many words were used or how many different variations of different titles were used in the movie?
+
+198
+00:19:18,700 --> 00:19:29,570
+Mass assignment. Um, that's. That is, that is a way that you can draw people's attention and help them get the takeaway you want them to take away.
+
+199
+00:19:30,110 --> 00:19:34,880
+Instead of hoping that your visual has the conveys that meaning that you want it to.
+
+200
+00:19:35,510 --> 00:19:39,710
+So again, annotate uh, important or interesting points directly.
+
+201
+00:19:40,040 --> 00:19:43,429
+Don't forget slide titles. They're very valuable real estate.
+
+202
+00:19:43,430 --> 00:19:48,410
+They're probably the most valuable real estate on a slide. We read top to bottom, left to right.
+
+203
+00:19:48,590 --> 00:19:51,830
+That's the first place your eyes are going to go when you're reading top to bottom.
+
+204
+00:19:52,890 --> 00:19:56,310
+Uh, use them for action titles or to convey key points.
+
+205
+00:19:56,310 --> 00:20:01,230
+Again, 3 to 8 seconds. That's as much time as you get with people to get the gist of your slide.
+
+206
+00:20:02,020 --> 00:20:05,550
+Esthetics. People like visually pleasing things.
+
+207
+00:20:05,760 --> 00:20:11,010
+Big surprise there, right? They are perceived as easy to use and are more readily accepted.
+
+208
+00:20:11,730 --> 00:20:15,570
+Be smart with color. It should always be used with intention.
+
+209
+00:20:15,570 --> 00:20:18,660
+Color is one of those areas that people will go crazy with.
+
+210
+00:20:19,440 --> 00:20:23,000
+Keep it. Keep it. Uh. Simple. Don't go.
+
+211
+00:20:23,010 --> 00:20:27,620
+Don't go over. Um. Don't go overboard with it. Pay attention to alignment.
+
+212
+00:20:27,630 --> 00:20:31,860
+Create unity and cohesion and leverage your white space.
+
+213
+00:20:33,360 --> 00:20:38,549
+Uh, the other thing to, to remember is that people will be very will tend to be much more forgiving
+
+214
+00:20:38,550 --> 00:20:42,930
+when we're talking about if you've got a very esthetically pleasing design.
+
+215
+00:20:43,380 --> 00:20:49,350
+They will spend they will spend more time understanding it than if it's just something ugly.
+
+216
+00:20:49,350 --> 00:20:53,260
+Just to let you know on that. And then we move into esthetics.
+
+217
+00:20:53,530 --> 00:21:00,850
+The graph depict. This graph here depicts the breakdown of US population and our customers by seven customer segments.
+
+218
+00:21:02,270 --> 00:21:07,010
+For example, age ranks. And you can see that we've got all these different.
+
+219
+00:21:08,300 --> 00:21:13,490
+Items here, but the colors and the the busyness make it very distracting.
+
+220
+00:21:13,910 --> 00:21:18,530
+It's not pleasing to look at. But on the right here, it's very pleasing to look at.
+
+221
+00:21:18,530 --> 00:21:21,980
+It's very simplified. It's very refined.
+
+222
+00:21:22,460 --> 00:21:29,030
+This is this is what you want to aspire to. Something like this that is very clean looking and very simple.
+
+223
+00:21:30,720 --> 00:21:35,940
+They convey the exact same information. Just one does it better. Acceptance.
+
+224
+00:21:35,950 --> 00:21:40,240
+Um, this is more, um, this is definitely the meta aspect of this chapter.
+
+225
+00:21:40,600 --> 00:21:44,410
+When we're talking about acceptance, we're talking about getting people to accept change.
+
+226
+00:21:46,550 --> 00:21:50,090
+When you may go into a business that that uses templates.
+
+227
+00:21:50,090 --> 00:21:53,360
+They want all the visualizations to look like they've always looked,
+
+228
+00:21:53,810 --> 00:22:00,380
+and the people that created it may not really have known how to create good visuals.
+
+229
+00:22:00,830 --> 00:22:07,340
+They may not have known how, you know, they may not have known what I'm teaching all of you, and they can be really ugly.
+
+230
+00:22:07,340 --> 00:22:10,670
+But that's what everybody's used to. And people don't like change.
+
+231
+00:22:13,130 --> 00:22:18,050
+A good example of that is this class. You guys all started using power BI.
+
+232
+00:22:18,140 --> 00:22:22,040
+Uh, most of you probably despised it because it was something new.
+
+233
+00:22:22,700 --> 00:22:29,120
+I know that a lot. I'm getting a lot of students that are telling me that they love it now and that they never, ever want to touch Excel again,
+
+234
+00:22:29,120 --> 00:22:34,670
+because Excel's such a pain in the butt to to convey information out of to create visuals from.
+
+235
+00:22:35,570 --> 00:22:45,620
+Uh, and I get it. That's the way I am to. And but, you know, getting the student, getting you guys to change at the very beginning is very difficult.
+
+236
+00:22:45,620 --> 00:22:51,220
+And when you're talking about trying to change company culture, it can be a pain.
+
+237
+00:22:51,230 --> 00:22:56,130
+It can be very troublesome too. So. You.
+
+238
+00:22:56,220 --> 00:23:03,630
+Um. So if you do, you want to make change and you want it to be accepted, you have to have by and by your intended audience.
+
+239
+00:23:04,080 --> 00:23:10,469
+You need to articulate the benefits of this change. And one easy way to do it is show the visual side by side.
+
+240
+00:23:10,470 --> 00:23:14,160
+Show the the old version that they've been using forever.
+
+241
+00:23:14,490 --> 00:23:19,440
+Show your new version that conveys the meaning in a much cleaner, easier to understand format.
+
+242
+00:23:19,950 --> 00:23:24,720
+If the new one is clearly superior, you're going to know it in an instance or in an instant.
+
+243
+00:23:25,140 --> 00:23:28,320
+Provide multiple options and seek input. Create.
+
+244
+00:23:28,380 --> 00:23:31,590
+Uh. Create several versions with different colors and get feedback.
+
+245
+00:23:31,590 --> 00:23:35,350
+Maybe some different variations. Find an optimal one.
+
+246
+00:23:35,370 --> 00:23:45,110
+There's not always. There may be a range of items that look really good with only one opt up optimal one.
+
+247
+00:23:45,710 --> 00:23:49,820
+I do a lot of. I do photography as as a hobby.
+
+248
+00:23:50,240 --> 00:23:57,560
+It's interesting because there's all sorts of settings I can set in the camera to get a good capture of whatever I'm trying to capture.
+
+249
+00:23:58,250 --> 00:24:06,080
+There are very, very few optimal settings for for capturing that scene depending on what I want.
+
+250
+00:24:06,620 --> 00:24:12,790
+And that's what we're talking about here. Where? There's there's usually a lot of different ways you.
+
+251
+00:24:12,910 --> 00:24:18,040
+You've seen it in other visuals in this slide deck already. There's different ways of conveying same information.
+
+252
+00:24:18,640 --> 00:24:21,670
+But there's and there are optimal ways as well.
+
+253
+00:24:21,670 --> 00:24:25,180
+And you want to find those optimal ways a good way.
+
+254
+00:24:25,450 --> 00:24:30,970
+Also a good way to get this change is get a vocal member of your audience on board.
+
+255
+00:24:32,470 --> 00:24:36,720
+Um, I've. I had a student comes to this class. He's graduating this semester.
+
+256
+00:24:36,730 --> 00:24:42,910
+He is, uh, he worked he's works in cyber security, and he's been an intern for the state of Idaho.
+
+257
+00:24:43,930 --> 00:24:51,270
+Over the summer, I think. Or last, or maybe last year, he was asked to take on a project.
+
+258
+00:24:51,310 --> 00:24:57,250
+He had made a recommendation to his superiors, and they said that they've tried to pass it,
+
+259
+00:24:57,490 --> 00:25:02,080
+pass it through for like five years, pass it to the state for five years.
+
+260
+00:25:02,080 --> 00:25:07,360
+And there are certain people that were saying, absolutely no, you cannot do this.
+
+261
+00:25:08,080 --> 00:25:13,600
+And, uh, this student went to what he basically went through.
+
+262
+00:25:13,630 --> 00:25:18,400
+He did what's called a stakeholder analysis and got to and talked with the people that
+
+263
+00:25:18,400 --> 00:25:22,540
+were blocking it and got a really good understanding of why they were blocking it.
+
+264
+00:25:23,050 --> 00:25:26,140
+And he was able to address all of their concerns.
+
+265
+00:25:26,860 --> 00:25:35,860
+And one of the most outstanding, um, adversaries, or one of the people that was very outspoken against doing this change,
+
+266
+00:25:36,280 --> 00:25:42,729
+ended up becoming one of his greatest allies and really pushed this change through.
+
+267
+00:25:42,730 --> 00:25:46,030
+And it was something, like I said, he was just an intern.
+
+268
+00:25:46,330 --> 00:25:51,040
+They've been they've got professionals that have been trying to push this through for five years.
+
+269
+00:25:51,520 --> 00:25:53,860
+As an intern. He was able to push it through,
+
+270
+00:25:54,310 --> 00:26:01,510
+and one of the big things he did was that stakeholder analysis and got one of the vocal members of his audience on board with him,
+
+271
+00:26:01,510 --> 00:26:05,650
+especially if it's one of the most vocal people that were against doing this,
+
+272
+00:26:05,980 --> 00:26:13,000
+and he was able to get them to understand it and address their concerns and turn them into a very vocal ally.
+
+273
+00:26:14,250 --> 00:26:17,310
+So what I'm talking about is not something that is theoretical.
+
+274
+00:26:17,340 --> 00:26:21,540
+It's something that I have seen that I've talked to students. I've experienced this kind of stuff.
+
+275
+00:26:22,050 --> 00:26:26,030
+His tends to be a little bit more, uh. Uh.
+
+276
+00:26:26,770 --> 00:26:31,660
+Uh. Uh, bigger are his tends to have a bigger impact than with the stuff I've done.
+
+277
+00:26:32,170 --> 00:26:36,100
+So I'm using that story. But just understand what I'm teaching you guys.
+
+278
+00:26:36,140 --> 00:26:40,780
+This is not things that are not helpful in business in general.
+
+279
+00:26:42,800 --> 00:26:46,730
+So the timeline for the final project. Next Wednesday is your final.
+
+280
+00:26:46,740 --> 00:26:53,840
+Um, the first finals, I think 9 a.m. to.
+
+281
+00:26:54,990 --> 00:26:58,030
+I don't know. They named something. And then your section is right.
+
+282
+00:26:58,320 --> 00:27:02,879
+Or is that afternoon? I think it's 9:09 a.m. to 1130 maybe.
+
+283
+00:27:02,880 --> 00:27:11,640
+I think it's 2.5 hours. And then I think you this section is like, uh, noon to 2 or 230 or something.
+
+284
+00:27:11,640 --> 00:27:14,760
+I forget what exactly it is. It's it's in your shell.
+
+285
+00:27:14,760 --> 00:27:19,830
+But. So it's going to be next Wednesday, uh, midday type of time.
+
+286
+00:27:20,430 --> 00:27:24,930
+You will need to have your presentation ready to go because you will be presenting to the class.
+
+287
+00:27:25,710 --> 00:27:29,730
+You need to have your final report done and you need to have your dashboard done.
+
+288
+00:27:30,240 --> 00:27:35,550
+Then the day after that, you will have to have you'll have to complete your peer assessment.
+
+289
+00:27:36,090 --> 00:27:39,989
+Uh, that is a hard deadline. If it's not done, you lose out on 30 points.
+
+290
+00:27:39,990 --> 00:27:45,390
+So definitely get it done. It just takes a couple of minutes. You've already done them before, so it should be very painless.
+
+291
+00:27:45,960 --> 00:27:49,740
+So, uh, you have to see for you have five points just for filling it out.
+
+292
+00:27:50,190 --> 00:27:54,390
+Depending on how you did, if you were a good team member, you can get up to 25 points.
+
+293
+00:27:54,870 --> 00:27:59,040
+Most students get the full points unless they really did not do the work.
+
+294
+00:27:59,660 --> 00:28:02,460
+Um, and then here's the rest of points. I think these are correct.
+
+295
+00:28:03,030 --> 00:28:07,469
+A lot of the assignments, uh, will have like 2 or 3 things that are good submitted at once.
+
+296
+00:28:07,470 --> 00:28:15,090
+So they're grouped up. Just let you know. Um, this portion, that part B is a team project.
+
+297
+00:28:15,090 --> 00:28:20,399
+Your team is the other students within your region. Your contribution to the team will affect your grades.
+
+298
+00:28:20,400 --> 00:28:25,440
+Like I just said, if your contribution to the work of the teams is far below average,
+
+299
+00:28:25,440 --> 00:28:30,360
+you will lose peer assessment points and you will lose points from the deliverables as well.
+
+300
+00:28:30,780 --> 00:28:32,519
+Make the most of your team time.
+
+301
+00:28:32,520 --> 00:28:38,969
+Schedule time to work together as a group to go over the data set, plan rules, etc. and team communication is important.
+
+302
+00:28:38,970 --> 00:28:42,480
+You can use virtual tools like zoom to meet online if need be.
+
+303
+00:28:44,110 --> 00:28:47,810
+This is the short written report or kind of a visual example of it.
+
+304
+00:28:47,830 --> 00:28:52,840
+You need to have. An introduction of. Basically, your purpose is kind of like an introduction.
+
+305
+00:28:53,260 --> 00:28:57,100
+A quick executive summary. Uh, what is your dashboard layout?
+
+306
+00:28:57,640 --> 00:29:01,690
+What are your KPIs? And then give me like a real quick conclusion.
+
+307
+00:29:03,110 --> 00:29:06,560
+Aim for one page if you can. There are no visuals in this.
+
+308
+00:29:06,590 --> 00:29:12,379
+You know the one that you did, the memo you did for, uh, for the individual did have visuals.
+
+309
+00:29:12,380 --> 00:29:16,730
+If you notice that this does not have visuals at all.
+
+310
+00:29:17,450 --> 00:29:22,070
+You also paste in screenshots of your dashboard at the end.
+
+311
+00:29:22,370 --> 00:29:26,030
+They don't count against the memo there. I just want to have screenshots as well.
+
+312
+00:29:26,600 --> 00:29:30,050
+So this portion here, like I said, it's just a quick memo.
+
+313
+00:29:30,440 --> 00:29:33,030
+You need to have this stuff. Look at the the the rubric.
+
+314
+00:29:33,050 --> 00:29:36,380
+If as long as you're meeting all the points in the rubric, you're going to get the full points.
+
+315
+00:29:37,380 --> 00:29:41,940
+I'm really not too stringent on this. You can kind of knock it out fairly quickly.
+
+316
+00:29:42,450 --> 00:29:47,520
+The focus is a really good looking dashboard and a really good looking presentation.
+
+317
+00:29:49,230 --> 00:29:56,850
+Again this is a memo example. This is a little older because this is talking about um what was it Jackson Food stores.
+
+318
+00:29:57,510 --> 00:30:05,430
+This can give you some ideas. You don't necessarily need to put your KPIs in additional data request in paragraph, specifically paragraph format.
+
+319
+00:30:05,430 --> 00:30:13,259
+You can use a list of your KPIs to target, uh, you know, the increment of measure, the target.
+
+320
+00:30:13,260 --> 00:30:20,610
+All of that said, uh, basically all four aspects and then have another bullet item, what additional data is needed.
+
+321
+00:30:21,000 --> 00:30:26,639
+And then maybe just like a quick explanation, why do you need the data and what is this?
+
+322
+00:30:26,640 --> 00:30:30,990
+What is this KPI represent? That's really all you need. You don't need a, uh, like a full on paragraph.
+
+323
+00:30:31,680 --> 00:30:36,330
+The nice thing about bullet points is I can find the information quickly and easily.
+
+324
+00:30:36,720 --> 00:30:40,590
+That is, what is important to me is that I can find the information quickly.
+
+325
+00:30:40,980 --> 00:30:44,310
+I don't need paragraphs to convey that information, so just let you know.
+
+326
+00:30:46,260 --> 00:30:54,960
+How to share it so you can share edit access. The key thing here is that you all have to be on the same workgroup.
+
+327
+00:30:55,530 --> 00:31:01,470
+So if you are a student employee and have an at Boise State Edu account,
+
+328
+00:31:01,950 --> 00:31:07,740
+you cannot interact with students that are on the U-dub Boise state.edu workgroup.
+
+329
+00:31:08,460 --> 00:31:11,940
+It's really obnoxious. Don't get me wrong.
+
+330
+00:31:11,970 --> 00:31:19,260
+This is this has been a pain point as far back because as I've been doing these assignments with students.
+
+331
+00:31:20,770 --> 00:31:28,569
+Um, unfortunately, it is what it is. In my experience, a lot of times it's only 1 or 2 people that are actually working on the, the dashboard itself.
+
+332
+00:31:28,570 --> 00:31:37,200
+So it it. In an actual work, it does not come up as being a problem very often, but at times it does.
+
+333
+00:31:37,210 --> 00:31:47,660
+So be aware you have to be on the same the same version or sorry, the same workgroup for you, for you to be able to see each other's work.
+
+334
+00:31:49,390 --> 00:31:53,440
+Uh, there's instructions here. It's actually pretty easy to do. It's a little convoluted.
+
+335
+00:31:54,010 --> 00:31:57,280
+Like I said, it's easy, but it's not intuitive and it's a little bit convoluted.
+
+336
+00:31:57,280 --> 00:32:02,649
+So if you really want to do this and are struggling, just get a hold of me and I can show you how to do it.
+
+337
+00:32:02,650 --> 00:32:08,050
+It just takes a couple minutes. So the dashboard again, this is one of the major focuses.
+
+338
+00:32:08,170 --> 00:32:12,750
+Somebody without any prior knowledge can quickly understand your dashboard.
+
+339
+00:32:12,760 --> 00:32:16,240
+That's that is what you are aiming for. The content.
+
+340
+00:32:16,660 --> 00:32:22,120
+You want them to be able to understand the content without any explanation from anybody.
+
+341
+00:32:22,990 --> 00:32:27,910
+Uh, with a quick glance, readers can quickly get what the page is about and what each chart and tables about,
+
+342
+00:32:28,390 --> 00:32:31,660
+and the reader's eyes are drawn to the element you want them to look at.
+
+343
+00:32:32,230 --> 00:32:35,770
+And these are the how you do it text box, tables, shapes, borders.
+
+344
+00:32:35,770 --> 00:32:40,839
+If you go back to the, uh, what's it called, the Data to Ink Ratio project.
+
+345
+00:32:40,840 --> 00:32:44,260
+When I was showing you on the screen, I did a lot of these kinds of things.
+
+346
+00:32:44,260 --> 00:32:51,340
+I put shapes and I put text in, I put different text box in there to convey the meaning as well.
+
+347
+00:32:52,340 --> 00:32:56,900
+So these are some things not to do or. Well, actually two of them are what not to do.
+
+348
+00:32:56,930 --> 00:33:01,780
+One is not bad. So, uh, don't use the day, month and quarter.
+
+349
+00:33:01,790 --> 00:33:08,610
+So you can see over here we have the year, we have the quarter, we have the month, and we have the day very, very busy.
+
+350
+00:33:08,630 --> 00:33:13,930
+You don't want to do that. That does not look good. Uh, this is looking better.
+
+351
+00:33:13,960 --> 00:33:18,710
+We just see the months over the two years, but it's still pretty complicated.
+
+352
+00:33:18,730 --> 00:33:22,480
+There's a lot of data there. If we switch this over to.
+
+353
+00:33:24,070 --> 00:33:29,380
+Uh, to align, chart and show the years. It actually is a lot easier to understand and it's a lot better looking.
+
+354
+00:33:30,280 --> 00:33:35,830
+It's still got some weirdness where we've got the year and, uh, the month number, as well as the month name.
+
+355
+00:33:36,130 --> 00:33:39,910
+It's got some weirdness to it, but it's this visual is really good.
+
+356
+00:33:39,940 --> 00:33:46,210
+These other two visuals are honestly pretty bad. So, uh, just something to keep in mind to help orient.
+
+357
+00:33:46,810 --> 00:33:51,040
+This is based on our current data. This is what our course coordinator created.
+
+358
+00:33:51,850 --> 00:33:59,890
+She put a bunch of slicers in. You want to use a lot of slices, especially for this portion because you you all have specific,
+
+359
+00:34:00,730 --> 00:34:04,650
+uh, market segments that you care about, whether it's a region.
+
+360
+00:34:04,660 --> 00:34:07,330
+Uh, there is one group that does all this, everything,
+
+361
+00:34:07,780 --> 00:34:14,439
+but almost everybody else is you have to do specific regions or I've got broken out in different ways.
+
+362
+00:34:14,440 --> 00:34:24,200
+I forget what all you have. Uh, my online class, I had to really dig deep to figure out ways to segment the data, but use slicers to segment it.
+
+363
+00:34:24,220 --> 00:34:31,959
+If you are looking at shingles, you can look at just shingles versus CD, um, CD sheathing, stuff like that.
+
+364
+00:34:31,960 --> 00:34:36,520
+You can show you the different order, uh, dates you saw in my visuals.
+
+365
+00:34:36,640 --> 00:34:40,810
+So this is one way of doing it. I, I'm biased.
+
+366
+00:34:40,810 --> 00:34:46,420
+I like my version better. Um, you know, so if you remember back here.
+
+367
+00:34:48,700 --> 00:34:56,920
+This is doing the same thing. It's a little larger, but this is showing the order date and I can actually select each of these independently.
+
+368
+00:34:57,430 --> 00:35:02,050
+I think it's better than just using one like these are going to be these are using the hierarchy.
+
+369
+00:35:02,410 --> 00:35:07,330
+I really do not recommend using a hierarchy inside of a slicer.
+
+370
+00:35:07,720 --> 00:35:11,680
+Keep a slicer to one thing and one thing only. Don't don't embed stuff in them.
+
+371
+00:35:12,280 --> 00:35:17,080
+Again, pie charts are not the best thing to use and this isn't bad.
+
+372
+00:35:17,110 --> 00:35:18,970
+Understand your data is a little different.
+
+373
+00:35:19,450 --> 00:35:28,000
+So with the with this data here with the original version of this, the region saw West northwest, northeast Pacific.
+
+374
+00:35:28,330 --> 00:35:36,219
+It was embedded along with the ship to name. I pulled that out to make it easier to distribute regions.
+
+375
+00:35:36,220 --> 00:35:46,640
+Really what is the main reason I did that? Um, so here are some good ideas with poor visual choices like this one here.
+
+376
+00:35:46,670 --> 00:35:51,989
+Why are there dots? If you're going to show a card, it has to show all of the data.
+
+377
+00:35:51,990 --> 00:35:55,250
+If it's showing dots, you're losing information.
+
+378
+00:35:55,280 --> 00:35:58,280
+Don't do that. Show everything. This is good.
+
+379
+00:35:58,310 --> 00:36:02,750
+This is bad. Uh, it's very difficult to compare two different pie charts.
+
+380
+00:36:02,780 --> 00:36:05,780
+There's a lot to to figure out what's going on.
+
+381
+00:36:05,780 --> 00:36:12,460
+And we can see there's different things here. Use a bar chart or use a 100% bar chart.
+
+382
+00:36:12,470 --> 00:36:15,710
+Far better for for comparison pie.
+
+383
+00:36:15,930 --> 00:36:18,710
+In general, pie charts are not great. 2 or 3 things.
+
+384
+00:36:19,160 --> 00:36:25,130
+Uh, in my visualization and my dashboard, I've come up with a sunburst visual that works really well,
+
+385
+00:36:25,400 --> 00:36:29,030
+but I spent a lot of time to really refine that particular one.
+
+386
+00:36:30,320 --> 00:36:35,540
+Um. So this is this is some other ways of conveying information.
+
+387
+00:36:35,560 --> 00:36:40,220
+This was an older version of the Jackson Food Stores data set.
+
+388
+00:36:40,240 --> 00:36:47,440
+This was using the their candy bars. So you can see here this student really cared about king sized candy bars.
+
+389
+00:36:47,980 --> 00:36:52,900
+They were really looking at the Reese's peanut butter. I don't know what cookie stands for, but that's the one they were looking at.
+
+390
+00:36:53,260 --> 00:36:56,650
+You can see that they highlighted what mattered to them.
+
+391
+00:36:57,250 --> 00:37:01,270
+So this was a step in the right direction in the day to do ratio type stuff.
+
+392
+00:37:02,110 --> 00:37:11,770
+Um, this isn't terrible. It's conveying like what the what the subcategory name was and the total sales by different regions.
+
+393
+00:37:12,190 --> 00:37:17,860
+It's not terrible. I would personally split this out probably into two different visuals though, to convey that same meaning.
+
+394
+00:37:18,880 --> 00:37:22,630
+And then there's a table down here that gives you some additional context.
+
+395
+00:37:23,320 --> 00:37:27,700
+Uh, and I will show you either today or Friday how I've set it up.
+
+396
+00:37:27,700 --> 00:37:31,660
+Where yes, I do use tables. I'm not a big fan of them, but they do have their place.
+
+397
+00:37:33,080 --> 00:37:41,210
+Um, so when you're creating dashboard, you want to select the most efficient chart and data fields to display on the comparison on one visual.
+
+398
+00:37:41,630 --> 00:37:45,080
+So if you're comparing two factors together, you can use a clustered bar chart.
+
+399
+00:37:45,740 --> 00:37:50,160
+This works because they're fairly similar. If there's a huge discrepancy between them, it does not work.
+
+400
+00:37:50,240 --> 00:37:54,710
+You'll see a little slice on one and then you'll see a big huge section on the other.
+
+401
+00:37:55,010 --> 00:37:59,330
+There's no similarity there, so that can be a big problem at times.
+
+402
+00:38:01,200 --> 00:38:04,320
+If you are showing change over time. Line charts are awesome.
+
+403
+00:38:04,860 --> 00:38:10,060
+Use the line chart. If you're comparing largest the smallest, you can use a funnel.
+
+404
+00:38:10,070 --> 00:38:13,910
+I'm not a fan of funnels. They've work in certain.
+
+405
+00:38:14,090 --> 00:38:17,480
+They actually it doesn't. It does. It's not bad in this situation.
+
+406
+00:38:18,020 --> 00:38:21,680
+Uh, you can also use a bar chart. That's what I would generally recommend.
+
+407
+00:38:22,160 --> 00:38:25,940
+Pie charts can be. I'm not a bit. Like I said, I'm not a big fan of pie using pie charts.
+
+408
+00:38:27,350 --> 00:38:34,220
+When I was working at Idaho Public Television instead of using a funnel, a lot of times I would use what's called a tornado chart.
+
+409
+00:38:34,250 --> 00:38:40,430
+So if I was looking at the demographics data on Facebook, I could be able I would be able to split,
+
+410
+00:38:41,090 --> 00:38:47,060
+uh, engagement between the genders, the two genders, as well as the age band.
+
+411
+00:38:47,660 --> 00:38:51,260
+And it created a nice even edge on the inner side.
+
+412
+00:38:51,590 --> 00:38:58,520
+And then it would go to the left for like, women and to the right for men, and then have their age ages going down.
+
+413
+00:38:58,520 --> 00:39:05,900
+So it was the best of both worlds where I got this, this kind of funnel to show like largest to smallest,
+
+414
+00:39:06,290 --> 00:39:10,369
+but it also gave me a straight edge down the center. It's one that I like to use.
+
+415
+00:39:10,370 --> 00:39:15,710
+Like I said, I'm not a big fan of the funnel, but you can go and get a tornado chart.
+
+416
+00:39:16,100 --> 00:39:21,020
+Remember, you can add additional visualizations in, um, power BI, which I've,
+
+417
+00:39:21,440 --> 00:39:25,670
+I've already added a bunch to mine and very easy to do, and I've shown you guys how to do it.
+
+418
+00:39:26,620 --> 00:39:34,450
+Draw the reader's eye to the element that you want them to look at. I showed you guys how to do this in the day to day ratio engagement assignment.
+
+419
+00:39:34,930 --> 00:39:42,700
+Just follow those instructions. To do this, you want to highlight the data that you care about and you want your audience to care about.
+
+420
+00:39:44,540 --> 00:39:49,010
+So we've talked a lot about dashboards and this is a dashboard layout.
+
+421
+00:39:52,010 --> 00:39:55,460
+This. I actually really like this variation.
+
+422
+00:39:56,240 --> 00:40:03,260
+I've seen a bunch of different ones. I've used different ones, but this is kind of my favorite simple dashboard layout.
+
+423
+00:40:03,800 --> 00:40:08,660
+So you start with the title message. You might put filters, slicers, and then some cards.
+
+424
+00:40:08,690 --> 00:40:17,530
+This is an example. So you may say we are looking at the Pacific for, uh, Frederick Jones business.
+
+425
+00:40:18,070 --> 00:40:23,920
+And that's what you would put in your region. King like store performance doesn't have to yours when, say, store performance.
+
+426
+00:40:23,920 --> 00:40:28,000
+Because. Because you're not looking at stores. But. Put whatever you're putting there.
+
+427
+00:40:29,210 --> 00:40:35,540
+Put your slicers here. I put them somewhere across the top, usually maybe a couple of call outs.
+
+428
+00:40:35,540 --> 00:40:41,479
+So these cards where you can just show what is going on. Again, we read top left to top right.
+
+429
+00:40:41,480 --> 00:40:46,309
+So we go from the left side to the right side. These are our most important visualizations.
+
+430
+00:40:46,310 --> 00:40:50,420
+What matters to us. That's what that's what we're looking at here.
+
+431
+00:40:51,670 --> 00:40:55,750
+From here, we're going to add some more charts. Maybe we'll put a timeline in here.
+
+432
+00:40:55,750 --> 00:41:03,810
+I do like to see a line chart, because we do have a little bit of, uh, data based on months and years.
+
+433
+00:41:03,820 --> 00:41:07,860
+Well, a year. So this is a good visualization.
+
+434
+00:41:07,860 --> 00:41:11,250
+Again, draw the eye to what matters here.
+
+435
+00:41:11,310 --> 00:41:17,010
+Draw the eye to what matters. Make sure your audience knows what, what you care about, what you want them to care about.
+
+436
+00:41:17,670 --> 00:41:21,450
+And then the lower right, you can add a table that adds a little bit of context.
+
+437
+00:41:21,870 --> 00:41:25,270
+But isn't the the the star of the show?
+
+438
+00:41:25,290 --> 00:41:30,779
+It is there to add context. It's not there to convey a lot of meaning very quickly.
+
+439
+00:41:30,780 --> 00:41:35,219
+It's it's you. This all of these charts convey meaning.
+
+440
+00:41:35,220 --> 00:41:38,880
+The table gives additional context to that, those charts in that meaning.
+
+441
+00:41:40,180 --> 00:41:43,930
+Um. Uh, this. I don't know why how this is designed.
+
+442
+00:41:43,930 --> 00:41:49,680
+It does that. So we'll go back here. Okay, so this is a different dashboard layout.
+
+443
+00:41:49,700 --> 00:41:58,179
+The how power BI has two different visualization layouts, but we have you all work on is the report view.
+
+444
+00:41:58,180 --> 00:42:02,530
+It's actually designed for creating reports. But we have you use it to create a dashboard.
+
+445
+00:42:02,530 --> 00:42:06,999
+They also have a dashboard view which we don't go through in this class.
+
+446
+00:42:07,000 --> 00:42:10,510
+This is this is an example of the dashboard view.
+
+447
+00:42:10,510 --> 00:42:21,640
+It's a lot it's a lot more information dense than the version we have where we're trying to create a report, uh, dashboard that is useful long term.
+
+448
+00:42:21,940 --> 00:42:26,560
+This is something you glance at for quick updates. They're kind of different focuses.
+
+449
+00:42:27,740 --> 00:42:35,480
+These aren't too hard to make, but really what we're really focusing on is that more report that is a little bit has stronger meaning.
+
+450
+00:42:36,510 --> 00:42:40,499
+I'm not going to go over this again. We went over this last week, but it's just a reminder.
+
+451
+00:42:40,500 --> 00:42:45,120
+I put in these slides, these two in these slides in case you want to just reference these slides.
+
+452
+00:42:47,290 --> 00:42:51,100
+Yeah. Oh, yeah. Yeah.
+
+453
+00:42:51,120 --> 00:42:54,120
+You're able to reuse everything. It just needs to be cleaned up for this.
+
+454
+00:42:54,780 --> 00:42:59,910
+The individual is the exploratory, uh, exploratory analysis.
+
+455
+00:43:00,450 --> 00:43:05,040
+It's going to be rougher. This one is. You're polished. You put several layers of polish.
+
+456
+00:43:05,430 --> 00:43:08,700
+You don't have to rethink. Restart over with this at all.
+
+457
+00:43:09,220 --> 00:43:14,220
+Uh, you can use. You know, it doesn't have to be. Everybody's information is user can be one.
+
+458
+00:43:14,560 --> 00:43:18,420
+You know, one of the people your group had a really good idea. It's really something you all want to run with.
+
+459
+00:43:18,430 --> 00:43:21,690
+You can use that. It could be a combination, all sorts of things.
+
+460
+00:43:21,690 --> 00:43:26,420
+But yeah, you should. The same KPIs. Yes.
+
+461
+00:43:26,780 --> 00:43:31,690
+But honestly. So the way you apply to the region or whatever, you just had a slicer and click, click it.
+
+462
+00:43:31,700 --> 00:43:36,299
+It's really that simple. Uh, the project requirements.
+
+463
+00:43:36,300 --> 00:43:40,050
+This is the presentation. So you need to.
+
+464
+00:43:40,080 --> 00:43:44,250
+So from a logistical point of view is you need to show off your dashboard.
+
+465
+00:43:44,850 --> 00:43:52,500
+This could be the easiest way is to just put a link in your presentation that you can open up during the presentation.
+
+466
+00:43:53,280 --> 00:43:57,060
+But just in case you do want to have the person that created it with you and you want to,
+
+467
+00:43:57,150 --> 00:44:00,720
+they need to be able to get to the power BI file if it's needed.
+
+468
+00:44:01,930 --> 00:44:05,170
+There's a maximum of ten minutes if you can keep it under that.
+
+469
+00:44:05,200 --> 00:44:10,930
+More power to you. I. As long as you convey all the meaning and you talk.
+
+470
+00:44:10,940 --> 00:44:19,670
+Well, that's what I'm looking for here. Everyone must present to get the points for this assignment, you have to present.
+
+471
+00:44:20,510 --> 00:44:26,720
+Include your PowerPoint slides and a live demo of your PowerPoint dashboard, or your your power BI dashboard.
+
+472
+00:44:27,380 --> 00:44:30,620
+And I understand getting up in front of people can be terrifying.
+
+473
+00:44:30,650 --> 00:44:34,430
+Uh, one of the biggest reasons I did not come back to school for many,
+
+474
+00:44:34,430 --> 00:44:39,319
+many years is I was terrified to get up in front of people doing what I do would have.
+
+475
+00:44:39,320 --> 00:44:46,610
+I would never have guessed like 20 years ago. There is no way I would ever believe I'd be getting up in front of people and talking.
+
+476
+00:44:47,240 --> 00:44:52,310
+Now I do it on a day to day basis with my job. I do it with, uh, a lot of I presentations.
+
+477
+00:44:53,000 --> 00:44:56,389
+Um, there's, uh, Boise Code camps coming up Saturday.
+
+478
+00:44:56,390 --> 00:45:04,640
+I'll be presenting. I'll be on on a panel there. Uh, we've got an AI institute coming up in, like, three weeks here at Boise State.
+
+479
+00:45:04,640 --> 00:45:12,440
+I'll be giving a couple presentations during that. Like I said, a bunch of years ago, I would never, ever have been able to do this.
+
+480
+00:45:13,040 --> 00:45:17,230
+And the way I got over it was going through school and just doing it over and over.
+
+481
+00:45:17,240 --> 00:45:24,709
+It sucks to have to get over, but eventually you can. So I do understand I don't grade on like your presence.
+
+482
+00:45:24,710 --> 00:45:31,730
+I'm up for comments about presents, but I don't grade on it because people that are scared usually get up in front of people.
+
+483
+00:45:31,730 --> 00:45:36,560
+Their presence is not quite as strong. Just let you know. Uh, content.
+
+484
+00:45:36,570 --> 00:45:40,820
+So you're going to introduce your team and your market.
+
+485
+00:45:40,820 --> 00:45:42,340
+Think of it, your market segment.
+
+486
+00:45:42,350 --> 00:45:50,450
+Maybe not a bunch of you do have regions, but some of you some groups have specific market segments or your market segment is everything.
+
+487
+00:45:50,750 --> 00:45:58,190
+I have one group that's that set to that. Uh, you'll introduce your market segment or your region, uh, give a brief overview of it,
+
+488
+00:45:58,580 --> 00:46:02,240
+communicate any trends you've or communicate the trends you've found,
+
+489
+00:46:02,330 --> 00:46:07,220
+do a live demonstration of your dashboard, present your KPIs, and then give a conclusion.
+
+490
+00:46:07,700 --> 00:46:13,819
+It doesn't have to be in this order. I've had groups that did the the dashboard demonstration at the beginning.
+
+491
+00:46:13,820 --> 00:46:17,060
+I've had to do at the end post and put them in the center.
+
+492
+00:46:17,390 --> 00:46:21,110
+Whatever you want, whatever feels good to you and your group, you definitely want to.
+
+493
+00:46:21,440 --> 00:46:26,030
+You definitely want to place a link to your PowerPoint, uh, to open the dashboard inside your power BI.
+
+494
+00:46:26,900 --> 00:46:31,490
+Uh, I, uh, I forgot to change this. You're presenting to, um.
+
+495
+00:46:32,530 --> 00:46:37,360
+Uh, Frederick Jones, uh, representatives, not, uh, Jackson's just let you know,
+
+496
+00:46:37,900 --> 00:46:41,530
+but this is basically rehashing what you see over here in the logistics.
+
+497
+00:46:41,950 --> 00:46:46,150
+This is an example of, uh, I think this was.
+
+498
+00:46:47,920 --> 00:46:53,620
+Okay, so this was an older version looking at or looking at different drinks that we did from Jackson's.
+
+499
+00:46:54,100 --> 00:46:58,600
+And this was their presentation. This is a picture of their dashboard here in the center.
+
+500
+00:46:58,600 --> 00:47:03,030
+And then they've got a link. If you click it you would actually see their their actual dashboard.
+
+501
+00:47:03,040 --> 00:47:10,090
+You can see that they also went to the Jackson or the Extra Mile website and grabbed the color theme.
+
+502
+00:47:10,540 --> 00:47:21,149
+A lot of businesses actually have color themes. So if you are doing something with about them, you can actually use their assets,
+
+503
+00:47:21,150 --> 00:47:24,900
+their logos, their fonts, their colors and all that and they tell you what they are.
+
+504
+00:47:25,380 --> 00:47:29,370
+So that is how they were able to make it matches because they were they could do that.
+
+505
+00:47:29,880 --> 00:47:36,360
+Another trick is you can just get like an eyedropper type tool and pull the colors directly off logos, stuff like that.
+
+506
+00:47:36,600 --> 00:47:40,220
+Little tricks you can do and it's it's not a lot.
+
+507
+00:47:40,230 --> 00:47:46,620
+It's actually really not a lot of work. But that extra level of polish produces amazing work.
+
+508
+00:47:48,000 --> 00:47:53,350
+So, uh, what's the big idea? This comes right out of chapter one of the book.
+
+509
+00:47:53,370 --> 00:47:59,069
+You will work on this as a group on Friday and get that turned in as an engage assignment.
+
+510
+00:47:59,070 --> 00:48:04,830
+So just, you know, expect that there's another good assignment and I'll touch on that here in a couple of slides.
+
+511
+00:48:06,830 --> 00:48:10,310
+So this is the last part of the book. This is chapter eight.
+
+512
+00:48:10,340 --> 00:48:18,290
+This is where Netflix pulls together everything she's done and gives you an gives you a demo of a way to think about this.
+
+513
+00:48:18,710 --> 00:48:24,920
+And this is this kind of what you want to aspire to when you're giving a presentation, a presentation with data.
+
+514
+00:48:25,790 --> 00:48:35,600
+So the context here is you're at a startup that has created a consumer product, and they want to figure out how do we price this consumer product.
+
+515
+00:48:36,350 --> 00:48:43,610
+The decision makers are going to focus on what are our competitors retail prices and what have their prices done over time.
+
+516
+00:48:43,610 --> 00:48:47,780
+What's been the change over time? So the who, the what and the how.
+
+517
+00:48:47,790 --> 00:48:54,240
+Again, this is right out of chapter one of the book, who we want to look at, the Vice President of product.
+
+518
+00:48:54,600 --> 00:48:57,660
+The primary decision maker. The what?
+
+519
+00:48:57,690 --> 00:49:03,570
+Understand how our competitors pricing has changed over time and recommend a price range.
+
+520
+00:49:03,840 --> 00:49:11,190
+And then finally the how show an average retail price over time for products A, B, C, D and E.
+
+521
+00:49:12,710 --> 00:49:18,500
+So in the next five minutes, our goal is to understand how prices have changed over time in the competitive landscape.
+
+522
+00:49:19,010 --> 00:49:25,500
+Use this knowledge to inform the pricing of our product and then we will end with these specific recommendations.
+
+523
+00:49:25,520 --> 00:49:28,549
+So this is how we start over time.
+
+524
+00:49:28,550 --> 00:49:35,000
+Our competitors are they have been priced similarly with be consistently slightly lower than a.
+
+525
+00:49:36,100 --> 00:49:42,250
+After six years, product A and B were priced at 260 and $250, respectively.
+
+526
+00:49:43,220 --> 00:49:49,670
+Meanwhile, product C, D, and E were each introduced later at much lower price points.
+
+527
+00:49:52,060 --> 00:49:55,900
+But all of these have increased in price since their respective launches.
+
+528
+00:49:57,130 --> 00:50:01,810
+This pattern is very consistent after all the launch of the new product.
+
+529
+00:50:02,050 --> 00:50:07,750
+We tend to see an initial price increase followed by a decrease over time.
+
+530
+00:50:08,230 --> 00:50:14,650
+And you can see how in this she highlights this whole story of how it works out together.
+
+531
+00:50:14,650 --> 00:50:18,550
+She she changes those segments to make it very obvious.
+
+532
+00:50:19,610 --> 00:50:23,059
+And we see that the retail prices of all the products have converged,
+
+533
+00:50:23,060 --> 00:50:32,000
+with an average retail price of $223, ranging from a low of $180 to a high of $260.
+
+534
+00:50:33,600 --> 00:50:42,690
+To be competitive, we recommend introducing our product below that $223 average price point in the 150 to $100 range.
+
+535
+00:50:43,790 --> 00:50:48,290
+So I want to point out doing this bar here is actually really easy in power BI.
+
+536
+00:50:48,710 --> 00:50:55,820
+You can put a text bar in there and then just put colorize it and the text.
+
+537
+00:50:56,570 --> 00:50:59,960
+Basically that text box will have a color in it and be that bar.
+
+538
+00:50:59,990 --> 00:51:06,350
+It's really that simple. The visuals themselves, there's a way to do it inside the visuals themselves as well.
+
+539
+00:51:07,010 --> 00:51:13,040
+It works on most visuals, not all of them. And if you really want to do this, feel free to either use the text example.
+
+540
+00:51:13,400 --> 00:51:18,530
+The problem with the text example text example is that if you make any changes or movements,
+
+541
+00:51:18,530 --> 00:51:24,440
+you it'll lose its position where if you filled it right into the visual, it'll keep it there.
+
+542
+00:51:26,860 --> 00:51:30,159
+Um, and then what's due tonight is the final project.
+
+543
+00:51:30,160 --> 00:51:34,989
+Team planning. Uh, basically, this is really like I put the note here.
+
+544
+00:51:34,990 --> 00:51:41,450
+What I really want to confirm is that you've found each other, you've shared your information, and you're able to communicate with each other.
+
+545
+00:51:41,470 --> 00:51:45,549
+You can just take a screenshot that you've all found each other and submit that.
+
+546
+00:51:45,550 --> 00:51:49,629
+That's all you need to do. I did have it said that you had to, uh, upload a document.
+
+547
+00:51:49,630 --> 00:51:54,640
+I actually pulled that out. And, uh, you can use a document. You can use the screenshot, whatever you want.
+
+548
+00:51:55,210 --> 00:52:00,640
+Uh, really? What all of that I'm really looking for is that you found each other and that you are working together.
+
+549
+00:52:01,840 --> 00:52:05,620
+Um. So now we're at the end of the class.
+
+550
+00:52:05,630 --> 00:52:09,300
+I want to go over this really quick. Um.
+
+551
+00:52:11,930 --> 00:52:17,629
+A question that I always get is by so many students is, why in the [INAUDIBLE] am I taking an ATM class?
+
+552
+00:52:17,630 --> 00:52:27,170
+I'm not a computer person. Um, and I created this ah .05 to show you why you take this class.
+
+553
+00:52:27,740 --> 00:52:31,280
+I've got every major in the college listed there.
+
+554
+00:52:31,280 --> 00:52:35,840
+I've got majors from other colleges that we tend to see students from listed there.
+
+555
+00:52:36,260 --> 00:52:40,010
+And then I've got this one here, which is kind of the generic one just for any undergrad.
+
+556
+00:52:40,580 --> 00:52:44,090
+So the first thing is preparing for technological trends.
+
+557
+00:52:44,090 --> 00:52:47,450
+We teach you business intelligence. We teach you analytics tools.
+
+558
+00:52:47,960 --> 00:52:51,140
+Businesses by and far are data driven anymore.
+
+559
+00:52:51,140 --> 00:52:54,800
+They want to understand the data. They make decisions on the data.
+
+560
+00:52:55,400 --> 00:53:02,300
+There are people that run smaller businesses that have a very intuitive sense of numbers and what's going on.
+
+561
+00:53:02,660 --> 00:53:04,100
+They can do very well.
+
+562
+00:53:04,520 --> 00:53:11,030
+There's a lot of people that think they do that don't, and those businesses tend to go under because they don't have the numbers to back them up.
+
+563
+00:53:11,750 --> 00:53:15,860
+And it's very easy to look at, oh, I'm making a ton of money and not realizing, well,
+
+564
+00:53:15,860 --> 00:53:21,410
+I'm losing even more money because different expenses that I'm not really thinking about.
+
+565
+00:53:22,540 --> 00:53:30,100
+Critical thinking and problem solving. Um, we teach you that that is a really good soft skill in general, especially in an AI world.
+
+566
+00:53:30,610 --> 00:53:35,169
+Data visualizations, how to create clear visuals. How to have impactful communication.
+
+567
+00:53:35,170 --> 00:53:43,900
+That's pretty much what this entire last section of the course is all about marketability to employers, interpreting data and presenting data.
+
+568
+00:53:44,560 --> 00:53:50,740
+Those are strong areas that we do. Um, and I want to point out I actually did use an AI to pull this up.
+
+569
+00:53:50,740 --> 00:53:55,630
+So this isn't my opinion. I said, this is what I teach in the class.
+
+570
+00:53:56,110 --> 00:54:05,200
+And looking at businesses in general, what what do I teach in this class that is worthwhile to students and how will they use it,
+
+571
+00:54:05,640 --> 00:54:10,420
+like to further their their school careers and their their their academic and their work careers?
+
+572
+00:54:10,810 --> 00:54:15,870
+So that's where all of these things come from. Um, improved efficiency and productivity.
+
+573
+00:54:15,880 --> 00:54:20,860
+So reducers, we don't really get into automation. Um, but reducing error errors.
+
+574
+00:54:20,860 --> 00:54:26,240
+We taught you about ETL. This is one of the areas where we don't go really in-depth.
+
+575
+00:54:26,260 --> 00:54:30,610
+We show you how to do it quickly. You kind of on a high level.
+
+576
+00:54:31,630 --> 00:54:36,670
+If you ever are in a business where you have to do it, you know a lot of the words to use.
+
+577
+00:54:36,670 --> 00:54:45,639
+You know the concept to look for. And you can use AI and Google to delve into that deeper and understand the topic.
+
+578
+00:54:45,640 --> 00:54:53,709
+Basically, get up to speed on it much quicker than if you've never had have never learned any of this, uh, foundational data skills.
+
+579
+00:54:53,710 --> 00:54:57,730
+Power BI, we teach you power BI. With.
+
+580
+00:54:57,730 --> 00:55:00,940
+With your knowledge of power BI, you can go over to Tableau.
+
+581
+00:55:00,970 --> 00:55:04,900
+You can go over to um, Google Data Studio.
+
+582
+00:55:04,900 --> 00:55:12,520
+You can go over to Domo. There's other programs out there like power BI, but the concepts are very, very similar in how they work.
+
+583
+00:55:13,090 --> 00:55:16,390
+If you've learned one, you can basically work in any of them.
+
+584
+00:55:16,840 --> 00:55:19,990
+So that's where these foundational data skills come into play.
+
+585
+00:55:21,620 --> 00:55:25,159
+Um. Okay. And that's really what I have here.
+
+586
+00:55:25,160 --> 00:55:30,080
+So there's different like there's different areas, like real world applications, marketing, budget management, research.
+
+587
+00:55:30,260 --> 00:55:34,459
+That is definitely areas that different groups of you will need.
+
+588
+00:55:34,460 --> 00:55:40,330
+But, uh, not necessarily all of you. Uh, I talked about this the very first day of class.
+
+589
+00:55:40,350 --> 00:55:43,950
+This class has three major themes. Enterprise systems.
+
+590
+00:55:43,950 --> 00:55:48,570
+These run the operations, but also provide dated answers to strategic questions.
+
+591
+00:55:48,990 --> 00:55:51,360
+This was the missed book. Yes, I know it's not.
+
+592
+00:55:51,360 --> 00:56:00,030
+It's not really a fun section of the class, but it's really good information, especially for those of you that are not ITM students.
+
+593
+00:56:00,510 --> 00:56:10,499
+It's very, very helpful to at least be able to understand how to talk with your, uh, uh, your, your, uh, information systems people.
+
+594
+00:56:10,500 --> 00:56:16,840
+It's very, very helpful. Data management is required to use the volume of variety of big data that is available.
+
+595
+00:56:16,870 --> 00:56:22,440
+Remember that what happens in an internet minute volume variety of data topics.
+
+596
+00:56:22,450 --> 00:56:29,680
+That's what this is talking about. Understand that there's massive amounts of data out there and businesses generate massive amounts of data.
+
+597
+00:56:30,460 --> 00:56:34,240
+And then finally data visualization. This is the last portion of this class.
+
+598
+00:56:34,630 --> 00:56:38,050
+Techniques support developing insights as we explore, analyze and communicate.
+
+599
+00:56:38,440 --> 00:56:46,930
+We honestly we, as in the professors that teach this class, think this is an incredibly important topic we want you all to be aware of.
+
+600
+00:56:48,750 --> 00:56:52,889
+This is also in the first day of class. This is the story of the class.
+
+601
+00:56:52,890 --> 00:56:59,220
+This is kind of our mental story that we think about with this class and the the framing of the class for you guys.
+
+602
+00:56:59,670 --> 00:57:07,350
+So, uh, sometime in your career, you walked into the boardroom prepared with your recommendation data and arguments.
+
+603
+00:57:08,160 --> 00:57:13,320
+When you leave, the board will have picked your idea or someone else's.
+
+604
+00:57:14,100 --> 00:57:18,780
+What will make the difference? In this class.
+
+605
+00:57:18,780 --> 00:57:22,000
+We believe what makes a difference is what you've been learning.
+
+606
+00:57:22,020 --> 00:57:30,330
+You know how to analyze data. You know how to find the right data, and you also know how to present it cleanly.
+
+607
+00:57:31,650 --> 00:57:35,700
+The framing of this class is right here. It's that you learned the skill.
+
+608
+00:57:35,730 --> 00:57:44,370
+You have learned the skills that give you the ability to answer questions effectively and get your point
+
+609
+00:57:44,370 --> 00:57:53,400
+across in such an easy to understand way that you will usually win when there is differences of opinions.
+
+610
+00:57:53,790 --> 00:57:59,880
+Because when you present it to other people, you know how to present things cleanly and make it make sense.
+
+611
+00:58:01,380 --> 00:58:05,360
+So, um, again, remember the course evaluations.
+
+612
+00:58:05,370 --> 00:58:13,410
+If 90% of you guys fill these out, you the whole everybody in the class gets five extra points of extra credit,
+
+613
+00:58:14,190 --> 00:58:19,680
+and then you can work on your, uh, on the engage assignment, work on the final.
+
+614
+00:58:20,100 --> 00:58:24,120
+And it's been a pleasure to have you guys in this class. I hope you guys actually have learned some stuff.
+
+615
+00:58:24,120 --> 00:58:28,770
+And I hope you guys use, uh, a bunch of what you've learned in this class and find it valuable.
+

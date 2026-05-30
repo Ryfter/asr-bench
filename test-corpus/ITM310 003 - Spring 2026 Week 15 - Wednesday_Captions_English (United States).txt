@@ -1,0 +1,2801 @@
+1
+00:00:00,090 --> 00:00:03,710
+[Auto-generated transcript. Edits may have been applied for clarity.]
+Okay. So welcome to Wednesday's class.
+
+2
+00:00:03,720 --> 00:00:08,300
+We're going to be talking about focusing your audience's attention, um, out of Netflix.
+
+3
+00:00:08,310 --> 00:00:16,380
+We're then going to get into the final project, um, the with the final project instructions covers part of it.
+
+4
+00:00:16,950 --> 00:00:22,769
+Uh, the rubric will cover part of it. But a lot of what you need to know to do actually in this lecture.
+
+5
+00:00:22,770 --> 00:00:29,280
+So it's good to have this, um, so, uh, this is where we'll be covering today.
+
+6
+00:00:29,280 --> 00:00:34,800
+It looks really complicated, but really you're just going to be working on the final you've got and the stuff that goes around that.
+
+7
+00:00:37,260 --> 00:00:40,600
+So we're going to start with pre attentive attributes.
+
+8
+00:00:40,620 --> 00:00:49,530
+These attributes are used to get iconic memory to the um to preprocess visualizations before passing them off to short term memory.
+
+9
+00:00:50,460 --> 00:00:53,280
+These attributes help direct the audience's attention and leverage.
+
+10
+00:00:53,280 --> 00:00:59,339
+Strategically enables our audience to see what we want them to see before they even know they are seeing it.
+
+11
+00:00:59,340 --> 00:01:00,480
+It's kind of like subliminal.
+
+12
+00:01:01,110 --> 00:01:09,400
+So if when you and the reason we develop this is because of this, we're able to immediately understand there's something wrong.
+
+13
+00:01:09,420 --> 00:01:11,940
+Let's figure out what the patterns are. What are the patterns? Tell us.
+
+14
+00:01:12,090 --> 00:01:16,140
+You're telling us there's something these big, mean eyes, big teeth, it's going to eat us.
+
+15
+00:01:17,100 --> 00:01:22,409
+And it goes through all of that before we even realize we're looking at a tiger.
+
+16
+00:01:22,410 --> 00:01:29,309
+It's. Our body is already preparing to act before we're even thinking about it.
+
+17
+00:01:29,310 --> 00:01:31,440
+And that's what the iconic memory is for.
+
+18
+00:01:31,860 --> 00:01:42,749
+And that is what we exploit in, in, um, visualizations, in using that iconic memory that is incredibly fast, was developed to keep us alive.
+
+19
+00:01:42,750 --> 00:01:47,130
+We can also exploit it to convey meaning fast. Maybe not fast, but better.
+
+20
+00:01:47,910 --> 00:01:51,330
+So there's for us there's three kinds of memory.
+
+21
+00:01:51,330 --> 00:01:53,580
+We've got iconic memory, short term and long term.
+
+22
+00:01:54,090 --> 00:02:01,440
+Iconic is super fast and allows us to discern danger environment in our environment by quickly picking up differences in it.
+
+23
+00:02:01,950 --> 00:02:07,350
+Seeing the tiger initially triggers that iconic memory before goes to short term memory, and you begin to analyze it.
+
+24
+00:02:08,280 --> 00:02:12,570
+Iconic memory lasts a fraction of a second. It is not a storage medium.
+
+25
+00:02:12,960 --> 00:02:22,290
+It is a medium to to start processing information in short term memory is meant to house small chunks of information before it is encoded,
+
+26
+00:02:22,920 --> 00:02:29,490
+uh, in long term memory, people and usually keep about four chunks of information in short term memory at a time.
+
+27
+00:02:30,060 --> 00:02:34,680
+Uh, you want to reduce the information that needs processing to reduce cognitive load.
+
+28
+00:02:35,130 --> 00:02:38,730
+There's that key word cognitive load. Again we do talk about it throughout this class.
+
+29
+00:02:39,600 --> 00:02:45,780
+Long term memory is where items from short term memory are either passed or they go into oblivion.
+
+30
+00:02:46,940 --> 00:02:51,950
+You either pass information from short term and goes to long term, or you forget it is really what it boils down to.
+
+31
+00:02:52,730 --> 00:02:56,800
+And for any particular slide you've got 3 to 8 seconds.
+
+32
+00:02:56,810 --> 00:03:00,350
+That's it. That's all the time and attention people are going to give you.
+
+33
+00:03:00,860 --> 00:03:06,230
+Studies show we have about that with our audience to entice them to continue looking at our slides.
+
+34
+00:03:06,860 --> 00:03:14,570
+The use of predictive attributes allows you to utilize those precious seconds to at least present the gist of the meaning.
+
+35
+00:03:15,770 --> 00:03:17,520
+A lot of people like I can look out.
+
+36
+00:03:17,540 --> 00:03:24,620
+Most people are looking at their phones or not paying attention, but if they glance up, if they take a couple of seconds to see what's going on here.
+
+37
+00:03:24,860 --> 00:03:30,559
+Hopefully you can at least get the gist of the slide. Um, and it's how we pull that.
+
+38
+00:03:30,560 --> 00:03:36,380
+We it's how we convey that meaning to you to be added to your, uh, short term and hopefully into your long term memory.
+
+39
+00:03:37,130 --> 00:03:44,030
+We can signal the important pieces for our audience to pay attention to quickly and deemphasize information that is necessary,
+
+40
+00:03:44,030 --> 00:03:47,270
+but not really as impactful. Not not the important points.
+
+41
+00:03:47,960 --> 00:03:54,140
+So this is this is the way to think about it, okay. Raise your hand when you've counted all the threes on the slide.
+
+42
+00:04:10,410 --> 00:04:15,530
+Okay, so took one was faster, but took about 4 to 4 seconds.
+
+43
+00:04:15,540 --> 00:04:19,719
+Five seconds for a bunch of you. And then a few others came in and around eight seconds.
+
+44
+00:04:19,720 --> 00:04:25,740
+So if you close your eyes for just a second here and then look up again and count them again, how long does it take you to count them?
+
+45
+00:04:27,590 --> 00:04:31,579
+Hands went up a lot faster. This is this is where we use this pretense of attributes.
+
+46
+00:04:31,580 --> 00:04:34,879
+This is an example of why you want to use them.
+
+47
+00:04:34,880 --> 00:04:41,930
+It's a lot faster. People do not have to spend as much time to understand the meaning and get that meaning out.
+
+48
+00:04:43,980 --> 00:04:47,400
+There are 12 pretend attributes to draw the eye through our visual,
+
+49
+00:04:47,400 --> 00:04:51,960
+and you'll notice that a bunch of these were already covered in the Gestalt principles there.
+
+50
+00:04:52,230 --> 00:04:54,810
+Since they're doing very similar things.
+
+51
+00:04:55,560 --> 00:05:01,770
+So we've got orientation, we have shape, we have line length, we have line width, we have size, we have curvature.
+
+52
+00:05:02,070 --> 00:05:07,710
+We've got added marks, enclosure hue intensity, spatial position and motion.
+
+53
+00:05:08,460 --> 00:05:12,000
+If you'll notice, a lot of these actually fall into that like uh.
+
+54
+00:05:12,060 --> 00:05:15,710
+Um. Contrast, uh, idea.
+
+55
+00:05:15,730 --> 00:05:19,240
+The idea of contrast. They can't. One item or couple of things.
+
+56
+00:05:19,240 --> 00:05:23,280
+Contrast to the rest. Again, that goes to that day to day ratio.
+
+57
+00:05:23,290 --> 00:05:29,689
+We use contrast to show what matters. And the stuff that doesn't matter.
+
+58
+00:05:29,690 --> 00:05:39,950
+Let's just, you know, move that to the back. So looking back at one of the movie visualizations, this is looking at the number of names.
+
+59
+00:05:41,380 --> 00:05:45,760
+Used for various movie titles we had. So, um.
+
+60
+00:05:46,770 --> 00:05:53,009
+And also you can label your visuals. You don't have to just have a visual, sit there and try to tell its own story.
+
+61
+00:05:53,010 --> 00:06:00,750
+You can tell it. You can use it to tell the story. So I'm putting a sample here of putting actual words on a visual.
+
+62
+00:06:01,230 --> 00:06:07,110
+So in the movies that had the most variations, only one of the nine did not have multiple words in the title.
+
+63
+00:06:07,830 --> 00:06:16,320
+Joker. The movie Joker seemed to give students quite a bit of trouble with 11 variations, considering the title was one word long.
+
+64
+00:06:16,710 --> 00:06:22,500
+So in the data set there were 11 different versions of the movie for Joker.
+
+65
+00:06:23,530 --> 00:06:27,730
+Uh, the one that had the most with 29 variations was Avengers Endgame.
+
+66
+00:06:28,060 --> 00:06:31,840
+Following that was Star Wars Episode eight, The Last Jedi.
+
+67
+00:06:31,850 --> 00:06:39,850
+So we had one of all of these four movies have 12 variations as we go down, like, uh, eight movies had seven, nine movies had six.
+
+68
+00:06:40,240 --> 00:06:44,410
+But you get the idea. We're focusing on this part. We're bringing contrast.
+
+69
+00:06:44,410 --> 00:06:47,080
+We're bringing the eyes to this. This is part that really matters.
+
+70
+00:06:47,560 --> 00:06:57,640
+We're using boldness and red to pull the eye color and, um, contrast again, to pull the eye out of what's important in the text there.
+
+71
+00:06:58,820 --> 00:07:03,470
+So we're able to kind of preload what we want the people to get out of things.
+
+72
+00:07:04,520 --> 00:07:08,380
+And we talk about color. Strategic use of color is good.
+
+73
+00:07:08,390 --> 00:07:12,230
+Using, um, a heat map works really well. They work really well.
+
+74
+00:07:12,530 --> 00:07:16,399
+As long as you're using contrast, you're not using on the bottom.
+
+75
+00:07:16,400 --> 00:07:22,219
+You're not using a Christmas tree that went crazy. When you have a lot of colors like in the bottom right.
+
+76
+00:07:22,220 --> 00:07:27,520
+It's it is visual clutter and actually will turn people off.
+
+77
+00:07:27,530 --> 00:07:33,560
+The top one is while it has the same number of kind of different variations in colors,
+
+78
+00:07:33,890 --> 00:07:38,200
+since they're all just contrast on the same color, it makes more sense.
+
+79
+00:07:38,250 --> 00:07:48,239
+You don't have all the differences there. Size matters when you choose a larger size for portion visualization, you're denoting how important it is.
+
+80
+00:07:48,240 --> 00:07:52,680
+It again pulls the eye. Contrast is what we're really talking about here.
+
+81
+00:07:53,340 --> 00:07:58,860
+Use color sparingly. It's one of your most powerful tools, but people use it for the sake of being colorful.
+
+82
+00:07:58,860 --> 00:08:02,610
+That's a problem, and it actually creates more load when you do that.
+
+83
+00:08:03,060 --> 00:08:10,500
+Use it intentionally and honestly. Everything we talk about like the just style principles we're talking about today, use it with intention.
+
+84
+00:08:10,500 --> 00:08:18,209
+Use colors, intention. Intentionally use size, intentionally use where you place items on the page intentionally.
+
+85
+00:08:18,210 --> 00:08:26,540
+We'll talk about in the next one. The more intention you use with how you create your visualizations, the more important it is.
+
+86
+00:08:27,160 --> 00:08:32,780
+Um, I've been working with a head of one of the station chiefs of one of the departments for the state,
+
+87
+00:08:33,260 --> 00:08:36,560
+uh, dealing with financial fraud for about a year and a half.
+
+88
+00:08:37,040 --> 00:08:42,830
+And he was talking, you know, he writes a lot of policy briefs for, uh, legislators.
+
+89
+00:08:43,010 --> 00:08:51,860
+And he was talking that a lot of times he would spend hours on, like a paragraph to get the wording just right,
+
+90
+00:08:52,310 --> 00:08:58,370
+because a lot of legislators have a lot of stuff pushed on them, and they don't have the time to read everything.
+
+91
+00:08:58,790 --> 00:09:03,590
+So every single word matters when you're writing for those kinds of people.
+
+92
+00:09:04,160 --> 00:09:08,600
+As you get into the business world, you know, we as professors, we tend to.
+
+93
+00:09:09,540 --> 00:09:14,490
+Encourage. I wouldn't say I'm one of, but we a lot of times we encourage lots of words.
+
+94
+00:09:15,330 --> 00:09:21,870
+I encourage meaning behind the words. That's reason why this the final project to to pages and memos.
+
+95
+00:09:22,290 --> 00:09:26,370
+And that includes 2 to 4 images. Those take up a huge section.
+
+96
+00:09:26,880 --> 00:09:36,270
+Um, I think it's, uh Amazon. Maybe they whenever you convey meaning, you're supposed to convey meaning in a memo no longer than one page can.
+
+97
+00:09:36,270 --> 00:09:40,560
+Writing concise takes work. Honestly, with I, it's gotten a lot easier.
+
+98
+00:09:40,890 --> 00:09:43,260
+But writing concisely takes more work.
+
+99
+00:09:43,800 --> 00:09:52,680
+And you, when you're competing with, uh, somebody's attention span, being able to write concisely is very important.
+
+100
+00:09:53,250 --> 00:09:56,700
+So just some stuff to keep in mind. Sorry. Total tangent on that one.
+
+101
+00:09:57,060 --> 00:10:05,250
+Okay. The author uses blue quite a bit. Um, for reasons that are both personal and technical, it's easy to discern.
+
+102
+00:10:05,250 --> 00:10:09,810
+For those that are colorblind, it prints well. And on a personal note, she likes the colors.
+
+103
+00:10:11,590 --> 00:10:15,400
+Peach position. Position the main takeaway or point at the top.
+
+104
+00:10:15,640 --> 00:10:20,620
+That's the reason why, uh, slide titles are incredibly important.
+
+105
+00:10:21,010 --> 00:10:24,130
+The most important thing you put on a page is the title.
+
+106
+00:10:25,060 --> 00:10:33,460
+Um. And I would put the caveat sometimes it doesn't make sense, but usually it does in visualizations.
+
+107
+00:10:33,490 --> 00:10:37,950
+Um, sorry. Um, position the main takeaway uh, or point at the top.
+
+108
+00:10:37,960 --> 00:10:42,100
+So in visually visualizations this one always makes sense or work.
+
+109
+00:10:42,520 --> 00:10:44,010
+But it is another tool you can use.
+
+110
+00:10:44,020 --> 00:10:52,990
+I would say most of the time, um, it's very rare that that I have a visual that does not start in the top or the top left.
+
+111
+00:10:53,650 --> 00:10:57,250
+Make information flow naturally to reduce cognitive load load.
+
+112
+00:10:57,260 --> 00:11:00,909
+Avoid going against the grain. People read left to right, top to bottom.
+
+113
+00:11:00,910 --> 00:11:05,050
+At least in the West, uh, different um, Asian countries will read top down.
+
+114
+00:11:05,740 --> 00:11:09,760
+Um, going the opposite creates an uncomfortable feeling.
+
+115
+00:11:09,760 --> 00:11:17,410
+It creates cognitive load. Be aware of that. So again in the West are reading flows in a Z format left to right top to bottom.
+
+116
+00:11:17,800 --> 00:11:22,270
+So put your. So we'll talk about um dashboards next week.
+
+117
+00:11:22,270 --> 00:11:25,540
+But you want to put the the most important items top left.
+
+118
+00:11:25,540 --> 00:11:28,869
+You want everybody to use. Everybody read go over to the right.
+
+119
+00:11:28,870 --> 00:11:30,339
+Everything as you go to the right.
+
+120
+00:11:30,340 --> 00:11:36,730
+Ah is kind of goes to your second most important stuff down left, third most important bottom right, the least important stuff.
+
+121
+00:11:37,060 --> 00:11:41,260
+If you're going to put a table, just put it in that lower right. Don't put it in the other spots.
+
+122
+00:11:43,030 --> 00:11:49,090
+Color blindness and color connotation. Roughly 8% of men and half a percent of women are color blind.
+
+123
+00:11:49,450 --> 00:11:54,730
+There's various kinds. The most common is red green, uh, color blindness.
+
+124
+00:11:55,450 --> 00:12:01,330
+Uh, many times you want to use red and green, but if you do, you need to use some sort of additional visual cue,
+
+125
+00:12:01,720 --> 00:12:06,820
+bold varying, uh, saturation or brightness, or adding a simple plus or minus.
+
+126
+00:12:07,890 --> 00:12:12,090
+Uh, the author uses blue to signify positive and orange to signify negative.
+
+127
+00:12:12,120 --> 00:12:15,660
+It actually works conveniently for us here at Boise State, because it's also our colors.
+
+128
+00:12:16,410 --> 00:12:21,810
+Uh, colors can have different meanings in different cultures. So knowing who you're presenting to in this context is important.
+
+129
+00:12:22,140 --> 00:12:25,650
+We've talked about the color, uh, the color wheel before.
+
+130
+00:12:25,650 --> 00:12:32,130
+I've shown you guys that, uh, it's basically it's basically that the we're talking about here, it also pertains to this section.
+
+131
+00:12:34,470 --> 00:12:38,760
+So quick recap. Use pretend attributes sparingly and strategically.
+
+132
+00:12:38,760 --> 00:12:43,469
+Again, remember that word intention. Use these with intention.
+
+133
+00:12:43,470 --> 00:12:51,450
+Great power. With great power comes great responsibility. If you use these a lot, you're just going to make everything look busy and painful.
+
+134
+00:12:52,320 --> 00:12:58,260
+Attributes like size, color, and position on page, uh, signal to our audience what is important.
+
+135
+00:12:58,980 --> 00:13:02,190
+There are three types of memory iconic, long, short term, and long term.
+
+136
+00:13:02,190 --> 00:13:06,000
+Visualizations flow down this line or are forgotten.
+
+137
+00:13:06,570 --> 00:13:09,809
+To see where your eyes are drawn, open your your visualization.
+
+138
+00:13:09,810 --> 00:13:13,139
+Close your eyes for a few seconds. Look back and note where your eyes are drawn.
+
+139
+00:13:13,140 --> 00:13:17,880
+First. Confirm this is where you want your want the eyes of your audience to go.
+
+140
+00:13:18,420 --> 00:13:24,659
+This works even better if you've got like a roommate or a friend that you can have them look at a visualization,
+
+141
+00:13:24,660 --> 00:13:31,470
+have them close their their eyes, pop it open and have them explain what they see first, what they see second, kind of their flow.
+
+142
+00:13:31,950 --> 00:13:37,380
+This really, this really is actually a very powerful tool, um, that you can use it.
+
+143
+00:13:37,620 --> 00:13:43,680
+You know, I really can't stress how kind of powerful that is to help. Uh, there's different links.
+
+144
+00:13:43,770 --> 00:13:48,390
+Uh, from the section, you can go download the PDF, uh, from the resources folder.
+
+145
+00:13:48,720 --> 00:13:50,960
+Uh, I always put the slides there. It allows.
+
+146
+00:13:50,970 --> 00:13:59,220
+So this check allows you to upload images or uh, or download a tool to, um, to see how a colorblind person would see various images.
+
+147
+00:13:59,790 --> 00:14:07,040
+Uh, color. Uh, the color oracle allows you to use full screen filter to see how others may see your visuals, colors, and culture.
+
+148
+00:14:07,050 --> 00:14:11,910
+This is the color wheel we've talked about before. Colors and emotions and data visualization.
+
+149
+00:14:11,910 --> 00:14:15,960
+Talk about. It's a blog post about how colors and emotions relate.
+
+150
+00:14:16,510 --> 00:14:20,280
+Make sure it's yes. Okay, so this is storytelling with, uh, data one.
+
+151
+00:14:20,700 --> 00:14:25,650
+So you can see that, you know, there's oh and it also goes into that colors and culture color wheel.
+
+152
+00:14:26,100 --> 00:14:31,799
+So it actually is this is a big topic on on understanding the culture as well.
+
+153
+00:14:31,800 --> 00:14:41,820
+And then also being able to communicate with people that are colorblind or people that may not have full, um, uh, full scene capability.
+
+154
+00:14:41,850 --> 00:14:43,140
+You want to have high contrast.
+
+155
+00:14:45,510 --> 00:14:56,489
+If you notice in most canvas shells it's black on white because very, very high contrast makes it easy for people that may not have, you know,
+
+156
+00:14:56,490 --> 00:15:04,260
+like full 2020 vision that have trouble seeing or getting close to that line of being, um, visually, you know, that or that are visually impaired.
+
+157
+00:15:04,860 --> 00:15:12,360
+So think about these different communities of people that may not look at your visualizations the same way you do.
+
+158
+00:15:13,650 --> 00:15:20,460
+One thing I want you guys to do is start building out a custom, um, notebook LM for this assignment.
+
+159
+00:15:21,090 --> 00:15:26,120
+Uh, we talked to, you know, I think the last time I really talked about it was the first week or two of class notebook.
+
+160
+00:15:26,130 --> 00:15:33,770
+LM is an incredibly powerful tool. It. I gave a presentation about it at, um, Hack Fort.
+
+161
+00:15:33,780 --> 00:15:36,840
+We've got an AI institute coming up here at Boise State.
+
+162
+00:15:37,260 --> 00:15:44,129
+I'll be talking about it again to professors. I've given, um, talks about it to professional groups.
+
+163
+00:15:44,130 --> 00:15:48,390
+It is a very, very powerful tool, but you have to use it.
+
+164
+00:15:48,990 --> 00:15:51,480
+It doesn't require a lot of time, doesn't require a lot of effort.
+
+165
+00:15:51,840 --> 00:15:56,790
+And that little bit of time you put into it is going to save you a ton of effort down the line.
+
+166
+00:15:57,820 --> 00:16:01,960
+Um, you can add files, slides, links, audio files, videos.
+
+167
+00:16:01,990 --> 00:16:04,900
+Um, to create your own personalized reference tool.
+
+168
+00:16:05,650 --> 00:16:11,469
+Uh, since we were talking about at the beginning of the semester, they've added new a new video type.
+
+169
+00:16:11,470 --> 00:16:16,450
+It's, uh, um, uh, cinematic video. So it's not just like a video slideshow anymore.
+
+170
+00:16:16,450 --> 00:16:20,859
+It's actually has videos and stuff that looks really it can look really slick most of the time.
+
+171
+00:16:20,860 --> 00:16:29,600
+It does. Um, they've added more visualization types for infographics or slides when actually I think slides.
+
+172
+00:16:29,630 --> 00:16:36,720
+Um, yeah. They just keep adding more and more and more to the, uh, the flashcards and quizzes.
+
+173
+00:16:36,720 --> 00:16:40,760
+Since I talked about at the beginning semester have, uh, had major upgrades.
+
+174
+00:16:41,120 --> 00:16:45,290
+It now like tracks what you're doing like like I said there, uh, the update as I see down here.
+
+175
+00:16:45,680 --> 00:16:54,530
+They update it often. They've actually added it now that in Gemini you can link to notebooks in Gemini.
+
+176
+00:16:54,530 --> 00:16:59,350
+And then you can also make queries in Gemini that are part of that.
+
+177
+00:16:59,360 --> 00:17:02,060
+You said notebook and it will pull them into the notebook.
+
+178
+00:17:02,600 --> 00:17:07,540
+They're just adding all sorts of new capabilities that weren't there, you know, six months ago.
+
+179
+00:17:07,550 --> 00:17:11,790
+It's kind of incredible. Um, so find resources to add.
+
+180
+00:17:11,880 --> 00:17:16,110
+Uh, in the discussions I've added to discussion posts, they have a lot of overlap.
+
+181
+00:17:16,800 --> 00:17:19,860
+Um, I'm doing things a little different this semester, Celeste.
+
+182
+00:17:20,190 --> 00:17:24,870
+Uh, last couple of semesters, I would show the first one in the night, paced in the second one later.
+
+183
+00:17:25,320 --> 00:17:32,250
+But, um, the second one has basically all the resources, at least the all the resources I recommend at this point to put in there.
+
+184
+00:17:32,610 --> 00:17:37,140
+You will probably want to add more to it if you can. If you find anything that you want to add.
+
+185
+00:17:37,920 --> 00:17:44,120
+Um. So if you think of something good to add, reply to the post and add it to help other students out.
+
+186
+00:17:44,660 --> 00:17:48,889
+I've got this section and the other section in the discussion group.
+
+187
+00:17:48,890 --> 00:17:53,690
+So you're helping out a very large number of people if you come up with something kind of interesting to add.
+
+188
+00:17:54,440 --> 00:17:57,230
+Um, and I also recommend using this when you have questions.
+
+189
+00:17:57,320 --> 00:18:03,650
+Um, you can use this when you can't make it into the tutors and want to figure something out before I'm able to respond.
+
+190
+00:18:04,040 --> 00:18:13,100
+This works really, really well for that. Um, and you can also upload down make sure you download my, my transcripts from these videos.
+
+191
+00:18:13,550 --> 00:18:21,620
+Add those to it. There's a lot of resources you can use to build out a notebook that will hopefully answer most of your questions.
+
+192
+00:18:22,580 --> 00:18:33,470
+Um, it uses all sorts of file types text files, PDF files, markdown files, MP3, ogg, mp4, audio, video files that you can upload images to it.
+
+193
+00:18:34,100 --> 00:18:37,940
+Um, Google drive files. I highly recommend using Google Drive files.
+
+194
+00:18:37,940 --> 00:18:42,480
+So Google Docs, Google Sheets, Google Slides because of how it's built.
+
+195
+00:18:42,500 --> 00:18:46,100
+If you want to update a resource, you have to delete it and re-add it.
+
+196
+00:18:46,550 --> 00:18:51,350
+If it comes out of Google Drive is one of the Google. Um, um.
+
+197
+00:18:52,410 --> 00:18:55,580
+Uh, whatever these are called the like, the docs, the sheets in the sides.
+
+198
+00:18:55,650 --> 00:19:01,080
+It's one of those formats. You can just go into the source and refresh it and download the latest version.
+
+199
+00:19:02,390 --> 00:19:03,780
+Uh, you can also add websites.
+
+200
+00:19:03,780 --> 00:19:12,290
+So web URLs, uh, YouTube video links if you are using videos or YouTube videos specifically, but just any videos it has to have.
+
+201
+00:19:12,920 --> 00:19:19,130
+Uh, transcript. It has to have audio. If it's just a video and there's no audio to go with it or there's just music.
+
+202
+00:19:19,670 --> 00:19:25,310
+Uh, and it's scenic. It's not going to pull that in. It pulls in the transcripts of what is actually talked about.
+
+203
+00:19:26,660 --> 00:19:30,660
+Um. This is a little more technical term.
+
+204
+00:19:30,660 --> 00:19:36,930
+Rag base retrieval notebook LM um, bases responses on what you've given it in your sources.
+
+205
+00:19:36,930 --> 00:19:41,250
+It it basically is grounded in what you give it.
+
+206
+00:19:41,610 --> 00:19:45,149
+This makes a ton of ideal reference application.
+
+207
+00:19:45,150 --> 00:19:50,040
+Rag stands for um. I totally had it.
+
+208
+00:19:50,040 --> 00:19:54,270
+And then I totally forgot it. It's, uh, retrieval, augmented generation.
+
+209
+00:19:54,690 --> 00:19:58,560
+That's what it stands for. Basically just means that it's using files you give it.
+
+210
+00:19:59,010 --> 00:20:04,440
+As you know, instead of typing it all into the context window, it retrieves, um,
+
+211
+00:20:04,560 --> 00:20:10,230
+it what you provided, it is using retrieval and it augments the generation.
+
+212
+00:20:10,890 --> 00:20:15,690
+Um, it's got a chat, so use chat to ask questions. That's one of the big things I would use it for.
+
+213
+00:20:16,140 --> 00:20:25,950
+You can save the responses as well. So you can save a chat response as a, um, uh, into the studio panel or into the studio on the side.
+
+214
+00:20:26,310 --> 00:20:29,040
+Once you do that, you can actually add that as a source.
+
+215
+00:20:29,040 --> 00:20:36,989
+So if you've got so if you ask some questions and you get some very specific answers that you want the notebook to reference more often,
+
+216
+00:20:36,990 --> 00:20:42,120
+you can stick that in there as well. I use, I use I don't use it a ton, but I do use it regularly.
+
+217
+00:20:43,410 --> 00:20:45,059
+Uh, it's got a lot of generative features.
+
+218
+00:20:45,060 --> 00:20:52,770
+So mind maps, you can click the boxes to learn more about whatever the item is in that, uh, tree works amazingly well.
+
+219
+00:20:53,220 --> 00:21:02,400
+Podcast audio overviews. This is actually this is the podcast audio overviews is what made it go, uh, viral probably a year ago.
+
+220
+00:21:02,400 --> 00:21:07,080
+It was very, very popular. Still is. It's still it's used very regularly, is very popular.
+
+221
+00:21:07,440 --> 00:21:12,600
+You can now interrupt the overview and actually, uh, give feedback or ask questions in real time.
+
+222
+00:21:13,620 --> 00:21:21,570
+Uh, it's it can generate facts. You can generate briefing docs, study guide and a lot of other, uh, report features.
+
+223
+00:21:22,020 --> 00:21:26,429
+It'll also do infographics and slide decks. Um, and actually, I didn't put it in here.
+
+224
+00:21:26,430 --> 00:21:31,919
+I took picture last night. Data table. Data tables were added since I, uh, since I did this.
+
+225
+00:21:31,920 --> 00:21:35,770
+Two, um. Yeah.
+
+226
+00:21:35,770 --> 00:21:42,360
+So like I put in here last semester. So I think probably like a year and a half ago there were four buttons over here.
+
+227
+00:21:42,370 --> 00:21:49,719
+That's it. That that was the extent of what you could do in Notebook Elm or, you know, it had for those studio buttons.
+
+228
+00:21:49,720 --> 00:21:53,350
+They keep adding a lot more functionality to it.
+
+229
+00:21:53,350 --> 00:21:57,970
+And each of those buttons has a lot more things you can do with them as well.
+
+230
+00:21:58,390 --> 00:22:05,620
+Anytime you've got this little arrow, that means you can click into it, add a prompt, choose colors, choose background, stuff like that.
+
+231
+00:22:07,000 --> 00:22:12,430
+My son is, um, this season's actually pitching in is in on his little league team.
+
+232
+00:22:13,030 --> 00:22:17,650
+I suck at baseball, so I don't really I don't really know what to do to teach him very well.
+
+233
+00:22:17,950 --> 00:22:21,669
+So what did I do? I went out to YouTube and found a bunch of videos.
+
+234
+00:22:21,670 --> 00:22:26,740
+I went to the Little League page, found information on training for kids for pitching.
+
+235
+00:22:27,160 --> 00:22:36,430
+I added all this to a notebook LM. I was able to create infographics on like exercises he can do, drills he can do to get better at it.
+
+236
+00:22:36,870 --> 00:22:40,720
+Uh, I created a slide deck that he can go through and learn about it.
+
+237
+00:22:41,230 --> 00:22:45,970
+And it's not just a boring slide deck. I'm sorry, guys, that my slide decks I know are boring.
+
+238
+00:22:46,270 --> 00:22:49,870
+It's not like these. Uh, they're based on his interests.
+
+239
+00:22:49,870 --> 00:22:56,049
+He loves like, Minecraft. He loves Roblox. So they have a very deep video game feel to them.
+
+240
+00:22:56,050 --> 00:23:01,780
+You know, it uses stuff like, don't be a noob, be a pro. Things like, you know, the terminology he uses all the time.
+
+241
+00:23:02,110 --> 00:23:09,249
+It's baked right in there. So you can create very interesting, um, slides and presentations that way with this.
+
+242
+00:23:09,250 --> 00:23:13,809
+Again, this is an incredibly powerful tool.
+
+243
+00:23:13,810 --> 00:23:18,430
+It has a little bit of an upfront learning curve, but honestly you're going to be past that learning curve.
+
+244
+00:23:18,430 --> 00:23:21,460
+And using this to save time so quickly will make your head spin.
+
+245
+00:23:21,820 --> 00:23:25,870
+But you do have to put that little teeny bit of effort upfront in.
+
+246
+00:23:27,750 --> 00:23:33,320
+Um, this is talking a little bit. I don't really I don't know if I'm going to have you guys do this next week.
+
+247
+00:23:33,330 --> 00:23:37,530
+I, I with the previous version of the assignment, this made a little bit more sense.
+
+248
+00:23:37,530 --> 00:23:42,389
+It doesn't make as much sense with this this current data set right now at least
+
+249
+00:23:42,390 --> 00:23:45,810
+I don't know the data set well enough to know if I can build it out properly.
+
+250
+00:23:45,810 --> 00:23:51,270
+But the idea here is that you would create a notebook and then submit your mind map.
+
+251
+00:23:51,270 --> 00:23:55,200
+And this is kind of what it was, and it took all the information you gave it.
+
+252
+00:23:55,200 --> 00:24:01,049
+So this would be like your overview, the instructions, the, uh, print, the rubric.
+
+253
+00:24:01,050 --> 00:24:07,530
+You go in, go to highlight the rubric and then go to right click go to print Print as a PDF.
+
+254
+00:24:07,530 --> 00:24:12,060
+You can upload that into it. Basically take all these resources and insert into your notebook.
+
+255
+00:24:12,210 --> 00:24:16,260
+Um, so it's a very robust, uh, tool for you to use.
+
+256
+00:24:18,510 --> 00:24:27,360
+Um. Any questions on all of this? I know I'm kind of blowing through this, but it is all recorded, so you can go back and make sure.
+
+257
+00:24:28,530 --> 00:24:32,399
+Yeah, it's all been recorded, so you can go back through and rewatch it.
+
+258
+00:24:32,400 --> 00:24:46,129
+Slow it down. I know I talk kind of fast. Yeah. Um, it is.
+
+259
+00:24:46,130 --> 00:24:53,890
+And we pop it up here. Here we go.
+
+260
+00:24:53,890 --> 00:24:58,710
+So if I go over to discussions and it is, uh, so.
+
+261
+00:24:59,600 --> 00:25:09,350
+Found it. Yeah. So just to show, just since I'm here already, um, so I talked about this early in how to use, like, notebook Elm.
+
+262
+00:25:10,070 --> 00:25:16,250
+Uh, this is the final project here. So these are the notes, and this is actually, like the long set of notes.
+
+263
+00:25:16,790 --> 00:25:26,030
+So these are all things that you can add to it. Um, so your project instructions, the project overview, the rubric itself.
+
+264
+00:25:26,810 --> 00:25:33,800
+Uh, I pulled it out of the because it was a little different, but basically your data dictionary put that in there.
+
+265
+00:25:34,700 --> 00:25:42,009
+Um. The. Actually this is the in the engage assignment I pulled out.
+
+266
+00:25:42,010 --> 00:25:46,209
+So ignore number four. These are different links to storytelling with data.
+
+267
+00:25:46,210 --> 00:25:50,260
+This was last week was in your resources. It had all these links.
+
+268
+00:25:50,260 --> 00:25:53,950
+So it talks. So you're able to put in like what is a bar chart.
+
+269
+00:25:53,950 --> 00:26:02,940
+What is a pie chart. What is a tree map. And it will dig into and give you ideas on how to produce higher quality it.
+
+270
+00:26:03,250 --> 00:26:08,170
+These visualizations you can ask it by putting that in there, uh, KPI notes.
+
+271
+00:26:08,230 --> 00:26:15,820
+Um, so you just click that, it's got this. You can just add those, uh, and then like different additional notes,
+
+272
+00:26:15,820 --> 00:26:22,780
+you can try here's some prompts you can use just in the text prompt portion notebook LM so and yeah.
+
+273
+00:26:22,780 --> 00:26:27,310
+So how do I create a visual to show data. Insert what you're trying to do or what visual you want to use.
+
+274
+00:26:27,760 --> 00:26:33,520
+How do I make it conform with the polished needed per story times data and data to ink ratio.
+
+275
+00:26:33,520 --> 00:26:37,509
+So by putting that in there, you can actually have it explain what you should be producing.
+
+276
+00:26:37,510 --> 00:26:43,329
+What kinds of visuals. Real simple stuff here. So I think that answer your question.
+
+277
+00:26:43,330 --> 00:26:47,020
+Any other questions on this? Again Nova Colon is incredible.
+
+278
+00:26:47,020 --> 00:26:52,870
+Powerful tool. Uh, we're going to talk a little bit of, uh, choosing the right visual.
+
+279
+00:26:52,870 --> 00:27:01,839
+This comes from data at work. The, uh, the version we used to use this textbook probably, I don't know, 8 or 9 years ago.
+
+280
+00:27:01,840 --> 00:27:09,280
+It's a it is a textbook on storytelling with data. So we would use this textbook and then we would use a chapter out of storytelling with data.
+
+281
+00:27:09,280 --> 00:27:13,269
+We've kind of flipped it. Now we use storytelling with data. And we we don't even use a full chapter.
+
+282
+00:27:13,270 --> 00:27:16,590
+We use section out of this book. So three.
+
+283
+00:27:16,950 --> 00:27:21,610
+So we've already talked about like three different ways to choose the right visual.
+
+284
+00:27:21,630 --> 00:27:26,640
+This is giving you a fourth way to think about visualizations and which ones to choose.
+
+285
+00:27:27,540 --> 00:27:33,000
+Um Camis Data at work proposes a task based classification.
+
+286
+00:27:33,330 --> 00:27:42,240
+So what is the task you want to accomplish? That is that is basically what he's recommending as how to choose that as the most important aspect.
+
+287
+00:27:42,780 --> 00:27:46,210
+Then you want to think about what what is who's your audience.
+
+288
+00:27:46,290 --> 00:27:51,560
+This is actually right of storytelling data. To what level is your, uh, decision maker?
+
+289
+00:27:51,570 --> 00:27:55,770
+Are they strategic? Are they operational? Are they, uh, tactical level?
+
+290
+00:27:56,310 --> 00:27:59,760
+Uh, what is their what are their expectations and common base of knowledge?
+
+291
+00:27:59,760 --> 00:28:06,930
+We actually give you this information in the instructions so you know who you're you're who you're talking with.
+
+292
+00:28:07,880 --> 00:28:11,300
+So read that. So you know what level of presentation and what.
+
+293
+00:28:11,510 --> 00:28:14,570
+To help you decide what visualizations to choose.
+
+294
+00:28:15,290 --> 00:28:18,370
+And then what is the sharing methodology. Is it static?
+
+295
+00:28:18,380 --> 00:28:19,630
+Is it interactive?
+
+296
+00:28:19,640 --> 00:28:27,560
+Is it on the screens like is it computer, mobile projection, even these different kinds of ways that people could consume the your visualization.
+
+297
+00:28:28,070 --> 00:28:31,340
+It's going to help decide what kind of visuals to use.
+
+298
+00:28:31,760 --> 00:28:38,390
+Or is it on paper, is it static. So all of this stuff matters when you're thinking about the visualizations to choose.
+
+299
+00:28:41,100 --> 00:28:46,319
+Um, these are all point comparison charts. So and this is how he classifies them.
+
+300
+00:28:46,320 --> 00:28:52,080
+If you're going to be talking about audio and ranking, we go back to the our most common charts, columns and bar charts.
+
+301
+00:28:52,830 --> 00:28:56,370
+Um, out of all these I do like slope charts quite a bit as well.
+
+302
+00:28:56,370 --> 00:28:59,849
+Um, but most of the time you kind of start the top level, go down.
+
+303
+00:28:59,850 --> 00:29:04,440
+Whatever you highlight is probably the most prevalent, uh, you move into composition.
+
+304
+00:29:04,440 --> 00:29:11,520
+Pie charts are still the most used. My preference is the stacked bar chart for most things.
+
+305
+00:29:12,000 --> 00:29:17,280
+Uh, you'll see in a couple slides some examples for this data set we're using.
+
+306
+00:29:17,290 --> 00:29:19,559
+And honestly it's a good use of a pie chart there.
+
+307
+00:29:19,560 --> 00:29:29,820
+And you'll see that uh distribution use a histogram a histogram is essentially a column chart, but the data is pushed together.
+
+308
+00:29:29,820 --> 00:29:34,410
+It's a little different way of looking at it, but it's essentially a, uh, column chart.
+
+309
+00:29:34,980 --> 00:29:41,310
+I get a lot of students every semester are going to put a line in place of a histogram for distribution.
+
+310
+00:29:41,760 --> 00:29:48,389
+Don't use a line chart. A line chart is is for time analysis, like, I think timeline.
+
+311
+00:29:48,390 --> 00:29:53,280
+Whenever you're going to use a line think timeline. Do you have a timeline date hours, whatever.
+
+312
+00:29:54,160 --> 00:29:58,660
+So again, trend analysis lines her, uh, horizon step.
+
+313
+00:29:59,200 --> 00:30:03,700
+Um, these are variations of a line. A step just jumps.
+
+314
+00:30:03,700 --> 00:30:07,929
+It's not a nice, clean, uh, movement. Relationships, scatter plots.
+
+315
+00:30:07,930 --> 00:30:13,180
+You use that a lot. You're comparing X to Y. Bubble adds a third dimension like a Z dimension.
+
+316
+00:30:13,190 --> 00:30:18,790
+So you could say like, you know, compare X to y to Z to, you know, to have how large it is.
+
+317
+00:30:19,510 --> 00:30:26,470
+Uh, three maps are used here. So we use tree maps a lot with, um, the previous one with um ordering and ranking as well.
+
+318
+00:30:26,890 --> 00:30:32,140
+Profiling again. Group bar charts. Look, another bar chart, uh, column charts both ways.
+
+319
+00:30:33,550 --> 00:30:37,540
+Um, yeah, that's probably the big one for profiling.
+
+320
+00:30:37,540 --> 00:30:44,620
+And then alerts and exceptions a dot, a dot in the middle of the. No, uh, no where that usually signifies something is different about that dot.
+
+321
+00:30:44,650 --> 00:30:48,640
+Not always, but usually of variation band.
+
+322
+00:30:48,670 --> 00:30:53,350
+You can actually build these right into notebook or sorry, into, uh, power BI.
+
+323
+00:30:54,010 --> 00:31:01,120
+When you see the three icons you've got like the visualizations that you can choose from, then the editor visualizations on some of them,
+
+324
+00:31:01,120 --> 00:31:07,569
+there is, um, another one that will generate a variation band that you can use and then context.
+
+325
+00:31:07,570 --> 00:31:12,610
+You saw me use this in this, um, dated increase yo engage assignment.
+
+326
+00:31:12,610 --> 00:31:20,049
+How I added that. So there's these are different uh, by those are different ways to look at visuals.
+
+327
+00:31:20,050 --> 00:31:25,720
+And these are ways to just kind of bring attention to an alert that's maybe not quite right there.
+
+328
+00:31:28,620 --> 00:31:32,310
+Then we get into actually analyzing our data.
+
+329
+00:31:33,160 --> 00:31:36,930
+Uh, this is what you are going to be doing in this assignment.
+
+330
+00:31:36,930 --> 00:31:43,620
+You're gonna be you're given a sandbox, you're given a big chunk of data, and you're going to just start analyzing it.
+
+331
+00:31:44,100 --> 00:31:51,180
+And honestly, after I've been thinking about this a lot, usually we assign groups and have you looking at specifics.
+
+332
+00:31:51,630 --> 00:31:56,460
+I don't think I'm going to do that this semester. I think I'm going to try something a little different for you guys.
+
+333
+00:31:57,270 --> 00:32:05,220
+Uh, I'm going to figure out the groups, but I'm not going to assign them until after or until basically this assignment is due.
+
+334
+00:32:05,670 --> 00:32:12,240
+And what your assignment is, is basically going to be is what is what are your what's your general data?
+
+335
+00:32:13,610 --> 00:32:18,200
+But keep in mind that you will be digging into the data as a group.
+
+336
+00:32:18,590 --> 00:32:20,540
+So you're going to be adding slate.
+
+337
+00:32:20,570 --> 00:32:28,430
+So at that point, you'll add slicers and stuff to be able to disassemble that or to take the data apart and look at it in different ways.
+
+338
+00:32:28,910 --> 00:32:31,940
+But for the individual portion and really it doesn't change anything.
+
+339
+00:32:31,940 --> 00:32:33,680
+It's what we always have you do anyways.
+
+340
+00:32:34,040 --> 00:32:42,349
+The individual portion is all about data understanding, giving us the broad overview of the company as a whole and just bringing all that together.
+
+341
+00:32:42,350 --> 00:32:45,530
+You'll see that in the instructions. Um, okay.
+
+342
+00:32:45,590 --> 00:32:48,799
+So when you're doing the, uh, all this analysis.
+
+343
+00:32:48,800 --> 00:32:56,890
+So there's types of tasks you can do searching for patterns and trends, you're going to use univariate multivariate, uh, algorithms.
+
+344
+00:32:56,900 --> 00:33:04,930
+You really don't really do that much in this class. It's it's what you would do in the real world outside of class, uh, searching for relationships.
+
+345
+00:33:04,940 --> 00:33:10,399
+It's bivariate. Multivariate here. This is what you guys did in the power BI assignment.
+
+346
+00:33:10,400 --> 00:33:17,570
+The power BI assignment was, um, bivariate use to very basically use two variables to look at the data.
+
+347
+00:33:17,570 --> 00:33:20,600
+And that's what you did in the pivot table assignment earlier this semester.
+
+348
+00:33:21,350 --> 00:33:27,290
+Ordering and ranking data points, monitoring variations to detect outliers or strange behavior.
+
+349
+00:33:28,190 --> 00:33:31,819
+Um, the order of a typical analysis project.
+
+350
+00:33:31,820 --> 00:33:37,490
+You do a simple descriptive analysis for each variable, compare points, rank them, look for patterns,
+
+351
+00:33:37,490 --> 00:33:43,940
+single variables, relationships between multiple patterns, and establish what's normal and monitor for variations.
+
+352
+00:33:46,060 --> 00:33:49,620
+That's essentially what you're gonna be doing in this assignment, though.
+
+353
+00:33:49,630 --> 00:33:52,720
+It's going to look a little different, but essentially it's what you're doing.
+
+354
+00:33:52,720 --> 00:33:57,850
+You're going to be. Yeah. And then go back to it. You're going to be understanding the data.
+
+355
+00:33:57,850 --> 00:34:01,270
+That's kind of what you're doing here. You're going to be understanding what is there.
+
+356
+00:34:01,690 --> 00:34:10,239
+You're going to look for patterns in the data. That's what that's a big part of this assignment is why do certain things not arrive on time?
+
+357
+00:34:10,240 --> 00:34:14,950
+Why are, you know, certain. Is there any pattern to those problems?
+
+358
+00:34:17,970 --> 00:34:22,770
+And then you're going to try to figure out what is normal, what is the what is our expectation.
+
+359
+00:34:23,920 --> 00:34:30,250
+What are the variations to that? Like where this things have gone wrong and then we'll throw in a KPI.
+
+360
+00:34:30,280 --> 00:34:33,819
+How do we test that? How do we make sure that doesn't happen?
+
+361
+00:34:33,820 --> 00:34:39,200
+And if it does happen. It's brought to our attention that it has to be fixed immediately.
+
+362
+00:34:41,440 --> 00:34:44,490
+Um, so visualizations and their multiple purposes.
+
+363
+00:34:44,500 --> 00:34:46,710
+So data discovery and exploration,
+
+364
+00:34:46,720 --> 00:34:53,470
+you start with an overview then dive in crisp DM this is your data understanding step maybe gets into preparation a bit.
+
+365
+00:34:54,010 --> 00:34:58,989
+Your tasks ordering and ranking data points. You're going to be doing simple univariate analysis.
+
+366
+00:34:58,990 --> 00:35:04,060
+So min max um mean patterns and trends is really what we're doing there.
+
+367
+00:35:04,630 --> 00:35:08,200
+Then we get into and again that's all exploratory. You're understanding the data.
+
+368
+00:35:08,470 --> 00:35:11,740
+That's really the step by map right now with the data analysis.
+
+369
+00:35:11,740 --> 00:35:15,730
+Ask questions your data crisp DM you iterate between modeling evaluation.
+
+370
+00:35:16,120 --> 00:35:23,800
+The tasks are searching for patterns and trends, bivariate multivariate relationships, what is associated with or driving the observed trends.
+
+371
+00:35:24,160 --> 00:35:30,550
+You will be doing that in this assignment because that's actually a big part of what you want to do is why is this happening?
+
+372
+00:35:31,700 --> 00:35:35,480
+Uh, report the results. Crispy. This is your evaluation deployment phase.
+
+373
+00:35:35,810 --> 00:35:43,610
+The tasks highlight the most relevant data features. So focus plus context monitor variations to detect outliers or strange behaviors.
+
+374
+00:35:44,030 --> 00:35:49,700
+This is the KPI that you're these. This is the these will be the KPIs you're kind of creating here.
+
+375
+00:35:50,710 --> 00:35:56,440
+Um. We've got. We talk about three different ways of looking at data.
+
+376
+00:35:56,470 --> 00:36:00,040
+You've we talked about the Kobe problem solving model very early on.
+
+377
+00:36:00,040 --> 00:36:08,109
+Again, frame inserting your work into frameworks makes it easier to understand, uh, especially when you have a big sandbox, uh, assignment.
+
+378
+00:36:08,110 --> 00:36:16,060
+It really helps a lot. Uh, so we've talked about the Kobe problem solving model before, the crystal model we talked about a couple of weeks ago,
+
+379
+00:36:16,510 --> 00:36:21,610
+and then we talk about this, uh, this week, we talk about the visual information seeking mantra.
+
+380
+00:36:22,150 --> 00:36:28,510
+So the overview is like the overview is what are the sales of the company during this time period in the match?
+
+381
+00:36:28,540 --> 00:36:33,010
+Or if we zoom and view, what are the sales in my region, what are the sales in my region by month?
+
+382
+00:36:33,460 --> 00:36:39,460
+And then we bring up details on demand. What are the characteristics or dimensions of my top two products and bottom two products?
+
+383
+00:36:40,470 --> 00:36:51,870
+This is the method that I fell into before I basically finished my degree, before I was actually, you know, trained how to data analysis.
+
+384
+00:36:51,870 --> 00:36:55,380
+I was pretty good at it. Just naturally I figured out how to do it.
+
+385
+00:36:55,770 --> 00:37:03,300
+And this was the the methodology that I used before actually being like more formally trained in analysis.
+
+386
+00:37:04,310 --> 00:37:08,370
+Uh, the Kobe problem solving model. So identify the need for problem solving.
+
+387
+00:37:08,390 --> 00:37:12,410
+Is my region sell better or worse than other regions? Analyze the problem.
+
+388
+00:37:12,410 --> 00:37:18,500
+Is there a particular product, category or subcategory that is selling well and has high margin?
+
+389
+00:37:18,500 --> 00:37:30,020
+It um, are uh, is there a particular product category or subcategory that is selling poorly or has low margins, uh, generate alternatives?
+
+390
+00:37:30,020 --> 00:37:37,459
+What percentage of my sales of high margin are high margin items are made during seasonal promotions versus outside of seasonal promotions.
+
+391
+00:37:37,460 --> 00:37:43,910
+And then finally, looking at the crisp business understanding, what are the sales trends for the company as a whole?
+
+392
+00:37:43,910 --> 00:37:50,690
+How does my region compare to other regions? Your data understanding step is how are sales, uh, calculated?
+
+393
+00:37:51,020 --> 00:37:53,569
+Are there any products in my region that are not being sold?
+
+394
+00:37:53,570 --> 00:37:59,240
+And then finally we go into the data prep, if any products were found answering the question above,
+
+395
+00:37:59,540 --> 00:38:03,380
+what filters should be applied to make fair comparison between regions?
+
+396
+00:38:05,210 --> 00:38:07,000
+This talks a little bit about, uh,
+
+397
+00:38:07,010 --> 00:38:13,430
+a little bit more about the visual information seeking mantra overview first zooming filter, details on demand bins.
+
+398
+00:38:13,430 --> 00:38:19,549
+Schneiderman popularized this. Again, this is what I rolled into when I was just figuring it out on my own.
+
+399
+00:38:19,550 --> 00:38:23,690
+This is the methodology that I figured out to use. So you start with an overview.
+
+400
+00:38:23,690 --> 00:38:30,050
+Start with a high level generic questions to provide context. You'll actually see that, uh, here in a few minutes how I was doing this.
+
+401
+00:38:30,800 --> 00:38:34,790
+Um, so like, what are the sales for the whole company during this time period?
+
+402
+00:38:34,790 --> 00:38:38,509
+You're going to zoom in, filter, focus in on what your audience cares about.
+
+403
+00:38:38,510 --> 00:38:44,810
+Slicers are where you it's what you use a lot here, day to day ratio to bring the eye to specific portions.
+
+404
+00:38:45,260 --> 00:38:50,180
+So what are the per store sales in my region? What is driving the observed trend then?
+
+405
+00:38:50,180 --> 00:38:55,460
+Details on demand. Make details available for the most relevant variables identified in the prior analysis.
+
+406
+00:38:57,000 --> 00:39:00,620
+Seven categories of questions a quantitative analysis can answer.
+
+407
+00:39:00,630 --> 00:39:04,740
+I covered this last week. Go back to last week's slides if you want to get more in depth.
+
+408
+00:39:04,740 --> 00:39:08,820
+I talked about it there. You can watch it there. I'm not going to rehash it basically.
+
+409
+00:39:09,540 --> 00:39:12,730
+Um. Let's see. So the project.
+
+410
+00:39:12,750 --> 00:39:17,430
+So for this week's project you've got the market segment overview. This is the first portion of the assignment.
+
+411
+00:39:18,060 --> 00:39:21,900
+And it should include an indicator of the overall performance.
+
+412
+00:39:21,930 --> 00:39:27,500
+Um describe the honor um order quantity and the quantity received based on different factors.
+
+413
+00:39:27,510 --> 00:39:32,729
+Try to try to figure this out. Uh, support your overview with at least two.
+
+414
+00:39:32,730 --> 00:39:37,470
+I would prefer 3 to 4 visualizations. Um.
+
+415
+00:39:39,440 --> 00:39:45,739
+Yeah. So just be aware, try to create a couple of visuals or, you know, like I said, up to excuse me, up to four visualizations.
+
+416
+00:39:45,740 --> 00:39:52,580
+Remember to use day to day ratio. Point out to me make it very obvious what are the data points.
+
+417
+00:39:52,580 --> 00:39:55,580
+You're really interested in it. You think I need to pay attention to?
+
+418
+00:39:56,950 --> 00:40:02,659
+Um. Let's see here. So these points are a little different in the actual assignment.
+
+419
+00:40:02,660 --> 00:40:06,260
+The, the uh Simon document. These points are actually correct.
+
+420
+00:40:06,890 --> 00:40:10,610
+Um, so these are the four sections that I want in the memo.
+
+421
+00:40:10,610 --> 00:40:16,159
+You're gonna have an executive summary. It's one paragraph, uh, summarizes your key findings.
+
+422
+00:40:16,160 --> 00:40:20,810
+Basically it's it's it goes into the model of I'm going to tell you this,
+
+423
+00:40:21,230 --> 00:40:24,920
+I tell you this, and then you go into the conclusion, this is what I told you.
+
+424
+00:40:24,920 --> 00:40:27,950
+That's the basic communication style.
+
+425
+00:40:28,520 --> 00:40:34,310
+Then you're going to go into the exploratory overview, the overview of the data and what you found 1 or 2 paragraphs discussing.
+
+426
+00:40:35,000 --> 00:40:39,190
+And I prefer two paragraphs here discussing high level details about different categories.
+
+427
+00:40:39,440 --> 00:40:46,790
+Uh, category product segments. Um, it should, you know, it should include indicators of their overall performance,
+
+428
+00:40:47,270 --> 00:40:51,500
+describing their order, quantity and quantity received based on different factors.
+
+429
+00:40:51,860 --> 00:41:00,499
+Use visualizations here. This is this is the section your, you know, 3 to 4 visualizations will go into, uh, the KPI.
+
+430
+00:41:00,500 --> 00:41:07,010
+You're going to identify two possible KPIs that you that should be implemented to facilitate identifying trends.
+
+431
+00:41:07,670 --> 00:41:14,210
+You do not need to calculate these. As a matter of fact, if done right, you cannot calculate these two KPIs.
+
+432
+00:41:14,630 --> 00:41:23,090
+You're essentially making them up. But you have to have the four pieces of a KPI, a target, a comparison, increment, a measure and calculation.
+
+433
+00:41:23,810 --> 00:41:33,080
+Please, please put these in as, uh, bullet points so that it's very obvious to find if you mix it into to the paragraph,
+
+434
+00:41:33,080 --> 00:41:37,910
+because you have to do two, it becomes very difficult to identify all four twice.
+
+435
+00:41:38,360 --> 00:41:41,930
+Put them in as bullet points, make them very obvious to find.
+
+436
+00:41:42,470 --> 00:41:48,410
+Then conclusion. It's going to be a paragraph. The conclusion should briefly summarize the scope and purpose of your investigation.
+
+437
+00:41:50,110 --> 00:41:54,909
+Uh, this is an example of some visualization. So overall performance the quantity received.
+
+438
+00:41:54,910 --> 00:41:59,860
+So quantity received by order date. The quantity received by uh Richard.
+
+439
+00:41:59,860 --> 00:42:03,610
+Last update uh quantity received by item category.
+
+440
+00:42:04,000 --> 00:42:07,630
+Remember I talked about this is a good use of a pie chart.
+
+441
+00:42:07,960 --> 00:42:12,160
+There are only three pieces. Generally the pie chart you don't want to go over four.
+
+442
+00:42:12,520 --> 00:42:19,090
+Sometimes you can make a, uh, an argument for five slices if they're very painfully, obviously different.
+
+443
+00:42:19,570 --> 00:42:23,740
+You can see these are obviously different. We have light blue and dark blue are very different.
+
+444
+00:42:23,740 --> 00:42:33,250
+And then orange is incredibly different from the rest. Um, so some insights into items, dates, orders, uh, order modifications, locations.
+
+445
+00:42:33,250 --> 00:42:36,850
+That's what we talk about here. And then explore with visualizations.
+
+446
+00:42:36,850 --> 00:42:42,660
+You can use these different charts. Again, the quantitative analysis.
+
+447
+00:42:42,720 --> 00:42:47,670
+Uh, we talked again. We talked about this last week, and I can go back into that again.
+
+448
+00:42:48,600 --> 00:42:54,990
+Um, now these are those seven quantitative analysis for market overview, but specifically for this assignment.
+
+449
+00:42:55,440 --> 00:42:58,950
+So order is an item ordered more or less in other items.
+
+450
+00:42:58,950 --> 00:43:03,149
+Composition. What is the total amount of quantity received by each item.
+
+451
+00:43:03,150 --> 00:43:08,340
+Category distribution. How transactions are distributed by order.
+
+452
+00:43:08,340 --> 00:43:11,370
+Date. Relationships are months of the year.
+
+453
+00:43:11,400 --> 00:43:15,660
+Warm versus cold. Influence in transactions. Exceptions.
+
+454
+00:43:15,660 --> 00:43:19,770
+What is the top item? What is the bottom item? What are you know? What are the exceptions here?
+
+455
+00:43:20,930 --> 00:43:25,820
+Evolution. The top are the top five items changing over time now.
+
+456
+00:43:26,750 --> 00:43:34,460
+This is a weakness of this data set. We only have like the very end to 2023 and then 2024.
+
+457
+00:43:34,940 --> 00:43:41,990
+This is a live data set from a local company. They do not want to give us, you know, years and years of data that their competitors can use.
+
+458
+00:43:43,010 --> 00:43:46,480
+Uh, we used to use synthetic data. Worked really well.
+
+459
+00:43:46,490 --> 00:43:51,350
+To a point. Unfortunately, the last two years were almost identical, and it had some issues.
+
+460
+00:43:52,130 --> 00:43:55,670
+That's the problem with synthetic data. But, um.
+
+461
+00:43:56,610 --> 00:44:01,319
+But synthetic and real data have two different issues. Like I said, this is real data.
+
+462
+00:44:01,320 --> 00:44:04,740
+This is, um, a use by a company.
+
+463
+00:44:04,740 --> 00:44:14,610
+But again, they we've, um, we've made it so that it you can't really identify who the company is, who the who their vendors are, stuff like that.
+
+464
+00:44:14,640 --> 00:44:17,640
+It's just kind of gives you an idea of what that data looks like.
+
+465
+00:44:19,820 --> 00:44:25,280
+Uh, let's see here. So profiling what are the transactions depending on the supplier and the shipping location.
+
+466
+00:44:25,970 --> 00:44:29,470
+I did tweak things a little bit. We do not have the parentheses.
+
+467
+00:44:29,480 --> 00:44:32,840
+Whatever here. I actually broke these out into regions.
+
+468
+00:44:32,840 --> 00:44:36,950
+So West Eni northeast P Pacific East or East.
+
+469
+00:44:37,760 --> 00:44:41,239
+Uh w uh West uh from this.
+
+470
+00:44:41,240 --> 00:44:47,690
+So we now have a region and the, the uh names are related to the region.
+
+471
+00:44:47,690 --> 00:44:56,620
+They were, they came from. This is the KPIs.
+
+472
+00:44:57,610 --> 00:45:00,620
+This is an area that students always struggle with.
+
+473
+00:45:00,640 --> 00:45:05,500
+This is the. This is the section that I see the most points dropped.
+
+474
+00:45:06,970 --> 00:45:10,350
+So when you're doing this, first of all ask yourself have I give?
+
+475
+00:45:10,420 --> 00:45:16,010
+Have I figured out two different KPIs for both of those KPIs?
+
+476
+00:45:16,030 --> 00:45:20,050
+Did I create a target? Did I create a time period to create a comparison?
+
+477
+00:45:20,350 --> 00:45:23,710
+Did I create a calculation? Do they actually make sense?
+
+478
+00:45:23,860 --> 00:45:30,520
+Make sure they make sense. If they don't, that could be a problem to. These are theoretical KPIs it's based on.
+
+479
+00:45:30,820 --> 00:45:37,330
+What other data do you need? So the last thing to ask is what data have I asked so that I can accomplish these?
+
+480
+00:45:38,440 --> 00:45:41,990
+So this goes back towards the beginning class. The four elements of a KPI.
+
+481
+00:45:42,010 --> 00:45:46,690
+You need a target. It may be a goal set by management or an industry benchmark.
+
+482
+00:45:46,690 --> 00:45:47,950
+Just some sort of target.
+
+483
+00:45:48,930 --> 00:45:56,400
+Uh comparison compares one organization to another one time period to another, one measurement to a target, or compares one group to another.
+
+484
+00:45:56,430 --> 00:46:00,210
+You just have to have a comparison, an increment, a measure.
+
+485
+00:46:00,900 --> 00:46:04,860
+So is it by time our year month day?
+
+486
+00:46:05,490 --> 00:46:10,710
+Is it unit of labor or is it a unit of purchase. It has to have some sort of increment.
+
+487
+00:46:11,010 --> 00:46:15,930
+How often are you making this measurement? And then it's a calculation.
+
+488
+00:46:15,940 --> 00:46:22,070
+A KPI is a ratio rate, average or percentage. Calculations include multiple measures.
+
+489
+00:46:22,090 --> 00:46:28,080
+An example here is miles per gallon number of miles driven divided by the, uh, gallons of gas.
+
+490
+00:46:28,090 --> 00:46:31,600
+There is a ratio of miles driven to gallons of gas.
+
+491
+00:46:31,600 --> 00:46:34,839
+That is a ratio there. So be aware of that.
+
+492
+00:46:34,840 --> 00:46:38,580
+You have to have these four elements. Yeah.
+
+493
+00:46:42,720 --> 00:46:50,250
+Right. Because you're the the one pieces that you don't have all of the data that you would need for it.
+
+494
+00:46:50,360 --> 00:46:55,710
+Is that part of this? Part of this section of the assignment is to identify.
+
+495
+00:46:57,040 --> 00:47:05,259
+Data that you would that would make your decisions easier, because a big part of doing analysis is getting is collecting all the data.
+
+496
+00:47:05,260 --> 00:47:08,830
+A lot of times you're not going to have all the data, so you need to identify it.
+
+497
+00:47:13,620 --> 00:47:15,590
+You just tell us what what it is like.
+
+498
+00:47:15,600 --> 00:47:23,550
+You would put like say you you know how many miles are driven, but you don't know how many gallons of gas are, um, purchased.
+
+499
+00:47:24,030 --> 00:47:30,179
+You would say, you know, uh, number of miles driven divided by gallons of gas for the,
+
+500
+00:47:30,180 --> 00:47:34,049
+uh, new data here, this new data element, you would say we need to start collecting.
+
+501
+00:47:34,050 --> 00:47:39,000
+How much? How many gallons of gas are used between Phillips or whatever for that?
+
+502
+00:47:48,100 --> 00:47:52,450
+Yeah. So and this will go actually much more in depth into this.
+
+503
+00:47:53,050 --> 00:47:58,780
+So proposed KPI development. Your dashboard can only use the data fields and metrics in the current data set.
+
+504
+00:47:59,470 --> 00:48:03,570
+It's good but not enough. So your task is to think outside the box.
+
+505
+00:48:03,580 --> 00:48:09,850
+You're going to have two new KPIs requiring some new data collection that is not in the current data set.
+
+506
+00:48:10,270 --> 00:48:17,110
+So for each key KPI, describe the specifics for all four elements the target goal to reach the time period.
+
+507
+00:48:17,110 --> 00:48:23,140
+The comparisons made in the calculation. You will also describe the new data elements that are needed.
+
+508
+00:48:23,470 --> 00:48:27,080
+So make more sense in that way. So here's an example.
+
+509
+00:48:27,100 --> 00:48:30,670
+Increasing sales by using drones to deliver products to customers homes.
+
+510
+00:48:31,150 --> 00:48:35,080
+So one KPI will be percent increase drone deliveries versus truck.
+
+511
+00:48:35,560 --> 00:48:40,030
+The target is drone deliveries will increase 10% faster than truck delivery.
+
+512
+00:48:40,480 --> 00:48:45,220
+The time period is weekly. Comparison with week to week drone versus truck deliveries.
+
+513
+00:48:45,460 --> 00:48:50,800
+And the calculation is very long. Take this week minus last week.
+
+514
+00:48:50,800 --> 00:48:53,800
+Drone deliveries divided by the number of drone deliveries.
+
+515
+00:48:54,250 --> 00:48:59,110
+Do the same for truck deliveries. Take a percent for drones, minus the percent for trucks.
+
+516
+00:48:59,950 --> 00:49:03,130
+This is very complex. Remember miles per gallon.
+
+517
+00:49:03,430 --> 00:49:08,860
+Just divide the number of miles driven by the gallons used is fine for calculation.
+
+518
+00:49:09,280 --> 00:49:13,990
+This is doing like three different calculations together or four different calculations together.
+
+519
+00:49:14,470 --> 00:49:17,920
+Um, it's more complex than what I would recommend for this assignment.
+
+520
+00:49:18,670 --> 00:49:24,010
+So to get this we need to collect the data on the type of delivery in the data set we
+
+521
+00:49:24,010 --> 00:49:29,470
+had is we could track whether the products were purchased in store or were delivered.
+
+522
+00:49:29,980 --> 00:49:37,270
+So in addition to delivery, we would need to track what form what, uh, how the delivery was made.
+
+523
+00:49:37,600 --> 00:49:41,230
+What was that form? So um, KPIs.
+
+524
+00:49:41,250 --> 00:49:45,090
+So examples, the average for the sales for the past four years.
+
+525
+00:49:45,600 --> 00:49:49,890
+Um, so the target increased sales by whatever for 2024.
+
+526
+00:49:50,310 --> 00:49:54,270
+Unit of measure measured in time. Annual sales per year.
+
+527
+00:49:54,870 --> 00:49:59,160
+Uh comparison. Percent increase this year compared to the past four years.
+
+528
+00:49:59,610 --> 00:50:04,200
+Calculation. Previous year sales. Uh, my uh, current year sales.
+
+529
+00:50:05,190 --> 00:50:09,780
+Previous year sales divided by previous year. That's a really ugly, uh, deal.
+
+530
+00:50:09,810 --> 00:50:12,990
+It's a rate of change calculation. Just understand rate of change.
+
+531
+00:50:13,650 --> 00:50:17,730
+Um. Keep your calculations simple. Don't you know you can?
+
+532
+00:50:17,740 --> 00:50:19,720
+This will work. You don't necessarily need to go that far.
+
+533
+00:50:20,200 --> 00:50:30,370
+Some bad examples is total sales, top five brands, brand popularity, measuring product sizes, top subcategories, check vans brands at brands.
+
+534
+00:50:30,370 --> 00:50:36,430
+But in the last week and top selling products, I can't tell you the number of times these are the KPIs I'm given.
+
+535
+00:50:36,640 --> 00:50:40,780
+They don't fit at all. I don't think the students read how to do KPIs.
+
+536
+00:50:41,260 --> 00:50:47,260
+I will get like 1 or 2 of these and they'll call it good. And it's it's like you're not describing anything what I need.
+
+537
+00:50:47,650 --> 00:50:53,200
+So be aware on that. Um, so this is an example.
+
+538
+00:50:53,210 --> 00:50:59,460
+This is using last year's data set because we didn't really have the this year's data set came in very late.
+
+539
+00:50:59,460 --> 00:51:06,350
+We kind of it's kind of a last minute to get it all put together. You're going to be doing four sections, not five sections.
+
+540
+00:51:07,040 --> 00:51:14,000
+Um, so your executive summary and purpose are basically combined into one paragraph here.
+
+541
+00:51:14,300 --> 00:51:21,620
+Uh, your market segment overview. You'll talk about that. Um, then you're going to do your KPIs and the additional data request as part of that.
+
+542
+00:51:22,160 --> 00:51:31,370
+This is in paragraph format. Just make it um, like explain it and then give me bullets for what it is and then what data you need for each of that.
+
+543
+00:51:31,370 --> 00:51:38,959
+And then do your conclusion. When you do submit your visualizations, make sure they're in data, you know, uh, data format.
+
+544
+00:51:38,960 --> 00:51:46,400
+So make sure they make sense. Make sure that you know what the key data you want me to look at is different than the rest.
+
+545
+00:51:46,400 --> 00:51:50,540
+It's in contrast to the rest. It doesn't have to be perfect editing ratio.
+
+546
+00:51:50,540 --> 00:51:53,990
+I just want some effort put in to clean it up and make it look better.
+
+547
+00:51:56,410 --> 00:52:01,569
+Uh, let's see here. Um. Let's see here.
+
+548
+00:52:01,570 --> 00:52:06,220
+So the key message. We understand power BI is new to you.
+
+549
+00:52:06,610 --> 00:52:13,750
+We have in the assignment you've done up to this point. You have learned all the skills you need to accomplish this assignment.
+
+550
+00:52:14,670 --> 00:52:19,200
+For this assignment. For those of you on Macs, you don't even need to run it.
+
+551
+00:52:19,260 --> 00:52:23,130
+Um, in power BI desktop, it all runs online.
+
+552
+00:52:23,550 --> 00:52:26,820
+As a matter of fact, let's see. Here I have it.
+
+553
+00:52:28,090 --> 00:52:31,090
+Uh, let's see if he's over here. Nope. Not over there.
+
+554
+00:52:34,020 --> 00:52:40,320
+I have. There we go. Three choices. And of course, my third. I have it running through the desktop version or through the online version,
+
+555
+00:52:40,740 --> 00:52:45,120
+because it's easier to be able to work on it in my office, work on it at home, and work on it here.
+
+556
+00:52:45,570 --> 00:52:49,020
+I just, I save it and then reopen it. It's just simpler.
+
+557
+00:52:49,020 --> 00:52:54,900
+So I just want to make sure you're aware that you do not need the desktop version to accomplish this assignment at all.
+
+558
+00:52:55,620 --> 00:53:01,109
+Um, if you want to add stuff, you can feel free to reach out to me if you want to add more stuff.
+
+559
+00:53:01,110 --> 00:53:04,020
+And I can show you how to do that, but you don't have to.
+
+560
+00:53:04,650 --> 00:53:09,180
+Um, it's this assignment's all about breaking it down to the steps and taking them one at a time.
+
+561
+00:53:09,180 --> 00:53:13,140
+Again. Notebook Elm in yellow, um, is actually pretty good at doing this.
+
+562
+00:53:14,040 --> 00:53:18,060
+Um, I'm here to help. So or so. So, yeah, we're here to help.
+
+563
+00:53:18,270 --> 00:53:24,270
+These are things you can do. Create a notebook. Um, I, I, I really highly recommend it because they work.
+
+564
+00:53:24,270 --> 00:53:28,559
+It's what I personally use for a lot of stuff. Uh, use the tutor hours.
+
+565
+00:53:28,560 --> 00:53:32,400
+Now, understand your data set is different than all the other classes.
+
+566
+00:53:33,000 --> 00:53:37,680
+I'm giving my three classes. So the class before you guys, this class, my online class,
+
+567
+00:53:38,250 --> 00:53:45,479
+a data set that I made some tweaks to because I wanted to give you guys more fields to play with.
+
+568
+00:53:45,480 --> 00:53:49,680
+Some, uh, allow you to give you more, um, granularity.
+
+569
+00:53:49,680 --> 00:53:55,860
+I, I don't like the very broad pieces that some of that this assignment had.
+
+570
+00:53:56,310 --> 00:54:00,180
+So you can actually dig into the data more with what I've done.
+
+571
+00:54:00,180 --> 00:54:03,629
+And honestly, I used AI to split apart the items.
+
+572
+00:54:03,630 --> 00:54:10,709
+You can use Excel to do it to an extent, but I don't outside of using a very complex regular expression,
+
+573
+00:54:10,710 --> 00:54:14,290
+I would not have been able to do this by hand nearly as fast.
+
+574
+00:54:14,330 --> 00:54:21,899
+I was able to just fire up the ChatGPT um, uh, add in for Excel, and it literally just added the fields.
+
+575
+00:54:21,900 --> 00:54:27,270
+It was kind of incredible. First time I've tried using it and yeah, it was really incredible.
+
+576
+00:54:27,780 --> 00:54:32,790
+So again, tutor hours. But be aware the the your data sets a little different.
+
+577
+00:54:33,270 --> 00:54:37,590
+Uh, you may confuse them at first. Just let them know that it is different.
+
+578
+00:54:38,400 --> 00:54:43,350
+Um, the instructor office hours. I don't have exact office hours.
+
+579
+00:54:44,070 --> 00:54:47,580
+Feel free to call. Feel free to stop by. You can call to see if I'm in.
+
+580
+00:54:48,180 --> 00:54:55,440
+I like I was looking at tomorrow's schedule. I've already got students scheduled for like 2.5 hours for tomorrow alone.
+
+581
+00:54:56,010 --> 00:55:01,860
+Um, a lot of the appointments. I can have more than one. You know, you don't have to be, like, the only person there.
+
+582
+00:55:02,700 --> 00:55:06,400
+Um, so. Yeah, feel free to stop in if I'm in my office Tuesdays.
+
+583
+00:55:06,480 --> 00:55:08,220
+Thursdays tend to be a lot more open.
+
+584
+00:55:08,700 --> 00:55:14,040
+Wednesdays are generally just really bad because I teach three classes throughout the day, and then I have other stuff going on.
+
+585
+00:55:14,850 --> 00:55:20,930
+Yeah. Yeah. Yeah.
+
+586
+00:55:21,260 --> 00:55:27,169
+Really this. So the the first part of the project has really always been about that.
+
+587
+00:55:27,170 --> 00:55:30,950
+Anyways. So it's not you're really not missing out at all.
+
+588
+00:55:30,950 --> 00:55:34,820
+And it probably even simplifies it in some ways. Yeah.
+
+589
+00:55:38,220 --> 00:55:43,050
+Uh, you're each group will have a more specific, uh, responsibility.
+
+590
+00:55:43,530 --> 00:55:47,250
+So you're going to take what you did in the individual and you're going to focus it down.
+
+591
+00:55:48,260 --> 00:55:51,319
+So it's going to use the exact same data set. Everything's the same.
+
+592
+00:55:51,320 --> 00:55:57,680
+It's just you're going to. Realistically you're going to add some slicers to um look in specific sections.
+
+593
+00:56:00,350 --> 00:56:06,430
+What do you mean? Right.
+
+594
+00:56:06,440 --> 00:56:09,530
+Well, you will do the presentation, uh, during finals week.
+
+595
+00:56:10,370 --> 00:56:13,400
+So. Yeah, that's so the the, um.
+
+596
+00:56:13,880 --> 00:56:18,709
+So here, let me get into it. So you've got, uh, due today or sorry, due on Tuesday.
+
+597
+00:56:18,710 --> 00:56:22,730
+So I've given you guys a few extra days. So due next Tuesday is the individual.
+
+598
+00:56:22,730 --> 00:56:28,309
+You have to have that done to start working groups um and then do on the six.
+
+599
+00:56:28,310 --> 00:56:33,260
+So this is on the day of our finals. You will be given a presentation.
+
+600
+00:56:33,770 --> 00:56:38,059
+Uh, you're also going to create a final report and is a big part of it is your dashboard.
+
+601
+00:56:38,060 --> 00:56:43,640
+So just understand really everything stems from your dashboard back is is a better way to think about it.
+
+602
+00:56:44,210 --> 00:56:47,920
+And then by the end of the next day you have to do your class evaluations.
+
+603
+00:56:47,930 --> 00:56:52,610
+So just like you did with the Pivot Table project, just like you did with the Eye challenge,
+
+604
+00:56:53,060 --> 00:56:56,930
+uh, you have to let me know how your group did, and that will be part of that.
+
+605
+00:56:59,780 --> 00:57:02,750
+Um. Let's see.
+
+606
+00:57:02,780 --> 00:57:09,680
+So this is talking about there's three different ways to look at again we've Coby problem solving my third Christie I'm Ben Schneiderman.
+
+607
+00:57:09,740 --> 00:57:16,490
+You can kind of get into those. Uh this is just how I'm going to distribute teams I talked about this last week as well.
+
+608
+00:57:17,300 --> 00:57:20,840
+Friday. You're going to give you're going to basically have most of class to work on it.
+
+609
+00:57:20,840 --> 00:57:25,190
+This will be a really good time that I will be here. Your you know, other people will be here.
+
+610
+00:57:25,190 --> 00:57:29,390
+You guys can talk amongst yourselves and just kind of get ideas and how to do it.
+
+611
+00:57:30,020 --> 00:57:38,480
+Uh, so by Friday you've got the engage assignment, you've got the quiz, and then by Monday you've got the um,
+
+612
+00:57:39,320 --> 00:57:42,680
+uh or sorry, it's actually Tuesday, you've got the power by assignment.
+
+613
+00:57:42,680 --> 00:57:50,870
+I forgot to change it to Tuesday. So I did want to show you, uh, some stuff really quick as well.
+
+614
+00:57:52,370 --> 00:57:57,349
+Um let's see. So yeah, you're going to download these, you know the different pieces here.
+
+615
+00:57:57,350 --> 00:58:03,920
+It's you've got your overview, the instructions, the data dictionary and the actual power BI assignment.
+
+616
+00:58:05,710 --> 00:58:10,630
+Um, I want to point out for your, um, notebook LM last week.
+
+617
+00:58:10,630 --> 00:58:15,400
+So week 14, there are tons and tons of links in here that you could add to that.
+
+618
+00:58:16,860 --> 00:58:20,010
+Uh, you're going to find the lectures and all that here. Let's see here.
+
+619
+00:58:20,070 --> 00:58:26,559
+So. Uh, the overview goes into kind of the background.
+
+620
+00:58:26,560 --> 00:58:30,970
+What is your role? This will help you. This will actually help you understand a little bit better what's going on?
+
+621
+00:58:31,810 --> 00:58:41,920
+Uh, this is the, um, the timeline, the overview, the overall timeline, uh, the kind of your, uh, expected outcomes for this.
+
+622
+00:58:42,990 --> 00:58:48,800
+Let's see here then. This is the actual assignment.
+
+623
+00:58:48,830 --> 00:58:53,959
+Now my instructions are a little different. I actually added like the table of contents to it.
+
+624
+00:58:53,960 --> 00:58:59,510
+It actually has uh, sections a little bit better section headings to make a little bit easier to navigate.
+
+625
+00:59:00,260 --> 00:59:05,780
+Um, so again this is your scenario, your, you know, step one, get the power BI file.
+
+626
+00:59:05,780 --> 00:59:11,900
+That should be kind of obvious. Use the data dictionary to understand what the four different tables are.
+
+627
+00:59:12,470 --> 00:59:17,690
+This this is a quick rundown on what they are. But the data dictionary actually explains what ls in there.
+
+628
+00:59:18,410 --> 00:59:22,430
+Uh, then you're going to be creating visualizations and writing your report. That's really what this is.
+
+629
+00:59:23,030 --> 00:59:27,259
+So, uh, logistics you're going to have, uh, it has to be two pages.
+
+630
+00:59:27,260 --> 00:59:34,280
+Memo format. Uh, you can assume the audience has some basic knowledge of the company, its operations, stuff like that.
+
+631
+00:59:35,030 --> 00:59:36,620
+You're going to have an executive summary.
+
+632
+00:59:36,650 --> 00:59:45,830
+Your exploratory overview, your new KPIs and, um, needed data, and then your conclusion and then this addendum, you know,
+
+633
+00:59:45,920 --> 00:59:52,050
+windows desktop, it's just going to be used in the report for you if you're using this, um, power BI ser online service.
+
+634
+00:59:52,070 --> 00:59:56,750
+This is how you upload it. You've already seen how to do this multiple times, but it's just a reminder.
+
+635
+00:59:57,110 --> 01:00:02,490
+And then just make sure how to open it. And finally we get to the data dictionary.
+
+636
+01:00:03,120 --> 01:00:07,140
+This has all the information. The biggest table is your transaction data.
+
+637
+01:00:07,170 --> 01:00:13,770
+This is what we call the facts table. It's got all the information about the products and what's going on here.
+
+638
+01:00:14,580 --> 01:00:21,150
+Your supplier list. Uh, you've got all this information about your supplier, your purchase location, basically who purchased it?
+
+639
+01:00:21,750 --> 01:00:25,709
+The region is whatever region they are. Again, this one I created.
+
+640
+01:00:25,710 --> 01:00:29,610
+So it's actually split out of the, um, the main set of data.
+
+641
+01:00:30,450 --> 01:00:34,140
+This alone makes it look different than anybody else's outside of my classes.
+
+642
+01:00:34,950 --> 01:00:38,910
+Um, and then you've got an item list. I've actually split this out as well.
+
+643
+01:00:39,420 --> 01:00:46,350
+So originally you just had like for I added, um, the size, I added the finish, I added the color.
+
+644
+01:00:46,770 --> 01:00:50,820
+Actually, I added a category code and category name as well.
+
+645
+01:00:52,880 --> 01:00:57,560
+Uh, let's. Let's see here. So I did not mean to do that.
+
+646
+01:00:57,860 --> 01:01:03,770
+Okay. So that is the instructions and all that I wanted to show you to just really quick before you go.
+
+647
+01:01:04,280 --> 01:01:10,070
+This is what I was playing around with yesterday. So, um, I'm going to go into edit here.
+
+648
+01:01:11,630 --> 01:01:16,460
+I started tossing things together. This is not hard to do.
+
+649
+01:01:17,030 --> 01:01:20,239
+Um, it's more advanced than what you guys probably care to do.
+
+650
+01:01:20,240 --> 01:01:25,640
+But one of the issues is you are going to be looking at like, order date.
+
+651
+01:01:25,910 --> 01:01:32,000
+Expect there's like four different date fields. So I created slicers and I group these so they all move together.
+
+652
+01:01:32,420 --> 01:01:36,930
+But this is actually five pieces. If you go to view and this is also in the desktop.
+
+653
+01:01:36,950 --> 01:01:42,820
+You go to view and desktop. If I select uh selection pane this is what I did.
+
+654
+01:01:42,830 --> 01:01:48,700
+This is what some. Uh, like, if I select certain things, I can right click.
+
+655
+01:01:48,700 --> 01:01:52,870
+I can group them together. That's essentially what I did here for the selection.
+
+656
+01:01:52,870 --> 01:01:56,200
+So if you look up here, I selected this. This is the expected receipt date.
+
+657
+01:01:56,920 --> 01:02:02,979
+It's got my four slicers year month date quarter. And it is using the.
+
+658
+01:02:02,980 --> 01:02:07,120
+If I select one of these it's using the expected receipt date.
+
+659
+01:02:08,080 --> 01:02:15,280
+Um so expected receipt date um date hierarchy if I go to the order date.
+
+660
+01:02:15,280 --> 01:02:21,980
+But if I go to the. If I go to the order date one, it's going to use the order date.
+
+661
+01:02:22,520 --> 01:02:26,299
+Uh, hierarchy. So you could actually have up to four of these if you want.
+
+662
+01:02:26,300 --> 01:02:31,910
+And then the great thing about power BI. I can right click this and click duplicate.
+
+663
+01:02:32,450 --> 01:02:36,860
+And I've got everything there. If I want to keep all of this I can duplicate here across two different ones.
+
+664
+01:02:37,580 --> 01:02:41,420
+Um, this is just one way of doing it. It's not the way of doing.
+
+665
+01:02:41,420 --> 01:02:48,530
+It's just one way of doing it. Um, after I and again, I was just playing around with it under testing.
+
+666
+01:02:48,530 --> 01:02:51,990
+I put all this together, then I copied it.
+
+667
+01:02:52,080 --> 01:02:55,250
+I so I had this duplicated testing, I renamed it products.
+
+668
+01:02:55,250 --> 01:02:58,549
+I remove the ex the other stuff, and I just left the products.
+
+669
+01:02:58,550 --> 01:03:01,730
+And then I'm looking at the sum of purchase order by month.
+
+670
+01:03:01,730 --> 01:03:04,670
+If I really want to say April, I really cared about,
+
+671
+01:03:05,360 --> 01:03:16,160
+I could come in here into the visualizations and I could go look at the bars and change this to April and switch this,
+
+672
+01:03:16,730 --> 01:03:20,299
+let's say switch that to orange. Now that's high contrast.
+
+673
+01:03:20,300 --> 01:03:25,400
+So we can really see what's going on there. Uh, so that's your data to Inc.
+
+674
+01:03:25,400 --> 01:03:35,180
+I'll also go in and clean up the title so we could say something like, um, uh.
+
+675
+01:03:38,360 --> 01:03:42,880
+Orders or purchases by Marquis de purchases by Marc.
+
+676
+01:03:43,730 --> 01:03:48,740
+So since a title day to be increased to. Just think about cleaning this up a little bit if you can.
+
+677
+01:03:49,420 --> 01:03:53,300
+Uh, we know that's a month. You can remove the month. Um, stuff like that.
+
+678
+01:03:54,690 --> 01:04:01,160
+Let's see here. Um. And let's say we wanted to look at the region.
+
+679
+01:04:01,370 --> 01:04:07,880
+So I don't have a region slicer. I'm going to just copy this and paste it in because I've already got the set up I'm using.
+
+680
+01:04:09,650 --> 01:04:17,360
+So I am using under slicer settings. I'm using the the dropdown style, the uh vertical list.
+
+681
+01:04:18,290 --> 01:04:24,440
+Uh let's see here. The reason why I'm not using that is that he creates a much longer one that takes up a lot more room.
+
+682
+01:04:25,750 --> 01:04:30,730
+Oh, did not switch it. Um. It's not one to switch okay.
+
+683
+01:04:30,970 --> 01:04:34,680
+So I'm not going to switch that. But um, that's the reason I like this dropdown.
+
+684
+01:04:34,690 --> 01:04:38,350
+I like it a lot. Under selection I have select all.
+
+685
+01:04:43,250 --> 01:04:48,400
+Um. That could do it. Okay, so should a lot of work.
+
+686
+01:04:48,430 --> 01:04:55,470
+You could switch that. The other thing that I was going to do with this is I was going to go to the.
+
+687
+01:04:55,480 --> 01:05:01,250
+It turns out transaction data is what I wanted. Uh I'm going to remove the shift to name.
+
+688
+01:05:01,270 --> 01:05:05,980
+I'm going to change this to region. So it's up to you.
+
+689
+01:05:07,170 --> 01:05:10,440
+And then I could have a region slicer. Now, obviously the internet's down.
+
+690
+01:05:10,650 --> 01:05:17,490
+So that's not actually showing up, but that's how it would work if it, you know, it would pop up if the internet was working.
+
+691
+01:05:17,910 --> 01:05:21,420
+It is. That is one of the downsides of using the power BI online.
+
+692
+01:05:21,420 --> 01:05:26,490
+Yet obviously you have to have internet. If I was using desktop, I would not be having these issues right now.
+
+693
+01:05:26,520 --> 01:05:30,030
+Actually, it looks interesting. I may come back up maybe.
+
+694
+01:05:32,440 --> 01:05:35,469
+Oh. Um, so. Yeah.
+
+695
+01:05:35,470 --> 01:05:42,490
+So, like I said, a big part of this assignment right now is really just going to be exploring the data and,
+
+696
+01:05:42,730 --> 01:05:47,200
+and writing that initial report about possible causes, stuff like that.
+
+697
+01:05:47,800 --> 01:05:52,270
+The group portion is when you're actually going to be actually presenting on all
+
+698
+01:05:52,270 --> 01:05:56,590
+of that and really digging into it and giving an explanation for what's going on.
+
+699
+01:05:57,700 --> 01:06:01,560
+Okay. That's all I have. Have a great couple of days.
+
+700
+01:06:01,570 --> 01:06:02,500
+I'll see you on Friday.
+

@@ -1,0 +1,433 @@
+1
+00:00:04,680 --> 00:00:09,780
+[Auto-generated transcript. Edits may have been applied for clarity.]
+Today is mostly about working in groups.
+
+2
+00:00:09,780 --> 00:00:13,080
+and giving you all time and getting the engagement assignment done this week.
+
+3
+00:00:13,500 --> 00:00:17,490
+So, just a reminder, next Wednesday is the final presentation.
+
+4
+00:00:18,150 --> 00:00:21,479
+You are the morning class.
+
+5
+00:00:21,480 --> 00:00:30,030
+That will be 9am to 11:30am. I have two classes, your class and I get a half hour break, and then I've got another 2.5 hours.
+
+6
+00:00:30,030 --> 00:00:34,140
+So, um. Yeah, it's going to be a long day on Wednesday for me.
+
+7
+00:00:34,890 --> 00:00:41,220
+So the presentation, the final report on the dashboard that is due before class on the sixth.
+
+8
+00:00:41,970 --> 00:00:51,660
+So please have it submitted. I preferred by the night before, but as long as it's before class because when I, I, I actually, uh,
+
+9
+00:00:51,660 --> 00:00:57,540
+will watch the your presentations and I actually kind of grade on the fly as you're giving the presentations.
+
+10
+00:00:57,810 --> 00:01:01,530
+So I have to have this stuff submitted for me to actually grade it.
+
+11
+00:01:02,370 --> 00:01:07,589
+Um, and then by the next day, you're going to have your peer assessment is going to be due.
+
+12
+00:01:07,590 --> 00:01:11,249
+So that'll get opened up, uh, that day as well.
+
+13
+00:01:11,250 --> 00:01:14,280
+So you basically get a day or two to complete your peer assessment.
+
+14
+00:01:14,700 --> 00:01:20,400
+It's just like you did for the pivot table project and the I challenge.
+
+15
+00:01:20,460 --> 00:01:25,390
+Um. So yeah. So that is what's happening next week.
+
+16
+00:01:26,080 --> 00:01:29,530
+Uh, just be here, be ready with your presentation. You'll do it.
+
+17
+00:01:29,530 --> 00:01:31,990
+And then, uh, that's it for the class.
+
+18
+00:01:32,380 --> 00:01:40,209
+I know that my grader has gotten most, if not all of the individual assignments graded, so you can kind of see how you did.
+
+19
+00:01:40,210 --> 00:01:45,580
+So you can get an idea of what to do for the next one. Uh, or for the, uh, your final presentation.
+
+20
+00:01:46,680 --> 00:01:51,180
+Uh, let's see here. I did want to talk. Really touch on really fast.
+
+21
+00:01:51,750 --> 00:01:55,140
+Today's assignment. Uh, there we go.
+
+22
+00:01:55,620 --> 00:02:03,029
+So it's the big idea. This comes right out of the, um, the storytelling with data.
+
+23
+00:02:03,030 --> 00:02:07,440
+The, uh, chapter one. This is the worksheet she showed you in the book.
+
+24
+00:02:07,920 --> 00:02:14,970
+Uh, I've modified it slightly so that it so fits with the group assignment aspect, but it's basically her.
+
+25
+00:02:15,270 --> 00:02:21,360
+Her documents are just a little bit of tweaking to it, and this is the information that we need in it.
+
+26
+00:02:21,420 --> 00:02:29,400
+Um, and then just some other stuff to add to it. So make sure it's really meant as a way for you to think about your presentation,
+
+27
+00:02:29,910 --> 00:02:33,180
+who you're presenting to, how you're going to do it, that kind of thing.
+
+28
+00:02:33,480 --> 00:02:41,400
+That's really what this is about. And it's also about just kind of touching base with your groups so that you guys are all on the same page.
+
+29
+00:02:42,450 --> 00:02:47,430
+Are there any questions on this? Yeah. Yeah.
+
+30
+00:02:50,600 --> 00:02:59,540
+They'll be doing Thursday. Yeah. Um, there's a every semester we kind of bump things forward a semester, so I just have it tweak those dates yet.
+
+31
+00:03:00,110 --> 00:03:05,030
+Okay. And I did want to show you guys really quick.
+
+32
+00:03:05,600 --> 00:03:09,319
+Uh, one of the things you can do is you can slice things.
+
+33
+00:03:09,320 --> 00:03:15,110
+So right now on this visualization here, I'm just showing the quantity, um, sold by order date.
+
+34
+00:03:15,110 --> 00:03:19,550
+By expected date. You can see they're a little different. These are just timelines.
+
+35
+00:03:20,030 --> 00:03:26,270
+I've also got up here I'm looking at the different regions and then I've got the sum of the quantity.
+
+36
+00:03:26,480 --> 00:03:31,700
+So this is what was actually what arrived. You can also go in on these.
+
+37
+00:03:32,720 --> 00:03:37,100
+And. There we go. So, uh, pull on ease.
+
+38
+00:03:37,100 --> 00:03:42,200
+Zoom out. Just touch here. So this these are both the exact same.
+
+39
+00:03:42,260 --> 00:03:45,489
+Um. The exact same quantity here.
+
+40
+00:03:45,490 --> 00:03:52,810
+They're both the same. But what I did on this one, you can go show value add and you can change it to percent of grand total.
+
+41
+00:03:53,110 --> 00:03:59,140
+That's how I got the grand. The percent of each of those regions versus the actual amount they sold.
+
+42
+00:03:59,710 --> 00:04:04,660
+So that's just a little additional data that you can do. And the other thing is.
+
+43
+00:04:05,860 --> 00:04:13,210
+Almost all the groups. You guys, how you guys are looking in specific areas like a specific region or for you guys, it's a specific region.
+
+44
+00:04:13,660 --> 00:04:16,780
+So to work with that you want to create a slicer.
+
+45
+00:04:17,500 --> 00:04:22,540
+So I'm going to click on this I'm going to add a list. Um yeah I'm going to add a list slicer.
+
+46
+00:04:23,500 --> 00:04:28,360
+And then I'm going to go in to format your um actually I need to choose the region.
+
+47
+00:04:33,760 --> 00:04:36,969
+Uh, okay. There we go. So here's the region.
+
+48
+00:04:36,970 --> 00:04:41,860
+We've got these different regions. There's certain things I like to do when I'm using these.
+
+49
+00:04:41,860 --> 00:04:45,429
+I like to choose, uh, instead of single select.
+
+50
+00:04:45,430 --> 00:04:49,600
+I like to be able to serve single select. I like to add select all.
+
+51
+00:04:50,350 --> 00:04:55,450
+So then I can add all these or these are checkboxes. And I can just sort by whatever I want to say.
+
+52
+00:04:55,450 --> 00:04:59,590
+If you're in the East you can check the East. And that's all that will show up.
+
+53
+00:05:00,460 --> 00:05:06,130
+And the other thing I do like to do, and uh, this isn't.
+
+54
+00:05:07,630 --> 00:05:13,950
+Um. I'd like to switch this into a, um.
+
+55
+00:05:14,760 --> 00:05:18,660
+Uh, this isn't showing it. I could switch it into a dropdown.
+
+56
+00:05:19,830 --> 00:05:23,420
+And if made, they move things around on.
+
+57
+00:05:26,030 --> 00:05:32,910
+So you might not be this visualization. So let's try. Oh, actually, no, I know it's the old slice of cheese.
+
+58
+00:05:32,920 --> 00:05:36,240
+It's not these new ones. Okay. Go to the old slice. Just to this one up here.
+
+59
+00:05:36,960 --> 00:05:38,460
+Click this slicer settings.
+
+60
+00:05:38,550 --> 00:05:46,950
+Uh, that's all since the same instead of a vertical list which lists them all, I like to do a drop down so I can get it out of the way.
+
+61
+00:05:47,160 --> 00:05:51,479
+Have you noticed space is a premium on your slides?
+
+62
+00:05:51,480 --> 00:05:55,050
+If you want it to be easily read, it needs to be large. These things need to be large.
+
+63
+00:05:55,470 --> 00:06:02,670
+Get that up out of the way so that it doesn't take a huge area, unless you're using it as a design element.
+
+64
+00:06:02,670 --> 00:06:04,110
+And let me show you how you can do that.
+
+65
+00:06:04,620 --> 00:06:10,080
+So I like dropdowns because I can get them out of the way, but there are times that I will add them like as a tile.
+
+66
+00:06:10,830 --> 00:06:14,010
+So just to show you a use of this.
+
+67
+00:06:15,690 --> 00:06:18,950
+Um. You could do something right.
+
+68
+00:06:19,850 --> 00:06:23,450
+There we go. So now I've got the region set here.
+
+69
+00:06:23,450 --> 00:06:30,590
+And you know what I'm going to turn off. Here we go.
+
+70
+00:06:30,680 --> 00:06:35,089
+So we know those are our regions. By doing this and by removing that, it cleans us up a little bit.
+
+71
+00:06:35,090 --> 00:06:41,569
+We can put it right there at the top. This is taking the entire top, but it's just a little teeny bit.
+
+72
+00:06:41,570 --> 00:06:44,719
+So this is another way you can think about moving stuff together.
+
+73
+00:06:44,720 --> 00:06:50,860
+And I'm going to bring this back up. And that got into this a little bit.
+
+74
+00:06:50,860 --> 00:06:55,300
+So. So I'm just cleaning the visuals up a little bit.
+
+75
+00:06:55,330 --> 00:07:01,980
+Uh oh there it is. I'm just gonna stick that right there.
+
+76
+00:07:07,890 --> 00:07:11,340
+Uh. I do like, um, straight edges.
+
+77
+00:07:11,340 --> 00:07:15,090
+If anybody's been to my office, you know that my office is kind of a disaster.
+
+78
+00:07:15,090 --> 00:07:22,410
+Pretty disaster area. Um, but when it comes to using data, I'm very particular because I've dealt with it so long.
+
+79
+00:07:22,440 --> 00:07:29,639
+You had. The more methodical you are with your data, the more intentional you are with how you use it and move things around.
+
+80
+00:07:29,640 --> 00:07:37,950
+You're going to find that it's just easier to use. Might take a minuscule amount of extra effort upfront, but you're going to find that overall,
+
+81
+00:07:37,980 --> 00:07:44,730
+being able to move things around, see things, and interact with it, you're going to save so, so much time.
+
+82
+00:07:45,240 --> 00:07:48,240
+Um, and that's one of the reasons why you see me tweaking little things like that.
+
+83
+00:07:48,240 --> 00:07:56,460
+It might seem to be not a big deal, but when you deal with data on a day to day basis and repeatedly, it actually becomes a big deal.
+
+84
+00:07:57,030 --> 00:08:00,390
+So again, this is like I said, that's two different ways to look at this.
+
+85
+00:08:00,930 --> 00:08:08,860
+I'm using this slicer right here for for this, um, there's a uh, let's uh, let's see, I got chosen.
+
+86
+00:08:08,970 --> 00:08:13,740
+There we go. You can see that there are a number of different things you can do with these.
+
+87
+00:08:14,400 --> 00:08:24,010
+Uh, I can change, you know what they look like. I can actually, if I wanted to make this look prettier, I could add, um, background on, uh.
+
+88
+00:08:26,200 --> 00:08:32,490
+Uh. See here. I can add a color background.
+
+89
+00:08:32,540 --> 00:08:42,199
+I can change my font colors here, and that is not showing up right now.
+
+90
+00:08:42,200 --> 00:08:46,310
+And I don't know why. Okay.
+
+91
+00:08:51,980 --> 00:08:54,470
+So that's what it's that's the hedge around that.
+
+92
+00:08:55,580 --> 00:09:04,030
+And I really hate it when these things do not want to work with me or do what I think they should do.
+
+93
+00:09:30,780 --> 00:09:38,490
+Those are working. So in theory, all of this should work correctly.
+
+94
+00:09:38,530 --> 00:09:51,280
+Yeah. So that's where keen. Um, yeah, I have zero clue why the background is not working on these.
+
+95
+00:09:51,290 --> 00:09:54,809
+I mean, try to. Let's see here.
+
+96
+00:09:54,810 --> 00:09:58,070
+Let me try to play around with this a little bit. I've turned off the background.
+
+97
+00:09:58,070 --> 00:10:21,910
+Uh. But honestly, for this one, I forgot to turn that off so you can choose whatever you.
+
+98
+00:10:25,970 --> 00:10:29,209
+Oh so that okay so that's showing. Okay.
+
+99
+00:10:29,210 --> 00:10:35,030
+So the so this is working. What it's showing is the things that are not shows.
+
+100
+00:10:35,060 --> 00:10:39,320
+And that's where that color's coming in at. Um.
+
+101
+00:10:42,000 --> 00:10:47,710
+And you can do so this f of x you can do some things okay. So if it's chosen, it's going to be black.
+
+102
+00:10:47,720 --> 00:10:52,790
+There's not much we can do about that. Um, I probably like those, like cats that don't.
+
+103
+00:10:53,750 --> 00:10:57,790
+Uh, let's see here. So there you go.
+
+104
+00:10:57,820 --> 00:11:00,160
+So like I said, that is how a slicer works.
+
+105
+00:11:00,170 --> 00:11:07,240
+I've given you a couple of different variations on it, and I will let you guys work in your groups for the rest of the time.
+
+106
+00:11:07,660 --> 00:11:11,229
+So I have are there any other questions or I'll let you go. Okay.
+
+107
+00:11:11,230 --> 00:11:17,630
+Just get up, get into your groups. Uh, do the, um, the engage Simon and then kind of.
+
+108
+00:11:17,650 --> 00:11:19,720
+And then you have time to work on your Simon itself.
+
