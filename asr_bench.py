@@ -614,6 +614,7 @@ def decode_to_pcm16(path: Path, target_rate: int = 16000) -> Tuple[bytes, int]:
     path works.
     """
     # --- Primary: pyav ---
+    pyav_error = None
     try:
         import av  # type: ignore
         from av.audio.resampler import AudioResampler  # type: ignore
@@ -633,8 +634,8 @@ def decode_to_pcm16(path: Path, target_rate: int = 16000) -> Tuple[bytes, int]:
         pcm = b"".join(chunks)
         if pcm:
             return pcm, len(pcm) // 2
-    except Exception:
-        pass  # fall through to ffmpeg
+    except Exception as e:
+        pyav_error = e  # fall through to ffmpeg
 
     # --- Fallback: ffmpeg subprocess ---
     import subprocess
@@ -647,7 +648,9 @@ def decode_to_pcm16(path: Path, target_rate: int = 16000) -> Tuple[bytes, int]:
         pcm = proc.stdout
         return pcm, len(pcm) // 2
     except (FileNotFoundError, subprocess.CalledProcessError) as e:
-        raise RuntimeError(f"could not decode {path} via pyav or ffmpeg: {e}")
+        raise RuntimeError(
+            f"could not decode {path}: pyav error={pyav_error!r}; ffmpeg error={e}"
+        )
 
 
 class FasterWhisperEngine(Engine):

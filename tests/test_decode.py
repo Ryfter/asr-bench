@@ -32,3 +32,4 @@ def test_decode_to_pcm16_resamples_44k_to_16k(tmp_path):
     _write_sine_wav(wav, seconds=1.0, rate=44100)
     pcm, n_samples = asr_bench.decode_to_pcm16(wav)
     assert 15500 <= n_samples <= 16500       # resampled down to 16kHz
+    assert len(pcm) == n_samples * 2
