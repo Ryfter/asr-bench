@@ -553,7 +553,10 @@ class FasterWhisperEngine(Engine):
 
     def run(self, entry: Dict, pairs: List[Pair], cfg: RunConfig) -> ModelResult:
         model_id = entry["id"]
-        info = entry
+        assert entry.get("engine", "faster-whisper") == "faster-whisper", (
+            f"FasterWhisperEngine requires a faster-whisper entry, got engine={entry.get('engine')!r}"
+        )
+        info = entry  # alias: the resolved entry carries the same keys the old run_model read from MODELS
         fw_name = info["fw_name"]
         device = cfg.device
         compute_type = cfg.compute_type
