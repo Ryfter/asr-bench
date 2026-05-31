@@ -81,6 +81,7 @@ def _add_nvidia_dll_directories() -> None:
 from pathlib import Path  # noqa: E402
 
 _add_nvidia_dll_directories()
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
@@ -514,6 +515,35 @@ class ModelResult:
     def peak_vram_bytes(self) -> Optional[int]:
         peaks = [c.vram_peak_bytes for c in self.clips if c.vram_peak_bytes is not None]
         return max(peaks) if peaks else None
+
+
+@dataclass
+class RunConfig:
+    """Settings passed to an engine's run(). Engine-specific fields are ignored
+    by the engine they don't apply to."""
+    # shared
+    device: str
+    compute_type: str
+    # faster-whisper only
+    batch_size: int = 1
+    beam_size: int = 5
+    vad_filter: bool = True
+    # nim only
+    nim_url: str = "localhost:50051"
+    nim_model: str = ""
+    nim_language: str = "en-US"
+    nim_api_key: Optional[str] = None
+    nim_ssl: bool = False
+
+
+class Engine(ABC):
+    """Contract every ASR engine family implements. Returns a ModelResult so the
+    report renderer is engine-agnostic."""
+    name: str = ""
+
+    @abstractmethod
+    def run(self, entry: Dict, pairs: List[Pair], cfg: RunConfig) -> "ModelResult":
+        ...
 
 
 def run_model(
