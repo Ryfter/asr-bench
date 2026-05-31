@@ -75,18 +75,54 @@ ad-hoc synthesis) and is unit-testable.
 
 `main()` validation accepts an id if it is in `MODELS` **or** matches `nim:`.
 
-### 2.3 Dispatch
+### 2.3 The `Engine` contract
 
-In the per-model loop in `main()`, branch on the resolved entry's `engine`:
+Rather than branch on an engine string with ad-hoc sibling functions, introduce
+a small abstraction now — formalizing what `run_model` already is — derived from
+**two** concrete implementations (faster-whisper + NIM) so the contract is
+tested by real diversity, not guessed from one case. Files stay in
+`asr_bench.py`; the package split is deferred (see §9).
 
-- `"faster-whisper"` → existing `run_model(...)`.
-- `"nim"` → new `run_nim_model(entry, pairs, nim_cfg, ...)`.
+```python
+@dataclass
+class RunConfig:
+    # shared
+    device: str
+    compute_type: str
+    # whisper-only (ignored by NIM)
+    batch_size: int = 1
+    beam_size: int = 5
+    vad_filter: bool = True
+    # nim-only (ignored by whisper)
+    nim_url: str = "localhost:50051"
+    nim_model: str = ""
+    nim_language: str = "en-US"
+    nim_api_key: Optional[str] = None
+    nim_ssl: bool = False
 
-Both return `ModelResult`, so `render_markdown` is structurally unchanged.
+class Engine(ABC):
+    name: str                      # "faster-whisper" | "nim"
+    @abstractmethod
+    def run(self, entry: dict, pairs: List[Pair], cfg: RunConfig) -> ModelResult: ...
 
-## 3. `run_nim_model(...) -> ModelResult`
+ENGINES: Dict[str, type[Engine]] = {
+    "faster-whisper": FasterWhisperEngine,
+    "nim": NimEngine,
+}
+```
 
-A sibling to `run_model`, mirroring its structure and failure handling.
+- The existing `run_model` body is refactored, behavior-preserving, into
+  `FasterWhisperEngine.run` (same logic, same outputs — verified by an
+  unchanged Whisper-only report on the reference corpus).
+- `NimEngine.run` is the new implementation (§3).
+- `main()` resolves each id to an `entry`, looks up `ENGINES[entry["engine"]]`,
+  and calls `.run(entry, pairs, cfg)`. Both return `ModelResult`, so
+  `render_markdown` is structurally unchanged.
+- A missing/unknown `engine` value raises a clear error listing valid engines.
+
+## 3. `NimEngine.run(...) -> ModelResult`
+
+Mirrors `FasterWhisperEngine`'s structure and failure handling.
 
 - **Lazy import:** `import riva.client` inside the function (mirrors the lazy
   `faster_whisper` import) so `--help` and Whisper-only runs never require the
@@ -152,7 +188,7 @@ readings, and that NIM's numbers are indicative — run it and see how it does.*
 
 ### 4.1 Best-effort VRAM for NIM
 
-Because the single RPC has no per-segment loop to sample in, `run_nim_model`
+Because the single RPC has no per-segment loop to sample in, `NimEngine.run`
 spawns a **background sampler thread** polling `gpu_used_bytes()` every ~100 ms
 during the RPC and records the peak **total** GPU-used. Stored in
 `ClipResult.vram_peak_bytes`.
@@ -216,14 +252,30 @@ New pure helpers (`resolve_model_entry`, `build_nim_auth_kwargs`,
 written to be unit-testable without a GPU or a live endpoint, ahead of the
 planned test-suite work.
 
-## 9. Single-file constraint
+## 9. Single-file constraint & the structure decision
 
 CLAUDE.md says keep asr-bench a single file until v0.2's multi-engine support
-forces a split. This *is* the first multi-engine step. Decision: **stay in
-`asr_bench.py` for this change** (one new run function + helpers), and treat the
-`engines/` subpackage split as a follow-up once a second non-Whisper family
-(e.g. WhisperX) lands — so the split is driven by real duplication, not
-anticipation.
+forces a split. This *is* the first multi-engine step. Decision (chosen over a
+bare sibling function and over a full package split):
+
+**Introduce the `Engine` contract now (§2.3) but keep everything in
+`asr_bench.py`.** Rationale:
+
+- The *interface* is the valuable, hard-to-change artifact; the *file layout* is
+  cheap and mechanical to change later. Define the interface now, while two
+  genuinely different engines (in-process delta-VRAM-segments vs. service
+  total-VRAM-words) are available to factor it from.
+- Defer the `engines/` package split until a **third** family (WhisperX in v0.2,
+  then NeMo in v0.3) actually lands — at which point the split is driven by real
+  code volume and the contract is already proven. WhisperX is in-process and
+  *wraps* faster-whisper, so it will compose against `FasterWhisperEngine`
+  cleanly when that day comes.
+- Note for later: Canary overlaps two families (NIM now, NeMo in-process later);
+  the `Engine` contract is what makes a future "same model, two serving paths"
+  comparison clean.
+
+This respects CLAUDE.md's "resist breaking it up" guidance (no new files) while
+still leaving the codebase ready for later engines at the contract level.
 
 ## 10. Open items deferred (not blocking)
 
