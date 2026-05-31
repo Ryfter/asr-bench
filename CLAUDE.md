@@ -67,6 +67,7 @@ These need to be true on any machine that runs asr-bench against GPU. Document e
 - **ffmpeg**: at `C:\Users\krank\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\ffmpeg.exe`. Not on bash's PATH; on PowerShell PATH. Not strictly needed for the bench itself (faster-whisper handles decoding internally via pyav).
 - **CUDA runtime libs**: from pip wheels (`nvidia-cublas-cu12`, `nvidia-cudnn-cu12`). asr-bench's `_add_nvidia_dll_directories()` auto-adds them to PATH at startup — both via `os.environ['PATH']` (universal) and `os.add_dll_directory()` (belt-and-suspenders for native loaders).
 - **NVML DLL**: at `C:\Windows\System32\nvml.dll` (modern install). The deprecated `nvidia-ml-py3` package looks at `C:\Program Files\NVIDIA Corporation\NVSMI\` which is the old layout — use `nvidia-ml-py` (no `3`) instead.
+- **nvidia-riva-client** (for NIM engine): `pip install nvidia-riva-client`. Lazy-imported — only required when a `nim`-engine model (e.g. `canary-nim`, `nim:<name>`) is requested. Whisper-only runs don't need it.
 
 ## Common workflows
 
@@ -98,6 +99,12 @@ python asr_bench.py --device cpu
 python asr_bench.py --no-vad-filter
 ```
 
+### Benchmark a self-hosted NIM against Whisper
+```powershell
+python asr_bench.py --models large-v3-turbo,canary-nim --nim-url localhost:50051
+```
+NIM rows report WER/RTFx/wall-clock normally; VRAM is shown as total-used (`*`) and disk as `n/a` (see the report's "Engines in this run" note). Ad-hoc unregistered NIM models: `--models nim:<riva-model-name>`.
+
 ### Watch live output from another shell
 ```powershell
 Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Select -First 1).FullName
@@ -107,8 +114,8 @@ Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Selec
 ## Development workflow
 
 - **Single-file script** — `asr_bench.py` is the whole tool. Resist the urge to break it up until v0.2 demands it (multi-engine support across NeMo + WhisperX will probably trigger a `engines/` subpackage).
-- **Add a new Whisper variant**: extend the `MODELS` dict + add an entry to `_MODEL_VRAM_COST` for batch sizing.
-- **Add a new engine family** (e.g., NeMo Canary): write a sibling to the `run_model` loop that handles the engine's API; share the metrics infrastructure (`ClipResult`, `ModelResult`, `render_markdown`).
+- **Add a new engine family**: implement the `Engine` ABC (`run(entry, pairs, cfg) -> ModelResult`), register the class in `ENGINES`, and give its models `"engine": "<name>"` in `MODELS`. `FasterWhisperEngine` and `NimEngine` are the two reference implementations. Share the metrics infrastructure (`ClipResult`, `ModelResult`, `render_markdown`). The `engines/` package split is deferred until a third family (WhisperX/NeMo) lands.
+- **Add a new Whisper variant**: extend the `MODELS` dict (`"engine": "faster-whisper"`) + add an entry to `_MODEL_VRAM_COST` for batch sizing.
 - **Tests**: none yet (v0.2 plan)
 - **Linting**: none yet — follow the style already in `asr_bench.py`
 
@@ -131,3 +138,4 @@ Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Selec
 - **2026-05-30** — CLI + markdown only. No GUI.
 - **2026-05-30** — VAD filter on by default after observing the Whisper-Large 1-second-cue decoder lock on Week 14 Wednesday.
 - **2026-05-30** — Batch size defaults to `auto` (NVML-probed) for non-CPU runs. Improves GPU utilization 50% → 80%+.
+- **2026-05-31** — Added NVIDIA NIM ASR (Riva gRPC) as the second engine family, ahead of its v0.3 roadmap slot, validated against a self-hosted Canary NIM. Stays within the "local engines only" rule: a self-hosted NIM is local inference behind a gRPC port, not a cloud ASR API. The `--nim-url` flag *permits* a hosted endpoint, but defaults and validation are local. Introduced the `Engine` contract (`FasterWhisperEngine` + `NimEngine`) in-file; deferred the `engines/` package split until WhisperX/NeMo land.

@@ -133,6 +133,25 @@ absolute accuracy?"
 Worst: use one ASR model's output as the reference for benchmarking another
 ASR model. This produces numbers that look real but measure nothing.
 
+## NVIDIA NIM engine (optional)
+
+To benchmark a NIM ASR endpoint (e.g. a self-hosted Canary NIM):
+
+```bash
+pip install nvidia-riva-client
+```
+
+This is only needed when you request a `nim`-engine model. Example:
+
+```bash
+python asr_bench.py --models large-v3-turbo,canary-nim --nim-url localhost:50051
+```
+
+NIM rows report WER, RTFx, and wall-clock like any engine. Because the model
+runs behind a gRPC service, VRAM is reported as *total* GPU memory in use
+(marked `*`) rather than a per-clip delta, and disk size shows `n/a`. Use
+`--models nim:<riva-model-name>` to benchmark an unregistered NIM model.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
