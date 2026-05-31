@@ -426,6 +426,7 @@ class ClipResult:
     reference_normalized: str
     hypothesis_normalized: str
     wer: float
+    cue_count: int = 0
     vtt_path: Optional[str] = None
     reference_origin: str = "unknown"
     reference_label: str = ""
@@ -477,6 +478,7 @@ def run_model(
     compute_type: str,
     batch_size: int = 1,
     beam_size: int = 5,
+    vad_filter: bool = True,
 ) -> ModelResult:
     """Load model once, transcribe each clip, compute WER per clip."""
     info = MODELS[model_id]
@@ -527,7 +529,7 @@ def run_model(
         vram_peak = vram_baseline
 
         t0 = time.time()
-        transcribe_kwargs = dict(language="en", beam_size=beam_size)
+        transcribe_kwargs = dict(language="en", beam_size=beam_size, vad_filter=vad_filter)
         if batch_size > 1:
             transcribe_kwargs["batch_size"] = batch_size
         segments, audio_info = transcribe_target.transcribe(
@@ -591,6 +593,7 @@ def run_model(
                 reference_normalized=ref_norm,
                 hypothesis_normalized=hyp_norm,
                 wer=wer_val,
+                cue_count=len(cue_tuples),
                 vtt_path=str(vtt_path),
                 reference_origin=ref_origin,
                 reference_label=ref_label,
@@ -708,6 +711,49 @@ def render_markdown(
         )
         lines.append("")
 
+    # ---- Cue-density anomaly detection ----
+    # Flag (model, clip) pairs whose cue count is >= 1.5x the median across the OTHER models
+    # on the same clip. Catches Whisper-Large-style 1-second-cue decoder lockups automatically.
+    if results and len(results) >= 2 and results[0].clips:
+        clip_count = len(results[0].clips)
+        anomalies: List[Tuple[str, str, int, float]] = []  # (model_display, clip_name, cues, ratio)
+        for i in range(clip_count):
+            counts_by_model: List[Tuple[ModelResult, int]] = [
+                (r, r.clips[i].cue_count) for r in results if i < len(r.clips)
+            ]
+            for r_target, n_target in counts_by_model:
+                others = [n for r_o, n in counts_by_model if r_o is not r_target and n > 0]
+                if len(others) < 1:
+                    continue
+                others_sorted = sorted(others)
+                mid = len(others_sorted) // 2
+                if len(others_sorted) % 2 == 1:
+                    median_others = float(others_sorted[mid])
+                else:
+                    median_others = (others_sorted[mid - 1] + others_sorted[mid]) / 2.0
+                if median_others <= 0:
+                    continue
+                ratio = n_target / median_others
+                if ratio >= 1.5:
+                    anomalies.append((r_target.display, r_target.clips[i].audio, n_target, ratio))
+        if anomalies:
+            lines.append("## ⚠️ Cue-density anomalies")
+            lines.append("")
+            lines.append(
+                "These (model, clip) pairs produced **1.5×+ more cues** than the median of "
+                "the other models on the same clip. Common cause: the Whisper decoder enters "
+                "a 1-second-per-cue lockup (a known faster-whisper failure mode) — the content "
+                "is usually still transcribed but the WER is inflated by alignment churn. "
+                "Already mitigated by `vad_filter=True` (the default); if you re-run with "
+                "`--no-vad-filter` you'll likely see these reappear."
+            )
+            lines.append("")
+            lines.append("| Model | Clip | Cue count | × median of others |")
+            lines.append("|---|---|---|---|")
+            for model_display, clip_name, n, ratio in anomalies:
+                lines.append(f"| {model_display} | {clip_name} | {n} | {ratio:.2f}× |")
+            lines.append("")
+
     # ---- Generated VTT files ----
     if results and any(c.vtt_path for c in results[0].clips):
         lines.append("## Generated VTT outputs")
@@ -730,7 +776,9 @@ def render_markdown(
     lines.append("")
     batch_flag = f" --batch-size {args.batch_size}" if args.batch_size > 1 else ""
     beam_flag = f" --beam-size {args.beam_size}" if args.beam_size != 5 else ""
-    lines.append(f"- Command: `python asr_bench.py --corpus '{corpus_path}' --models {','.join(args.models)} --device {args.device} --compute-type {args.compute_type}{batch_flag}{beam_flag}`")
+    vad_flag = "" if args.vad_filter else " --no-vad-filter"
+    lines.append(f"- Command: `python asr_bench.py --corpus '{corpus_path}' --models {','.join(args.models)} --device {args.device} --compute-type {args.compute_type}{batch_flag}{beam_flag}{vad_flag}`")
+    lines.append(f"- VAD filter: {'on (Silero VAD pre-segments audio — prevents the Whisper-Large 1-second-cue decoder lock)' if args.vad_filter else 'off (--no-vad-filter)'}")
     lines.append(f"- Reference normalization: lowercase, strip punctuation (keep apostrophes), collapse whitespace.")
     lines.append(f"- WER computed via [jiwer](https://github.com/jitsi/jiwer).")
     if any(c.reference_origin in {"panopto-asr", "asr-generic"} for r in results for c in r.clips):
@@ -781,6 +829,14 @@ def main() -> int:
         type=int,
         default=5,
         help="Beam search width. 1 = greedy decoding (fastest, slightly lower accuracy).",
+    )
+    ap.add_argument(
+        "--vad-filter",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Pre-segment audio with Silero VAD before transcription. Prevents the "
+             "Whisper-Large 1-second-cue decoder lock and generally improves WER. "
+             "Use --no-vad-filter to disable.",
     )
     ap.add_argument(
         "--gold",
@@ -883,6 +939,7 @@ def main() -> int:
                 args.compute_type,
                 batch_size=args.batch_size,
                 beam_size=args.beam_size,
+                vad_filter=args.vad_filter,
             )
         )
 
