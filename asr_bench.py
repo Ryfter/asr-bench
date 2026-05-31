@@ -548,6 +548,64 @@ class Engine(ABC):
         ...
 
 
+# ---- NIM helpers ------------------------------------------------------------
+def build_nim_auth_kwargs(url: str, api_key: Optional[str], ssl: bool) -> Dict:
+    """Build kwargs for riva.client.Auth. An API key implies SSL + a Bearer
+    authorization metadata header (the path a hosted endpoint needs)."""
+    kw: Dict = {"uri": url, "use_ssl": bool(ssl)}
+    if api_key:
+        kw["use_ssl"] = True
+        kw["metadata_args"] = [["authorization", f"Bearer {api_key}"]]
+    return kw
+
+
+def nim_response_to_hypothesis(response) -> str:
+    """Concatenate the top alternative transcript across all results."""
+    parts: List[str] = []
+    for result in getattr(response, "results", []) or []:
+        alts = getattr(result, "alternatives", None) or []
+        if alts:
+            parts.append(alts[0].transcript)
+    return " ".join(p.strip() for p in parts if p).strip()
+
+
+def nim_response_to_words(response) -> List[Tuple[float, float, str]]:
+    """Flatten word-level timings (Riva reports ms) into (start_s, end_s, word)."""
+    out: List[Tuple[float, float, str]] = []
+    for result in getattr(response, "results", []) or []:
+        alts = getattr(result, "alternatives", None) or []
+        if not alts:
+            continue
+        for w in getattr(alts[0], "words", None) or []:
+            out.append((float(w.start_time) / 1000.0, float(w.end_time) / 1000.0, w.word))
+    return out
+
+
+def group_words_into_cues(
+    words: List[Tuple[float, float, str]],
+    max_words: int = 12,
+    max_span: float = 6.0,
+) -> List[Tuple[float, float, str]]:
+    """Group word timings into VTT-style cues. Close a cue on sentence-final
+    punctuation, or when it reaches max_words, or spans >= max_span seconds."""
+    cues: List[Tuple[float, float, str]] = []
+    buf: List[str] = []
+    start: Optional[float] = None
+    end: float = 0.0
+    for (ws, we, text) in words:
+        if start is None:
+            start = ws
+        buf.append(text)
+        end = we
+        ends_sentence = text.rstrip().endswith((".", "?", "!"))
+        if ends_sentence or len(buf) >= max_words or (end - start) >= max_span:
+            cues.append((start, end, " ".join(buf)))
+            buf, start = [], None
+    if buf and start is not None:
+        cues.append((start, end, " ".join(buf)))
+    return cues
+
+
 class FasterWhisperEngine(Engine):
     name = "faster-whisper"
 
