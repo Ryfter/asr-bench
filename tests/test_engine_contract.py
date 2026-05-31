@@ -15,3 +15,15 @@ def test_faster_whisper_engine_name():
     eng = asr_bench.FasterWhisperEngine()
     assert eng.name == "faster-whisper"
     assert isinstance(eng, asr_bench.Engine)
+
+
+def test_nim_engine_name():
+    eng = asr_bench.NimEngine()
+    assert eng.name == "nim"
+    assert isinstance(eng, asr_bench.Engine)
+
+
+def test_engines_registry_has_both():
+    assert set(asr_bench.ENGINES.keys()) == {"faster-whisper", "nim"}
+    for cls in asr_bench.ENGINES.values():
+        assert issubclass(cls, asr_bench.Engine)
