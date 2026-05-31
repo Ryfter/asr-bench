@@ -855,12 +855,15 @@ class NimEngine(Engine):
 
         def _fail(msg: str) -> ModelResult:
             print(f"  ERROR: {msg}", file=sys.stderr)
+            # NIM has no local model file; fw_name/disk are N/A
             return ModelResult(
-                model_id=entry["id"], display=entry["display"], fw_name="",
+                model_id=entry["id"], display=entry["display"], fw_name="",  # fw_name: N/A for NIM
                 params=entry.get("params", "—"), developer=entry.get("developer", "NVIDIA"),
                 languages=entry.get("languages", "—"), notes=f"LOAD FAILED: {msg}",
                 disk_bytes=None, load_sec=0.0, engine="nim", vram_is_total=True,
             )
+
+        from jiwer import wer as jiwer_wer
 
         t0 = time.time()
         try:
@@ -874,14 +877,13 @@ class NimEngine(Engine):
         load_sec = time.time() - t0
         print(f"  connected in {load_sec:.1f}s", flush=True)
 
+        # NIM has no local model file; fw_name/disk are N/A
         result = ModelResult(
-            model_id=entry["id"], display=entry["display"], fw_name="",
+            model_id=entry["id"], display=entry["display"], fw_name="",  # fw_name: N/A for NIM
             params=entry.get("params", "—"), developer=entry.get("developer", "NVIDIA"),
             languages=entry.get("languages", "—"), notes=entry.get("notes", ""),
             disk_bytes=None, load_sec=load_sec, engine="nim", vram_is_total=True,
         )
-
-        from jiwer import wer as jiwer_wer
 
         for clip_idx, pair in enumerate(pairs, start=1):
             print(f"  [{clip_idx}/{len(pairs)}] transcribing {pair.audio.name}...", flush=True)
@@ -904,6 +906,8 @@ class NimEngine(Engine):
             # encoding / sample rate: LINEAR_PCM @ 16k mono
             config.sample_rate_hertz = 16000
             config.audio_channel_count = 1
+            # AudioEncoding location varies across nvidia-riva-client versions:
+            # newer exposes riva.client.AudioEncoding; older lives in the proto module.
             try:
                 config.encoding = riva.client.AudioEncoding.LINEAR_PCM
             except AttributeError:
@@ -913,6 +917,7 @@ class NimEngine(Engine):
                 config.model = riva_model
 
             sampler = VramSampler().start() if _HAS_NVML else None
+            print(f"    offline_recognize: {audio_sec:.1f}s audio, awaiting NIM response...", flush=True)
             t1 = time.time()
             try:
                 response = asr.offline_recognize(pcm, config)
@@ -953,6 +958,8 @@ class NimEngine(Engine):
                     reference_origin=ref_origin, reference_label=ref_label,
                 )
             )
+        if not result.clips:
+            result.notes = "ALL CLIPS FAILED — check NIM endpoint, audio decode, and stderr above"
         return result
 
 
