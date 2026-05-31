@@ -27,3 +27,10 @@ def test_resolve_unknown_raises():
 def test_resolve_empty_adhoc_raises():
     with pytest.raises(ValueError):
         asr_bench.resolve_model_entry("nim:")
+
+def test_resolve_does_not_mutate_registry():
+    before = dict(asr_bench.MODELS["small"])
+    entry = asr_bench.resolve_model_entry("small")
+    entry["id"] = "MUTATED"
+    assert "id" not in asr_bench.MODELS["small"]
+    assert asr_bench.MODELS["small"] == before
