@@ -461,6 +461,17 @@ def _model_label(model_id: str) -> str:
     return "".join(p.capitalize() for p in model_id.split("-"))
 
 
+def _vram_cell(value: Optional[int], is_total: bool) -> str:
+    """Render a VRAM cell; mark NIM 'total used' values with a trailing '*'."""
+    if value is None:
+        return "n/a" if not _HAS_NVML else "0"
+    return fmt_bytes(value) + ("*" if is_total else "")
+
+
+def _disk_cell(result: "ModelResult") -> str:
+    return "n/a" if result.engine == "nim" else fmt_bytes(result.disk_bytes)
+
+
 # ---- Per-model run ----------------------------------------------------------
 @dataclass
 class ClipResult:
@@ -1013,12 +1024,32 @@ def render_markdown(
         wall_clock = f"{r.total_transcribe_sec:.1f}s"
         wer_pct = f"{r.avg_wer * 100:.1f}" if r.clips else "—"
         rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
-        vram = fmt_bytes(r.peak_vram_bytes) if r.peak_vram_bytes else ("n/a" if not _HAS_NVML else "0")
-        disk = fmt_bytes(r.disk_bytes)
+        vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
+        disk = _disk_cell(r)
         lines.append(
             f"| {r.display} | {r.params} | {disk} | {wer_pct} | {rtfx} | {wall_clock} | {vram} | {r.notes} |"
         )
     lines.append("")
+
+    # ---- Engines note: explain metric-fidelity differences when NIM is present ----
+    if any(r.engine == "nim" for r in results):
+        lines.append("## Engines in this run")
+        lines.append("")
+        lines.append(
+            "This run mixes engine families. The in-process **faster-whisper** engine "
+            "returns the fuller, more directly-comparable set of readings: a per-clip "
+            "**VRAM allocation delta**, the **on-disk** model size, and weights **load** time."
+        )
+        lines.append("")
+        lines.append(
+            "The **NIM** engine runs behind a gRPC service, so it exposes less. "
+            "Its VRAM figures are marked `*` = **total GPU memory** in use during the clip "
+            "(the model is pre-resident in the NIM container), **not** the per-clip allocation "
+            "delta that Whisper rows report — the two are not directly comparable. Disk size "
+            "is shown as `n/a` (it is a container image, not an HF cache dir). NIM is still "
+            "fully benchmarkable for **WER**, **RTFx**, and **wall clock** — run it and see how it does."
+        )
+        lines.append("")
 
     # ---- Per-clip view: each clip first, with one row per model ----
     if results and results[0].clips:
@@ -1038,7 +1069,7 @@ def render_markdown(
                 if i < len(r.clips):
                     c = r.clips[i]
                     wer_pct = f"{c.wer * 100:.1f}"
-                    vram = fmt_bytes(c.vram_peak_bytes) if c.vram_peak_bytes else ("n/a" if not _HAS_NVML else "0")
+                    vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
                     lines.append(
                         f"| {r.display} | {wer_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
                     )
@@ -1056,7 +1087,7 @@ def render_markdown(
         lines.append("|---|---|---|---|---|---|")
         for c in r.clips:
             wer_pct = f"{c.wer * 100:.1f}"
-            vram = fmt_bytes(c.vram_peak_bytes) if c.vram_peak_bytes else ("n/a" if not _HAS_NVML else "0")
+            vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
             audio_label = f"{c.audio_sec / 60:.1f} min"
             lines.append(
                 f"| {c.audio} | {audio_label} | {wer_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
@@ -1065,7 +1096,7 @@ def render_markdown(
         overall_audio = f"{r.total_audio_sec / 60:.1f} min"
         overall_wer = f"{r.avg_wer * 100:.1f}" if r.clips else "—"
         overall_rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
-        overall_vram = fmt_bytes(r.peak_vram_bytes) if r.peak_vram_bytes else ("n/a" if not _HAS_NVML else "0")
+        overall_vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         lines.append(
             f"| **OVERALL** | **{overall_audio}** | **{overall_wer}** | **{overall_rtfx}** | **{r.total_transcribe_sec:.1f}s** | **{overall_vram}** |"
         )
@@ -1137,7 +1168,12 @@ def render_markdown(
     batch_flag = f" --batch-size {args.batch_size}" if args.batch_size > 1 else ""
     beam_flag = f" --beam-size {args.beam_size}" if args.beam_size != 5 else ""
     vad_flag = "" if args.vad_filter else " --no-vad-filter"
-    lines.append(f"- Command: `python asr_bench.py --corpus '{corpus_path}' --models {','.join(args.models)} --device {args.device} --compute-type {args.compute_type}{batch_flag}{beam_flag}{vad_flag}`")
+    nim_flag = ""
+    if any(r.engine == "nim" for r in results):
+        nim_flag = f" --nim-url {args.nim_url} --nim-language {args.nim_language}"
+        if args.nim_model:
+            nim_flag += f" --nim-model {args.nim_model}"
+    lines.append(f"- Command: `python asr_bench.py --corpus '{corpus_path}' --models {','.join(args.models)} --device {args.device} --compute-type {args.compute_type}{batch_flag}{beam_flag}{vad_flag}{nim_flag}`")
     lines.append(f"- VAD filter: {'on (Silero VAD pre-segments audio — prevents the Whisper-Large 1-second-cue decoder lock)' if args.vad_filter else 'off (--no-vad-filter)'}")
     lines.append(f"- Reference normalization: lowercase, strip punctuation (keep apostrophes), collapse whitespace.")
     lines.append(f"- WER computed via [jiwer](https://github.com/jitsi/jiwer).")
