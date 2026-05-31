@@ -9,3 +9,9 @@ def test_runconfig_defaults():
     assert cfg.nim_language == "en-US"
     assert cfg.nim_api_key is None
     assert cfg.nim_ssl is False
+
+
+def test_faster_whisper_engine_name():
+    eng = asr_bench.FasterWhisperEngine()
+    assert eng.name == "faster-whisper"
+    assert isinstance(eng, asr_bench.Engine)
