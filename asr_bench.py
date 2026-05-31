@@ -667,8 +667,6 @@ def decode_to_pcm16(path: Path, target_rate: int = 16000) -> Tuple[bytes, int]:
         import av  # type: ignore
         from av.audio.resampler import AudioResampler  # type: ignore
 
-        import numpy as np  # type: ignore  # available via faster-whisper
-
         container = av.open(str(path))
         resampler = AudioResampler(format="s16", layout="mono", rate=target_rate)
         chunks: List[bytes] = []
