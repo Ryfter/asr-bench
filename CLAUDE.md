@@ -116,7 +116,7 @@ Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Selec
 - **Single-file script** — `asr_bench.py` is the whole tool. Resist the urge to break it up until v0.2 demands it (multi-engine support across NeMo + WhisperX will probably trigger a `engines/` subpackage).
 - **Add a new engine family**: implement the `Engine` ABC (`run(entry, pairs, cfg) -> ModelResult`), register the class in `ENGINES`, and give its models `"engine": "<name>"` in `MODELS`. `FasterWhisperEngine` and `NimEngine` are the two reference implementations. Share the metrics infrastructure (`ClipResult`, `ModelResult`, `render_markdown`). The `engines/` package split is deferred until a third family (WhisperX/NeMo) lands.
 - **Add a new Whisper variant**: extend the `MODELS` dict (`"engine": "faster-whisper"`) + add an entry to `_MODEL_VRAM_COST` for batch sizing.
-- **Tests**: none yet (v0.2 plan)
+- **Tests**: pytest suite under `tests/` (added with the NIM engine). Run `python -m pytest`.
 - **Linting**: none yet — follow the style already in `asr_bench.py`
 
 ## Hard rules
