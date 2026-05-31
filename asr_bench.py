@@ -16,6 +16,7 @@ import json
 import os
 import re
 import sys
+import threading
 import time
 
 # Windows console defaults to cp1252 and chokes on most non-ASCII glyphs.
@@ -549,6 +550,42 @@ class Engine(ABC):
 
 
 # ---- NIM helpers ------------------------------------------------------------
+class VramSampler:
+    """Background poller that records peak total GPU memory used during a call.
+
+    Used for the NIM path, where a single blocking offline_recognize RPC offers
+    no per-segment loop to sample in. Reports TOTAL used (model is pre-resident
+    in the container), not a per-clip delta — callers must mark it as such.
+    """
+    def __init__(self, read_fn=gpu_used_bytes, interval: float = 0.1):
+        self._read_fn = read_fn
+        self._interval = interval
+        self.peak: int = 0
+        self._stop = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+
+    def _record(self, value: int) -> None:
+        if value > self.peak:
+            self.peak = value
+
+    def _loop(self) -> None:
+        while not self._stop.is_set():
+            self._record(self._read_fn())
+            self._stop.wait(self._interval)
+
+    def start(self) -> "VramSampler":
+        self._stop.clear()
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
+        return self
+
+    def stop(self) -> int:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=1.0)
+        return self.peak
+
+
 def build_nim_auth_kwargs(url: str, api_key: Optional[str], ssl: bool) -> Dict:
     """Build kwargs for riva.client.Auth. An API key implies SSL + a Bearer
     authorization metadata header (the path a hosted endpoint needs)."""
