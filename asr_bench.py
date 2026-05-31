@@ -302,6 +302,67 @@ def fmt_bytes(n: Optional[int]) -> str:
     return f"{f:.1f}TB"
 
 
+# ---- GPU probe + batch-size recommendation ----------------------------------
+def gpu_total_and_free_bytes() -> Tuple[Optional[int], Optional[int]]:
+    """Return (total, free) VRAM bytes for GPU 0, or (None, None) if NVML is off."""
+    if not _HAS_NVML or _NVML_DEVICE_COUNT == 0:
+        return (None, None)
+    h = pynvml.nvmlDeviceGetHandleByIndex(0)
+    info = pynvml.nvmlDeviceGetMemoryInfo(h)
+    return (info.total, info.free)
+
+
+def gpu_name() -> Optional[str]:
+    if not _HAS_NVML or _NVML_DEVICE_COUNT == 0:
+        return None
+    h = pynvml.nvmlDeviceGetHandleByIndex(0)
+    name = pynvml.nvmlDeviceGetName(h)
+    return name if isinstance(name, str) else name.decode("utf-8", errors="replace")
+
+
+# Rough VRAM cost per model at compute_type=float16, including a base + per-batch-item slope.
+# Numbers come from observed peaks; conservative so the recommendation doesn't OOM.
+_MODEL_VRAM_COST: Dict[str, Tuple[int, int]] = {
+    # model_id -> (base_bytes, per_batch_item_bytes)
+    "small":          (int(0.8 * 1024**3), int(0.18 * 1024**3)),
+    "medium":         (int(1.8 * 1024**3), int(0.45 * 1024**3)),
+    "large-v3":       (int(4.0 * 1024**3), int(0.90 * 1024**3)),
+    "large-v3-turbo": (int(2.0 * 1024**3), int(0.45 * 1024**3)),
+}
+
+
+def recommend_batch_size(model_ids: List[str], headroom_bytes: int = int(2 * 1024**3)) -> Tuple[int, str]:
+    """Suggest a batch size that fits the largest queued model in available VRAM.
+
+    Returns (batch_size, reason). Falls back to 1 with explanation when we can't
+    probe or when free VRAM is too small to safely batch.
+    """
+    _, free = gpu_total_and_free_bytes()
+    if free is None:
+        return (1, "no NVIDIA GPU detected — staying sequential")
+    # The model that constrains us is the one with the highest per-item slope.
+    worst = max(
+        (mid for mid in model_ids if mid in _MODEL_VRAM_COST),
+        key=lambda mid: _MODEL_VRAM_COST[mid][1],
+        default=None,
+    )
+    if worst is None:
+        return (1, "no batch-cost data for selected models — staying sequential")
+    base, per_item = _MODEL_VRAM_COST[worst]
+    usable = free - headroom_bytes - base
+    if usable <= 0:
+        return (1, f"only {fmt_bytes(free)} free — keeping batch=1 to avoid OOM (constraining model: {worst})")
+    candidate = max(1, usable // per_item)
+    # Cap at 32 — diminishing returns past that for Whisper-sized models, and
+    # extremely large batches hurt latency without helping throughput.
+    candidate = min(candidate, 32)
+    return (
+        candidate,
+        f"{fmt_bytes(free)} free, constraining model {worst} "
+        f"({fmt_bytes(base)} base + {fmt_bytes(per_item)}/batch item, {fmt_bytes(headroom_bytes)} safety headroom)",
+    )
+
+
 # ---- VTT output -------------------------------------------------------------
 def _fmt_vtt_time(seconds: float) -> str:
     if seconds < 0:
@@ -409,11 +470,19 @@ class ModelResult:
         return max(peaks) if peaks else None
 
 
-def run_model(model_id: str, pairs: List[Pair], device: str, compute_type: str) -> ModelResult:
+def run_model(
+    model_id: str,
+    pairs: List[Pair],
+    device: str,
+    compute_type: str,
+    batch_size: int = 1,
+    beam_size: int = 5,
+) -> ModelResult:
     """Load model once, transcribe each clip, compute WER per clip."""
     info = MODELS[model_id]
     fw_name = info["fw_name"]
-    print(f"\n[{info['display']}] loading on device={device} compute_type={compute_type}...", flush=True)
+    batched_note = f" batch_size={batch_size}" if batch_size > 1 else ""
+    print(f"\n[{info['display']}] loading on device={device} compute_type={compute_type}{batched_note}...", flush=True)
 
     # Late import so the script can show --help without requiring the model dep
     from faster_whisper import WhisperModel
@@ -422,6 +491,13 @@ def run_model(model_id: str, pairs: List[Pair], device: str, compute_type: str) 
     t0 = time.time()
     try:
         model = WhisperModel(fw_name, device=device, compute_type=compute_type)
+        # BatchedInferencePipeline is the path to high GPU utilization. Sequential
+        # decoding tops out around 50% on big GPUs; batching pushes it past 80%.
+        if batch_size > 1:
+            from faster_whisper import BatchedInferencePipeline  # type: ignore
+            transcribe_target = BatchedInferencePipeline(model=model)
+        else:
+            transcribe_target = model
     except Exception as e:
         print(f"  ERROR loading {fw_name}: {e}", file=sys.stderr)
         # Return a model result with a zero-clip note so the table shows the failure
@@ -451,10 +527,12 @@ def run_model(model_id: str, pairs: List[Pair], device: str, compute_type: str) 
         vram_peak = vram_baseline
 
         t0 = time.time()
-        segments, audio_info = model.transcribe(
+        transcribe_kwargs = dict(language="en", beam_size=beam_size)
+        if batch_size > 1:
+            transcribe_kwargs["batch_size"] = batch_size
+        segments, audio_info = transcribe_target.transcribe(
             str(pair.audio),
-            language="en",
-            beam_size=5,
+            **transcribe_kwargs,
         )
         text_parts: List[str] = []
         cue_tuples: List[Tuple[float, float, str]] = []
@@ -650,7 +728,9 @@ def render_markdown(
     # ---- Reproducibility footnote ----
     lines.append("## Reproducibility")
     lines.append("")
-    lines.append(f"- Command: `python asr_bench.py --corpus '{corpus_path}' --models {','.join(args.models)} --device {args.device} --compute-type {args.compute_type}`")
+    batch_flag = f" --batch-size {args.batch_size}" if args.batch_size > 1 else ""
+    beam_flag = f" --beam-size {args.beam_size}" if args.beam_size != 5 else ""
+    lines.append(f"- Command: `python asr_bench.py --corpus '{corpus_path}' --models {','.join(args.models)} --device {args.device} --compute-type {args.compute_type}{batch_flag}{beam_flag}`")
     lines.append(f"- Reference normalization: lowercase, strip punctuation (keep apostrophes), collapse whitespace.")
     lines.append(f"- WER computed via [jiwer](https://github.com/jitsi/jiwer).")
     if any(c.reference_origin in {"panopto-asr", "asr-generic"} for r in results for c in r.clips):
@@ -689,6 +769,18 @@ def main() -> int:
         "--compute-type",
         default="auto",
         help="ctranslate2 compute type: 'auto', 'int8', 'int8_float16', 'float16', 'float32'.",
+    )
+    ap.add_argument(
+        "--batch-size",
+        default="auto",
+        help="Batch size for transcription. 'auto' probes free VRAM and recommends a fit "
+             "(uses BatchedInferencePipeline when > 1). '1' = sequential. Otherwise integer.",
+    )
+    ap.add_argument(
+        "--beam-size",
+        type=int,
+        default=5,
+        help="Beam search width. 1 = greedy decoding (fastest, slightly lower accuracy).",
     )
     ap.add_argument(
         "--gold",
@@ -751,6 +843,23 @@ def main() -> int:
         args.compute_type = "float16" if device == "cuda" else "int8"
     args.models = requested
 
+    # Resolve --batch-size (auto → recommend based on free VRAM + queued models)
+    if str(args.batch_size).lower() == "auto":
+        if device != "cuda":
+            args.batch_size = 1
+            print("Batch size: 1 (CPU device — batching not used)")
+        else:
+            bsz, why = recommend_batch_size(requested)
+            args.batch_size = bsz
+            gname = gpu_name() or "GPU"
+            print(f"Batch size: {bsz} (auto)  GPU={gname}  reason: {why}")
+    else:
+        try:
+            args.batch_size = int(args.batch_size)
+        except ValueError:
+            print(f"ERROR: --batch-size must be 'auto' or an integer, got {args.batch_size}", file=sys.stderr)
+            return 2
+
     # Auto-detect ASR-shaped references; surface even if the user passed --gold.
     auto_origins = {detect_reference_origin(p.reference)[0] for p in pairs}
     asr_detected = any(o in {"panopto-asr", "asr-generic"} for o in auto_origins)
@@ -766,7 +875,16 @@ def main() -> int:
 
     results: List[ModelResult] = []
     for model_id in requested:
-        results.append(run_model(model_id, pairs, device, args.compute_type))
+        results.append(
+            run_model(
+                model_id,
+                pairs,
+                device,
+                args.compute_type,
+                batch_size=args.batch_size,
+                beam_size=args.beam_size,
+            )
+        )
 
     md = render_markdown(results, corpus, args, gold_label)
     print()
