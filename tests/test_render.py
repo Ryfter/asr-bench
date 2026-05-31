@@ -67,3 +67,9 @@ def test_reproducibility_includes_nim_flags():
 def test_no_engines_note_for_whisper_only():
     md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
     assert "Engines in this run" not in md
+
+
+def test_whisper_row_has_no_star_marker():
+    md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
+    wl = [l for l in md.splitlines() if l.startswith("| Whisper Large V3 Turbo")][0]
+    assert "*" not in wl
