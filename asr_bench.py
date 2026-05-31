@@ -844,15 +844,6 @@ class FasterWhisperEngine(Engine):
         return result
 
 
-def run_model(model_id, pairs, device, compute_type, batch_size=1, beam_size=5, vad_filter=True):
-    """Backwards-compat shim: delegates to FasterWhisperEngine. main() uses this
-    until a later task rewires dispatch through the ENGINES registry."""
-    entry = resolve_model_entry(model_id)
-    cfg = RunConfig(device=device, compute_type=compute_type,
-                    batch_size=batch_size, beam_size=beam_size, vad_filter=vad_filter)
-    return FasterWhisperEngine().run(entry, pairs, cfg)
-
-
 class NimEngine(Engine):
     name = "nim"
 
@@ -1235,6 +1226,26 @@ def main() -> int:
              "Use --no-vad-filter to disable.",
     )
     ap.add_argument(
+        "--nim-url", default="localhost:50051",
+        help="NIM/Riva gRPC endpoint for nim-engine models (self-hosted or hosted).",
+    )
+    ap.add_argument(
+        "--nim-model", default="",
+        help="Override the Riva model name for the canary-nim entry. '' = server default.",
+    )
+    ap.add_argument(
+        "--nim-language", default="en-US",
+        help="Riva language code for NIM models (note: Whisper uses 'en').",
+    )
+    ap.add_argument(
+        "--nim-api-key", default=None,
+        help="Bearer token for a secured NIM endpoint. Presence auto-enables SSL.",
+    )
+    ap.add_argument(
+        "--nim-ssl", action="store_true",
+        help="Force SSL for the NIM endpoint without an API key (e.g. self-signed TLS).",
+    )
+    ap.add_argument(
         "--gold",
         action="store_true",
         help="Label the WER as gold-standard (hand-corrected reference). Without this, output marks WER as proxy.",
@@ -1263,10 +1274,15 @@ def main() -> int:
         return 2
 
     requested = [m.strip() for m in args.models.split(",") if m.strip()]
-    unknown = [m for m in requested if m not in MODELS]
+    unknown = []
+    for m in requested:
+        try:
+            resolve_model_entry(m)
+        except ValueError:
+            unknown.append(m)
     if unknown:
         print(f"ERROR: unknown models: {', '.join(unknown)}", file=sys.stderr)
-        print(f"Available: {', '.join(MODELS.keys())}", file=sys.stderr)
+        print(f"Available: {', '.join(MODELS.keys())} (or ad-hoc 'nim:<riva-model-name>')", file=sys.stderr)
         return 2
 
     pairs = discover_pairs(corpus)
@@ -1325,19 +1341,27 @@ def main() -> int:
         gold_label = "**proxy** (default: pass --gold if your reference is hand-corrected)"
     print(f"Reference quality: {gold_label}")
 
+    cfg = RunConfig(
+        device=device,
+        compute_type=args.compute_type,
+        batch_size=args.batch_size,
+        beam_size=args.beam_size,
+        vad_filter=args.vad_filter,
+        nim_url=args.nim_url,
+        nim_model=args.nim_model,
+        nim_language=args.nim_language,
+        nim_api_key=args.nim_api_key,
+        nim_ssl=args.nim_ssl,
+    )
+
     results: List[ModelResult] = []
     for model_id in requested:
-        results.append(
-            run_model(
-                model_id,
-                pairs,
-                device,
-                args.compute_type,
-                batch_size=args.batch_size,
-                beam_size=args.beam_size,
-                vad_filter=args.vad_filter,
-            )
-        )
+        entry = resolve_model_entry(model_id)
+        engine_cls = ENGINES.get(entry["engine"])
+        if engine_cls is None:
+            print(f"ERROR: no engine registered for '{entry['engine']}' (model {model_id})", file=sys.stderr)
+            return 2
+        results.append(engine_cls().run(entry, pairs, cfg))
 
     md = render_markdown(results, corpus, args, gold_label)
     print()
