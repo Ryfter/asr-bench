@@ -63,3 +63,21 @@ def test_group_words_into_cues_breaks_on_max_words():
 
 def test_group_words_into_cues_empty():
     assert asr_bench.group_words_into_cues([], 12, 6.0) == []
+
+
+def test_group_words_into_cues_breaks_on_max_span():
+    # No sentence punctuation, few words, but the running span reaches max_span.
+    words = [(0.0, 1.0, "a"), (3.0, 4.0, "b"), (6.0, 7.0, "c"), (8.0, 9.0, "d")]
+    cues = asr_bench.group_words_into_cues(words, max_words=99, max_span=6.0)
+    # span hits >=6.0 when "c" lands (end 7.0 - start 0.0), closing the first cue
+    assert len(cues) == 2
+    assert cues[0] == (0.0, 7.0, "a b c")
+    assert cues[1][2] == "d"
+
+
+def test_nim_response_to_hypothesis_multiple_results():
+    import types
+    r1 = types.SimpleNamespace(alternatives=[types.SimpleNamespace(transcript="foo")])
+    r2 = types.SimpleNamespace(alternatives=[types.SimpleNamespace(transcript="bar baz")])
+    resp = types.SimpleNamespace(results=[r1, r2])
+    assert asr_bench.nim_response_to_hypothesis(resp) == "foo bar baz"
