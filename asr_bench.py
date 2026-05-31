@@ -135,6 +135,15 @@ MODELS: Dict[str, Dict] = {
         "fw_name": "large-v3-turbo",
         "notes": "Distilled large-v3. Accuracy close to large at medium-class speed.",
     },
+    "canary-nim": {
+        "engine": "nim",
+        "display": "Canary (NIM)",
+        "params": "—",
+        "developer": "NVIDIA",
+        "languages": "en (+multi)",
+        "riva_model": "",  # "" => let the NIM server pick its default model
+        "notes": "NVIDIA NIM ASR via Riva gRPC. Endpoint set by --nim-url.",
+    },
 }
 
 
