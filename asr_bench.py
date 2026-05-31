@@ -606,6 +606,50 @@ def group_words_into_cues(
     return cues
 
 
+def decode_to_pcm16(path: Path, target_rate: int = 16000) -> Tuple[bytes, int]:
+    """Decode any audio/video file to 16kHz mono s16le PCM bytes.
+
+    Primary: pyav (already installed via faster-whisper). Fallback: an ffmpeg
+    subprocess. Returns (pcm_bytes, n_samples). Raises RuntimeError if neither
+    path works.
+    """
+    # --- Primary: pyav ---
+    try:
+        import av  # type: ignore
+        from av.audio.resampler import AudioResampler  # type: ignore
+
+        import numpy as np  # type: ignore  # available via faster-whisper
+
+        container = av.open(str(path))
+        resampler = AudioResampler(format="s16", layout="mono", rate=target_rate)
+        chunks: List[bytes] = []
+        for frame in container.decode(audio=0):
+            for rframe in resampler.resample(frame):
+                chunks.append(rframe.to_ndarray().astype("<i2").tobytes())
+        # Flush the resampler.
+        for rframe in resampler.resample(None):
+            chunks.append(rframe.to_ndarray().astype("<i2").tobytes())
+        container.close()
+        pcm = b"".join(chunks)
+        if pcm:
+            return pcm, len(pcm) // 2
+    except Exception:
+        pass  # fall through to ffmpeg
+
+    # --- Fallback: ffmpeg subprocess ---
+    import subprocess
+    try:
+        proc = subprocess.run(
+            ["ffmpeg", "-nostdin", "-i", str(path),
+             "-ar", str(target_rate), "-ac", "1", "-f", "s16le", "-"],
+            capture_output=True, check=True,
+        )
+        pcm = proc.stdout
+        return pcm, len(pcm) // 2
+    except (FileNotFoundError, subprocess.CalledProcessError) as e:
+        raise RuntimeError(f"could not decode {path} via pyav or ffmpeg: {e}")
+
+
 class FasterWhisperEngine(Engine):
     name = "faster-whisper"
 
