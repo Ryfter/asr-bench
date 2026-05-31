@@ -100,6 +100,7 @@ except Exception:
 # ---- Model registry ---------------------------------------------------------
 MODELS: Dict[str, Dict] = {
     "small": {
+        "engine": "faster-whisper",
         "display": "Whisper Small",
         "params": "244M",
         "developer": "OpenAI",
@@ -108,6 +109,7 @@ MODELS: Dict[str, Dict] = {
         "notes": "Real-time on CPU. Decent for clear single speaker.",
     },
     "medium": {
+        "engine": "faster-whisper",
         "display": "Whisper Medium",
         "params": "769M",
         "developer": "OpenAI",
@@ -116,6 +118,7 @@ MODELS: Dict[str, Dict] = {
         "notes": "Production sweet spot. ~2-3x realtime on CPU.",
     },
     "large-v3": {
+        "engine": "faster-whisper",
         "display": "Whisper Large V3",
         "params": "1550M",
         "developer": "OpenAI",
@@ -124,6 +127,7 @@ MODELS: Dict[str, Dict] = {
         "notes": "State-of-art OpenAI accuracy. CPU is slow; GPU recommended.",
     },
     "large-v3-turbo": {
+        "engine": "faster-whisper",
         "display": "Whisper Large V3 Turbo",
         "params": "809M",
         "developer": "OpenAI",
