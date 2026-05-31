@@ -146,6 +146,38 @@ MODELS: Dict[str, Dict] = {
     },
 }
 
+_NIM_ADHOC_RE = re.compile(r"^nim:(.+)$")
+
+
+def resolve_model_entry(model_id: str) -> Dict:
+    """Resolve a --models token to a full engine entry.
+
+    Returns a dict that always carries: id, engine, display, developer, params,
+    languages, notes. NIM entries also carry riva_model; whisper entries carry
+    fw_name. Raises ValueError for unknown ids.
+    """
+    if model_id in MODELS:
+        entry = dict(MODELS[model_id])
+        entry.setdefault("engine", "faster-whisper")
+        entry["id"] = model_id
+        return entry
+    m = _NIM_ADHOC_RE.match(model_id)
+    if m:
+        name = m.group(1).strip()
+        if not name:
+            raise ValueError(f"empty NIM model name in '{model_id}'")
+        return {
+            "id": model_id,
+            "engine": "nim",
+            "display": f"NIM ({name})",
+            "developer": "NVIDIA",
+            "params": "—",
+            "languages": "—",
+            "riva_model": name,
+            "notes": f"Ad-hoc NIM model '{name}' via Riva gRPC.",
+        }
+    raise ValueError(f"unknown model id: {model_id}")
+
 
 # ---- Reference origin detection ---------------------------------------------
 _PANOPTO_FILENAME_RE = re.compile(r"_Captions_[A-Za-z]+(?:\s*\([^)]+\))?(?:\s*\(\d+\))?\.txt$")
