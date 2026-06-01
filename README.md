@@ -1,6 +1,6 @@
 # asr-bench
 
-A command-line benchmark for comparing speech recognition models on your own audio.
+A command-line benchmark for comparing automatic speech recognition (ASR) models on your own audio.
 
 Built for professors, researchers, and accessibility teams who need to pick an
 ASR engine for their actual content — not whatever was on a public leaderboard
