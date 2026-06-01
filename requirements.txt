@@ -1,0 +1,10 @@
+faster-whisper>=1.0
+jiwer>=3.0
+nvidia-ml-py>=12.0  # optional — enables peak-VRAM tracking on NVIDIA GPUs (replaces the older nvidia-ml-py3 which has a hardcoded path that no longer matches modern driver installs)
+
+# Required ONLY for GPU acceleration on systems without a system-wide CUDA install.
+# These wheels ship the cuBLAS 12 and cuDNN 9 DLLs that ctranslate2 loads at
+# transcribe time. asr_bench.py auto-adds them to the DLL search path on Windows.
+# CPU-only users can skip these.
+nvidia-cublas-cu12; platform_system == "Windows" or platform_system == "Linux"
+nvidia-cudnn-cu12; platform_system == "Windows" or platform_system == "Linux"

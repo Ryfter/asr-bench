@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+
+# Output
+report/
+results/
+*.mp3
+*.wav
+*.mp4
+*.vtt
+*.comparison.md
+
+# test-corpus is bring-your-own — only README + an optional manifest should be tracked.
+test-corpus/*
+!test-corpus/README.md
+!test-corpus/manifest.json
+!test-corpus/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
