@@ -235,6 +235,63 @@ def load_reference_text(path: Path) -> str:
     return " ".join(out)
 
 
+# ---- Caption cue parsing ----------------------------------------------------
+@dataclass
+class Cue:
+    start: float
+    end: float
+    text: str
+
+
+_VTT_TS_RE = re.compile(
+    r"(\d{2}):(\d{2}):(\d{2})[.,](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[.,](\d{3})"
+)
+
+
+def _ts_to_seconds(h: str, m: str, s: str, ms: str) -> float:
+    return int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000.0
+
+
+def parse_caption_cues(path: Path) -> List[Cue]:
+    """Parse a VTT or SRT file into timed cues.
+
+    Tolerant of both '.' (VTT) and ',' (SRT) millisecond separators. Drops the
+    WEBVTT header, numeric cue indices, and bracketed editorial notes (Panopto's
+    '[Auto-generated transcript...]'). Multi-line cue text is joined with spaces.
+    """
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    cues: List[Cue] = []
+    start = end = None
+    buf: List[str] = []
+
+    def flush() -> None:
+        nonlocal start, end, buf
+        if start is not None and buf:
+            text = " ".join(buf).strip()
+            if text:
+                cues.append(Cue(start, end, text))
+        start = end = None
+        buf = []
+
+    for line in raw.splitlines():
+        s = line.strip()
+        m = _VTT_TS_RE.search(s)
+        if m:
+            flush()
+            start = _ts_to_seconds(m.group(1), m.group(2), m.group(3), m.group(4))
+            end = _ts_to_seconds(m.group(5), m.group(6), m.group(7), m.group(8))
+            continue
+        if not s:
+            flush()
+            continue
+        if s.upper() == "WEBVTT" or _CUE_NUM_RE.match(s) or _BRACKETED_RE.match(s):
+            continue
+        if start is not None:
+            buf.append(s)
+    flush()
+    return cues
+
+
 def normalize_for_wer(text: str) -> str:
     """Lowercase, strip punctuation except apostrophes, collapse whitespace.
 
