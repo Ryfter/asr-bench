@@ -86,3 +86,12 @@ def test_headline_has_mer_and_wil_columns():
 def test_per_clip_table_has_sdi_columns():
     md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
     assert "| S | D | I |" in md
+
+
+def test_nan_metric_renders_as_dash():
+    r = _whisper_result()
+    r.clips[0].wer = float("nan")
+    r.clips[0].mer = float("nan")
+    r.clips[0].wil = float("nan")
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    assert "nan" not in md.lower().split("reproducibility")[0]  # no literal 'nan' in the tables

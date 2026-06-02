@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -503,6 +504,13 @@ def _model_label(model_id: str) -> str:
     Used for filename suffixes (`_Captions_<Label>.vtt`) and short report cells.
     """
     return "".join(p.capitalize() for p in model_id.split("-"))
+
+
+def _fmt_pct(value: float) -> str:
+    """Format a 0-1 metric as a 1-decimal percentage, or '—' if NaN/None."""
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return "—"
+    return f"{value * 100:.1f}"
 
 
 def _vram_cell(value: Optional[int], is_total: bool) -> str:
@@ -1075,9 +1083,9 @@ def render_markdown(
     lines.append("|---|---|---|---|---|---|---|---|---|---|")
     for r in results:
         wall_clock = f"{r.total_transcribe_sec:.1f}s"
-        wer_pct = f"{r.avg_wer * 100:.1f}" if r.clips else "—"
-        mer_pct = f"{r.avg_mer * 100:.1f}" if r.clips else "—"
-        wil_pct = f"{r.avg_wil * 100:.1f}" if r.clips else "—"
+        wer_pct = _fmt_pct(r.avg_wer) if r.clips else "—"
+        mer_pct = _fmt_pct(r.avg_mer) if r.clips else "—"
+        wil_pct = _fmt_pct(r.avg_wil) if r.clips else "—"
         rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
         vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         disk = _disk_cell(r)
@@ -1123,9 +1131,9 @@ def render_markdown(
             for r in results:
                 if i < len(r.clips):
                     c = r.clips[i]
-                    wer_pct = f"{c.wer * 100:.1f}"
-                    mer_pct = f"{c.mer * 100:.1f}"
-                    wil_pct = f"{c.wil * 100:.1f}"
+                    wer_pct = _fmt_pct(c.wer)
+                    mer_pct = _fmt_pct(c.mer)
+                    wil_pct = _fmt_pct(c.wil)
                     vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
                     lines.append(
                         f"| {r.display} | {wer_pct} | {mer_pct} | {wil_pct} | {c.substitutions} | {c.deletions} | {c.insertions} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
@@ -1143,18 +1151,18 @@ def render_markdown(
         lines.append("| Clip | Audio | WER% | MER% | WIL% | RTFx | Transcribe time | VRAM peak |")
         lines.append("|---|---|---|---|---|---|---|---|")
         for c in r.clips:
-            wer_pct = f"{c.wer * 100:.1f}"
-            mer_pct = f"{c.mer * 100:.1f}"
-            wil_pct = f"{c.wil * 100:.1f}"
+            wer_pct = _fmt_pct(c.wer)
+            mer_pct = _fmt_pct(c.mer)
+            wil_pct = _fmt_pct(c.wil)
             vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
             audio_label = f"{c.audio_sec / 60:.1f} min"
             lines.append(
                 f"| {c.audio} | {audio_label} | {wer_pct} | {mer_pct} | {wil_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
             )
         overall_audio = f"{r.total_audio_sec / 60:.1f} min"
-        overall_wer = f"{r.avg_wer * 100:.1f}" if r.clips else "—"
-        overall_mer = f"{r.avg_mer * 100:.1f}" if r.clips else "—"
-        overall_wil = f"{r.avg_wil * 100:.1f}" if r.clips else "—"
+        overall_wer = _fmt_pct(r.avg_wer) if r.clips else "—"
+        overall_mer = _fmt_pct(r.avg_mer) if r.clips else "—"
+        overall_wil = _fmt_pct(r.avg_wil) if r.clips else "—"
         overall_rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
         overall_vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         lines.append(
