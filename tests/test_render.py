@@ -40,6 +40,7 @@ def _args():
         vad_filter=True, models=["large-v3-turbo", "canary-nim"],
         nim_url="localhost:50051", nim_model="", nim_language="en-US",
         nim_api_key=None, nim_ssl=False,
+        show_alignment=False,
     )
 
 
@@ -95,3 +96,18 @@ def test_nan_metric_renders_as_dash():
     r.clips[0].wil = float("nan")
     md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
     assert "nan" not in md.lower().split("reproducibility")[0]  # no literal 'nan' in the tables
+
+
+def test_show_alignment_section_emitted_when_flag_on():
+    args = _args()
+    args.show_alignment = True
+    r = _whisper_result()
+    r.clips[0].reference_normalized = "the quick brown fox"
+    r.clips[0].hypothesis_normalized = "the quick brown box"
+    md = asr_bench.render_markdown([r], Path("."), args, "proxy")
+    assert "## Alignment detail" in md
+
+
+def test_no_alignment_section_by_default():
+    md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
+    assert "## Alignment detail" not in md

@@ -1230,6 +1230,31 @@ def render_markdown(
                     lines.append(f"  - `{name}`")
         lines.append("")
 
+    # ---- Optional alignment detail ----
+    if getattr(args, "show_alignment", False) and results and results[0].clips:
+        from jiwer import process_words, visualize_alignment
+        lines.append("## Alignment detail")
+        lines.append("")
+        lines.append("Word-level reference→hypothesis alignment (S=substitution, D=deletion, I=insertion).")
+        lines.append("")
+        for r in results:
+            for c in r.clips:
+                if not c.reference_normalized or not c.hypothesis_normalized:
+                    continue
+                try:
+                    viz = visualize_alignment(
+                        process_words(c.reference_normalized, c.hypothesis_normalized),
+                        show_measures=False,
+                    )
+                except Exception:
+                    continue
+                lines.append(f"### {r.display} — {c.audio}")
+                lines.append("")
+                lines.append("```")
+                lines.append(viz.rstrip())
+                lines.append("```")
+                lines.append("")
+
     # ---- Reproducibility footnote ----
     lines.append("## Reproducibility")
     lines.append("")
@@ -1343,6 +1368,11 @@ def main() -> int:
         "--include",
         default=None,
         help="Regex; only include clips whose audio filename matches.",
+    )
+    ap.add_argument(
+        "--show-alignment",
+        action="store_true",
+        help="Append a per-clip word-level alignment diff (jiwer) to the report. Verbose.",
     )
     args = ap.parse_args()
 
