@@ -246,6 +246,50 @@ def normalize_for_wer(text: str) -> str:
     return text
 
 
+# ---- Word metrics -----------------------------------------------------------
+@dataclass
+class WordMetrics:
+    """All word-level scores from a single jiwer alignment.
+
+    WER  = (S+D+I)/N1                      (edit cost; can exceed 1.0)
+    MER  = (S+D+I)/(H+S+D+I)               (Morris et al.; bounded [0,1])
+    WIL  = 1 - H*H/(N1*N2)                 (Morris et al.; bounded [0,1])
+    where N1 = ref words = H+S+D, N2 = hyp words = H+S+I.
+    """
+    wer: float
+    mer: float
+    wil: float
+    hits: int
+    substitutions: int
+    deletions: int
+    insertions: int
+
+
+def compute_word_metrics(reference: str, hypothesis: str) -> WordMetrics:
+    """One jiwer.process_words call -> WER, MER, WIL, and H/S/D/I counts.
+
+    Inputs should already be normalized (see normalize_for_wer). Returns NaN
+    metrics (not an exception) when alignment is impossible (e.g. empty ref).
+    """
+    nan = float("nan")
+    if not reference.strip():
+        return WordMetrics(nan, nan, nan, 0, 0, 0, 0)
+    from jiwer import process_words
+    try:
+        out = process_words(reference, hypothesis)
+        return WordMetrics(
+            wer=float(out.wer),
+            mer=float(out.mer),
+            wil=float(out.wil),
+            hits=int(out.hits),
+            substitutions=int(out.substitutions),
+            deletions=int(out.deletions),
+            insertions=int(out.insertions),
+        )
+    except Exception:
+        return WordMetrics(nan, nan, nan, 0, 0, 0, 0)
+
+
 # ---- Pair discovery ---------------------------------------------------------
 AUDIO_EXTS = {".mp4", ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm"}
 
