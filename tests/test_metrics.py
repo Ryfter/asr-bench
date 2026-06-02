@@ -31,3 +31,12 @@ def test_table1_hsdi_counts():
 def test_empty_reference_is_nan_not_crash():
     m = asr_bench.compute_word_metrics("", "")
     assert math.isnan(m.wer) and math.isnan(m.mer) and math.isnan(m.wil)
+
+
+def test_empty_hypothesis_is_all_deletions():
+    # non-empty ref, empty hyp -> H=0, S=0, D=3, I=0; WER/MER/WIL all 100%
+    m = asr_bench.compute_word_metrics("a b c", "")
+    assert (m.hits, m.substitutions, m.deletions, m.insertions) == (0, 0, 3, 0)
+    assert round(m.wer * 100) == 100
+    assert round(m.mer * 100) == 100
+    assert round(m.wil * 100) == 100
