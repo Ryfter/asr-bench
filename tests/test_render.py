@@ -111,3 +111,13 @@ def test_show_alignment_section_emitted_when_flag_on():
 def test_no_alignment_section_by_default():
     md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
     assert "## Alignment detail" not in md
+
+
+def test_no_empty_alignment_header_when_all_clips_skipped():
+    args = _args()
+    args.show_alignment = True
+    r = _whisper_result()
+    r.clips[0].reference_normalized = ""
+    r.clips[0].hypothesis_normalized = ""
+    md = asr_bench.render_markdown([r], Path("."), args, "proxy")
+    assert "## Alignment detail" not in md

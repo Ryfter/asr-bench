@@ -1233,27 +1233,32 @@ def render_markdown(
     # ---- Optional alignment detail ----
     if getattr(args, "show_alignment", False) and results and results[0].clips:
         from jiwer import process_words, visualize_alignment
-        lines.append("## Alignment detail")
-        lines.append("")
-        lines.append("Word-level reference→hypothesis alignment (S=substitution, D=deletion, I=insertion).")
-        lines.append("")
+        blocks: List[str] = []
         for r in results:
             for c in r.clips:
                 if not c.reference_normalized or not c.hypothesis_normalized:
                     continue
+                name = Path(c.audio).name
                 try:
                     viz = visualize_alignment(
                         process_words(c.reference_normalized, c.hypothesis_normalized),
                         show_measures=False,
                     )
                 except Exception:
+                    blocks.append(f"<!-- alignment unavailable for {name} -->")
                     continue
-                lines.append(f"### {r.display} — {c.audio}")
-                lines.append("")
-                lines.append("```")
-                lines.append(viz.rstrip())
-                lines.append("```")
-                lines.append("")
+                blocks.append(f"### {r.display} — {name}")
+                blocks.append("")
+                blocks.append("```")
+                blocks.append(viz.rstrip())
+                blocks.append("```")
+                blocks.append("")
+        if blocks:
+            lines.append("## Alignment detail")
+            lines.append("")
+            lines.append("Word-level reference→hypothesis alignment (S=substitution, D=deletion, I=insertion).")
+            lines.append("")
+            lines.extend(blocks)
 
     # ---- Reproducibility footnote ----
     lines.append("## Reproducibility")
@@ -1372,7 +1377,7 @@ def main() -> int:
     ap.add_argument(
         "--show-alignment",
         action="store_true",
-        help="Append a per-clip word-level alignment diff (jiwer) to the report. Verbose.",
+        help="Append a per-clip word-level alignment diff (jiwer) to the report. Verbose — one fenced block per (model, clip) pair; can add many hundreds of lines.",
     )
     args = ap.parse_args()
 
