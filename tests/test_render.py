@@ -9,6 +9,7 @@ def _whisper_result():
         vram_peak_bytes=200 * 1024**2, hypothesis="hi", reference_normalized="hi",
         hypothesis_normalized="hi", wer=0.10, cue_count=50,
         reference_origin="unknown", reference_label="user-provided reference",
+        mer=0.09, wil=0.12, hits=90, substitutions=5, deletions=3, insertions=2,
     )
     return asr_bench.ModelResult(
         model_id="large-v3-turbo", display="Whisper Large V3 Turbo",
@@ -24,6 +25,7 @@ def _nim_result():
         vram_peak_bytes=9 * 1024**3, hypothesis="hi", reference_normalized="hi",
         hypothesis_normalized="hi", wer=0.09, cue_count=48,
         reference_origin="unknown", reference_label="user-provided reference",
+        mer=0.09, wil=0.12, hits=90, substitutions=5, deletions=3, insertions=2,
     )
     return asr_bench.ModelResult(
         model_id="canary-nim", display="Canary (NIM)", fw_name="", params="—",
@@ -73,3 +75,14 @@ def test_whisper_row_has_no_star_marker():
     md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
     wl = [l for l in md.splitlines() if l.startswith("| Whisper Large V3 Turbo")][0]
     assert "*" not in wl
+
+
+def test_headline_has_mer_and_wil_columns():
+    md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
+    header = [l for l in md.splitlines() if l.startswith("| Model | Params")][0]
+    assert "MER%" in header and "WIL%" in header
+
+
+def test_per_clip_table_has_sdi_columns():
+    md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
+    assert "| S | D | I |" in md
