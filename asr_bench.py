@@ -1100,6 +1100,33 @@ ENGINES: Dict[str, type] = {
 }
 
 
+# ---- Fusion -----------------------------------------------------------------
+def build_windows(duration: float, window: float, overlap: float) -> List[Tuple[float, float]]:
+    """Tile [0, duration] into (start, end) spans of length `window`, stepping by
+    stride = window - overlap. The overlap is carried into prompts as context; the
+    final window is clamped to `duration`. Returns a single full-span window when
+    the clip is shorter than one window.
+    """
+    if duration <= window or window <= 0:
+        return [(0.0, duration)]
+    stride = max(window - overlap, 1.0)
+    spans: List[Tuple[float, float]] = []
+    start = 0.0
+    while start < duration:
+        end = min(start + window, duration)
+        spans.append((round(start, 3), round(end, 3)))
+        if end >= duration:
+            break
+        start += stride
+    return spans
+
+
+def collect_window_text(cues: List[Cue], start: float, end: float) -> str:
+    """Concatenate the text of all cues that overlap [start, end)."""
+    parts = [c.text for c in cues if c.end > start and c.start < end]
+    return " ".join(parts).strip()
+
+
 # ---- Output -----------------------------------------------------------------
 def render_markdown(
     results: List[ModelResult],
