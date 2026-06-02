@@ -45,3 +45,11 @@ def test_parse_skips_panopto_header(tmp_path):
     p.write_text("WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\n[Auto-generated transcript.]\nreal text\n", encoding="utf-8")
     cues = asr_bench.parse_caption_cues(p)
     assert cues[0].text == "real text"
+
+
+def test_parse_joins_multiline_cue_text(tmp_path):
+    p = tmp_path / "cap.vtt"
+    p.write_text("WEBVTT\n\n1\n00:00:00.000 --> 00:00:03.000\nline one\nline two\n", encoding="utf-8")
+    cues = asr_bench.parse_caption_cues(p)
+    assert len(cues) == 1
+    assert cues[0].text == "line one line two"

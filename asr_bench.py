@@ -256,8 +256,9 @@ def parse_caption_cues(path: Path) -> List[Cue]:
     """Parse a VTT or SRT file into timed cues.
 
     Tolerant of both '.' (VTT) and ',' (SRT) millisecond separators. Drops the
-    WEBVTT header, numeric cue indices, and bracketed editorial notes (Panopto's
-    '[Auto-generated transcript...]'). Multi-line cue text is joined with spaces.
+    WEBVTT header, numeric cue indices, and any fully bracketed line (e.g.
+    ``[Applause]``, ``[Music]``, Panopto's ``[Auto-generated transcript...]``).
+    Multi-line cue text is joined with spaces.
     """
     raw = path.read_text(encoding="utf-8", errors="replace")
     cues: List[Cue] = []
@@ -284,6 +285,7 @@ def parse_caption_cues(path: Path) -> List[Cue]:
         if not s:
             flush()
             continue
+        # Also drops a cue body that is a bare integer or fully bracketed — harmless for ASR content.
         if s.upper() == "WEBVTT" or _CUE_NUM_RE.match(s) or _BRACKETED_RE.match(s):
             continue
         if start is not None:
