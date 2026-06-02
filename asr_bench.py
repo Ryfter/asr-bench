@@ -528,6 +528,12 @@ class ClipResult:
     reference_normalized: str
     hypothesis_normalized: str
     wer: float
+    mer: float = float("nan")
+    wil: float = float("nan")
+    hits: int = 0
+    substitutions: int = 0
+    deletions: int = 0
+    insertions: int = 0
     cue_count: int = 0
     vtt_path: Optional[str] = None
     reference_origin: str = "unknown"
@@ -554,6 +560,18 @@ class ModelResult:
         if not self.clips:
             return 0.0
         return sum(c.wer for c in self.clips) / len(self.clips)
+
+    @property
+    def avg_mer(self) -> float:
+        if not self.clips:
+            return 0.0
+        return sum(c.mer for c in self.clips) / len(self.clips)
+
+    @property
+    def avg_wil(self) -> float:
+        if not self.clips:
+            return 0.0
+        return sum(c.wil for c in self.clips) / len(self.clips)
 
     @property
     def total_audio_sec(self) -> float:
@@ -763,7 +781,6 @@ class FasterWhisperEngine(Engine):
 
         # Late import so the script can show --help without requiring the model dep
         from faster_whisper import WhisperModel
-        from jiwer import wer as jiwer_wer
 
         t0 = time.time()
         try:
@@ -844,10 +861,8 @@ class FasterWhisperEngine(Engine):
 
             ref_norm = normalize_for_wer(ref_text)
             hyp_norm = normalize_for_wer(hypothesis)
-            try:
-                wer_val = jiwer_wer(ref_norm, hyp_norm)
-            except Exception:
-                wer_val = float("nan")
+            metrics = compute_word_metrics(ref_norm, hyp_norm)
+            wer_val = metrics.wer
 
             audio_sec = float(audio_info.duration)
             rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
@@ -870,6 +885,12 @@ class FasterWhisperEngine(Engine):
                     reference_normalized=ref_norm,
                     hypothesis_normalized=hyp_norm,
                     wer=wer_val,
+                    mer=metrics.mer,
+                    wil=metrics.wil,
+                    hits=metrics.hits,
+                    substitutions=metrics.substitutions,
+                    deletions=metrics.deletions,
+                    insertions=metrics.insertions,
                     cue_count=len(cue_tuples),
                     vtt_path=str(vtt_path),
                     reference_origin=ref_origin,
@@ -906,8 +927,6 @@ class NimEngine(Engine):
                 languages=entry.get("languages", "—"), notes=f"LOAD FAILED: {msg}",
                 disk_bytes=None, load_sec=0.0, engine="nim", vram_is_total=True,
             )
-
-        from jiwer import wer as jiwer_wer
 
         t0 = time.time()
         try:
@@ -980,10 +999,8 @@ class NimEngine(Engine):
 
             ref_norm = normalize_for_wer(ref_text)
             hyp_norm = normalize_for_wer(hypothesis)
-            try:
-                wer_val = jiwer_wer(ref_norm, hyp_norm)
-            except Exception:
-                wer_val = float("nan")
+            metrics = compute_word_metrics(ref_norm, hyp_norm)
+            wer_val = metrics.wer
 
             rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
             print(
@@ -998,7 +1015,10 @@ class NimEngine(Engine):
                     transcribe_sec=transcribe_sec, rtfx=rtfx,
                     vram_peak_bytes=vram_peak, hypothesis=hypothesis,
                     reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
-                    wer=wer_val, cue_count=len(cue_tuples), vtt_path=str(vtt_path),
+                    wer=wer_val, mer=metrics.mer, wil=metrics.wil,
+                    hits=metrics.hits, substitutions=metrics.substitutions,
+                    deletions=metrics.deletions, insertions=metrics.insertions,
+                    cue_count=len(cue_tuples), vtt_path=str(vtt_path),
                     reference_origin=ref_origin, reference_label=ref_label,
                 )
             )

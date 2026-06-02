@@ -40,3 +40,33 @@ def test_empty_hypothesis_is_all_deletions():
     assert round(m.wer * 100) == 100
     assert round(m.mer * 100) == 100
     assert round(m.wil * 100) == 100
+
+
+def test_clipresult_has_metric_fields_with_defaults():
+    # New fields must have defaults so existing positional constructors keep working.
+    c = asr_bench.ClipResult(
+        audio="x.mp4", audio_sec=1.0, transcribe_sec=1.0, rtfx=1.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="r",
+        hypothesis_normalized="h", wer=0.5,
+    )
+    assert c.mer != c.mer or c.mer == 0 or isinstance(c.mer, float)  # field exists
+    assert hasattr(c, "wil") and hasattr(c, "substitutions")
+
+
+def test_modelresult_avg_mer_wil():
+    c1 = asr_bench.ClipResult(
+        audio="a", audio_sec=1, transcribe_sec=1, rtfx=1, vram_peak_bytes=None,
+        hypothesis="", reference_normalized="", hypothesis_normalized="",
+        wer=0.2, mer=0.1, wil=0.3,
+    )
+    c2 = asr_bench.ClipResult(
+        audio="b", audio_sec=1, transcribe_sec=1, rtfx=1, vram_peak_bytes=None,
+        hypothesis="", reference_normalized="", hypothesis_normalized="",
+        wer=0.4, mer=0.3, wil=0.5,
+    )
+    mr = asr_bench.ModelResult(
+        model_id="m", display="M", fw_name="m", params="1", developer="d",
+        languages="en", notes="", disk_bytes=None, load_sec=0.0, clips=[c1, c2],
+    )
+    assert abs(mr.avg_mer - 0.2) < 1e-9
+    assert abs(mr.avg_wil - 0.4) < 1e-9
