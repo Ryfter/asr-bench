@@ -1103,6 +1103,63 @@ ENGINES: Dict[str, type] = {
 
 
 # ---- Fusion -----------------------------------------------------------------
+_CONTEXT_GLOSSARY_HEADER_RE = re.compile(r"^#+\s*glossary\b", re.IGNORECASE | re.MULTILINE)
+
+
+def init_context_template() -> str:
+    """A guided context.md the user fills in, then passes via --context."""
+    return """# Fusion context
+
+Fill in what the fusion LLM should know about this corpus. Everything here is
+fed to the model for every clip. Delete sections you don't need.
+
+## Topic / course
+<!-- e.g. "Undergraduate intro statistics; lectures cover hypothesis testing." -->
+
+## Schedule & recurring times
+<!-- e.g. "I teach 9-11am; there are no evening sessions, so 'final at 9pm' is wrong." -->
+
+## Names (people, places) — canonical spelling
+<!-- e.g. "Dr. Nguyen; the dataset is called CIFAR-10." -->
+
+## Jargon & acronyms
+<!-- e.g. "Spell 'AI' (not 'I'); 'p-value' (not 'p value')." -->
+
+## Known mishearings to watch for
+<!-- e.g. "'their' vs 'there'; 'affect' vs 'effect'." -->
+
+## Style preferences
+<!-- e.g. captions: keep verbatim; KB: full sentences, normalize numbers. -->
+
+## Glossary
+<!-- One correction per line, e.g.:
+AI not I
+CIFAR-10 not cipher ten
+-->
+"""
+
+
+def load_context(context_path: Optional[str], glossary_path: Optional[str]) -> Tuple[str, str]:
+    """Return (context_text, glossary_text).
+
+    The glossary is the '## Glossary' section of the context file, unless a
+    separate --glossary file is given (which overrides it). Missing files -> "".
+    """
+    context_text = ""
+    glossary_text = ""
+    if context_path:
+        raw = Path(context_path).read_text(encoding="utf-8", errors="replace")
+        m = _CONTEXT_GLOSSARY_HEADER_RE.search(raw)
+        if m:
+            context_text = raw[: m.start()].strip()
+            glossary_text = raw[m.end():].strip()
+        else:
+            context_text = raw.strip()
+    if glossary_path:
+        glossary_text = Path(glossary_path).read_text(encoding="utf-8", errors="replace").strip()
+    return context_text, glossary_text
+
+
 def build_windows(duration: float, window: float, overlap: float) -> List[Tuple[float, float]]:
     """Tile [0, duration] into (start, end) spans of length `window`, stepping by
     stride = window - overlap. The overlap is carried into prompts as context; the
