@@ -1129,6 +1129,56 @@ def collect_window_text(cues: List[Cue], start: float, end: float) -> str:
     return " ".join(parts).strip()
 
 
+@dataclass
+class WindowPayload:
+    start: float
+    end: float
+    sources: Dict[str, str]          # source label -> text in this window
+    prev_fused: str = ""             # previous window's fused output (carryover)
+
+
+_VERBATIM_INSTRUCTIONS = (
+    "You are reconciling several speech-to-text transcripts of the SAME audio span "
+    "into the single most accurate VERBATIM transcript of what was actually said.\n"
+    "Rules:\n"
+    "- Restore the actually-spoken words. When sources disagree (e.g. 'AI' vs 'I'), "
+    "choose the reading that fits the context and glossary.\n"
+    "- Do NOT rephrase, summarize, or clean up grammar. Preserve the speaker's wording "
+    "and disfluencies.\n"
+    "- Output ONLY the corrected transcript text for this span. No commentary, no labels."
+)
+
+_KB_INSTRUCTIONS = (
+    "You are merging several speech-to-text transcripts of the SAME audio span into "
+    "one clean, readable passage for a searchable knowledge base.\n"
+    "Rules:\n"
+    "- Rewrite for clarity and correct grammar. Normalize times, numbers and dates "
+    "(e.g. '9 to 11' -> '9:00-11:00 am') using the context.\n"
+    "- Fix mishearings and proper nouns using the glossary and context. Prefer meaning "
+    "over literal wording, but never invent facts.\n"
+    "- Output ONLY the cleaned passage text for this span. No commentary, no labels."
+)
+
+
+def build_fusion_prompt(payload: "WindowPayload", profile: str, context: str, glossary: str) -> str:
+    instructions = _KB_INSTRUCTIONS if profile == "kb" else _VERBATIM_INSTRUCTIONS
+    parts: List[str] = [instructions, ""]
+    if context.strip():
+        parts += ["## Context", context.strip(), ""]
+    if glossary.strip():
+        parts += ["## Glossary (canonical spellings / corrections)", glossary.strip(), ""]
+    if payload.prev_fused.strip():
+        parts += ["## Preceding text (already finalized — for continuity only, do not repeat)",
+                  payload.prev_fused.strip(), ""]
+    parts.append(f"## Transcripts for span {payload.start:.1f}s-{payload.end:.1f}s")
+    for label, text in payload.sources.items():
+        parts.append(f"### {label}")
+        parts.append(text.strip() or "(empty)")
+    parts.append("")
+    parts.append("## Output")
+    return "\n".join(parts)
+
+
 # ---- LLM backends -----------------------------------------------------------
 class LLMBackend(ABC):
     """Minimal contract: turn a prompt into text. Fusion builds the prompt; the
