@@ -17,8 +17,10 @@ import math
 import os
 import re
 import sys
+import subprocess
 import threading
 import time
+import urllib.request
 
 # Windows console defaults to cp1252 and chokes on most non-ASCII glyphs.
 # Force UTF-8 on stdout/stderr so the progress + report render correctly.
@@ -1125,6 +1127,93 @@ def collect_window_text(cues: List[Cue], start: float, end: float) -> str:
     """Concatenate the text of all cues that overlap [start, end)."""
     parts = [c.text for c in cues if c.end > start and c.start < end]
     return " ".join(parts).strip()
+
+
+# ---- LLM backends -----------------------------------------------------------
+class LLMBackend(ABC):
+    """Minimal contract: turn a prompt into text. Fusion builds the prompt; the
+    backend only generates. Keeps profile/prompt logic in one place (DRY)."""
+    name: str = ""
+
+    @abstractmethod
+    def generate(self, prompt: str) -> str:
+        ...
+
+
+class FakeLLMBackend(LLMBackend):
+    """Deterministic, dependency-free backend for tests."""
+    name = "fake"
+
+    def __init__(self, fn=None):
+        self._fn = fn or (lambda prompt: prompt)
+
+    def generate(self, prompt: str) -> str:
+        return self._fn(prompt)
+
+
+class OllamaBackend(LLMBackend):
+    """Local Ollama HTTP backend (default). Offline, free, no API key."""
+    name = "ollama"
+
+    def __init__(self, model: str = "qwen2.5", host: str = "http://localhost:11434", timeout: float = 300.0):
+        self.model = model
+        self.host = host.rstrip("/")
+        self.timeout = timeout
+
+    def generate(self, prompt: str) -> str:
+        import json
+        body = json.dumps({"model": self.model, "prompt": prompt, "stream": False}).encode("utf-8")
+        req = urllib.request.Request(
+            f"{self.host}/api/generate", data=body,
+            headers={"Content-Type": "application/json"}, method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        return (data.get("response") or "").strip()
+
+
+class CliBackend(LLMBackend):
+    """Shell out to an authenticated frontier CLI (e.g. `claude -p`, `gemini`).
+
+    The prompt is passed on stdin to avoid arg-length limits. Uses the operator's
+    existing subscription — no API key is stored in asr-bench.
+    """
+    name = "cli"
+
+    def __init__(self, command: List[str], timeout: float = 300.0):
+        self.command = command
+        self.timeout = timeout
+
+    def generate(self, prompt: str) -> str:
+        proc = subprocess.run(
+            self.command, input=prompt, capture_output=True, text=True,
+            timeout=self.timeout, check=False,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(f"LLM CLI {self.command} exited {proc.returncode}: {proc.stderr[:500]}")
+        return (proc.stdout or "").strip()
+
+
+def make_llm_backend(spec: str) -> LLMBackend:
+    """Parse a --llm spec into a backend.
+
+    'fake'                 -> FakeLLMBackend (echo)
+    'ollama:<model>'       -> OllamaBackend  (default model qwen2.5 if omitted)
+    'cli:<command words>'  -> CliBackend     (command split on whitespace)
+    """
+    spec = (spec or "").strip()
+    if spec == "fake":
+        return FakeLLMBackend()
+    kind, _, rest = spec.partition(":")
+    kind = kind.strip().lower()
+    rest = rest.strip()
+    if kind == "ollama":
+        return OllamaBackend(model=rest or "qwen2.5")
+    if kind == "cli":
+        if not rest:
+            raise ValueError("cli backend needs a command, e.g. --llm cli:claude")
+        return CliBackend(rest.split())
+    raise ValueError(f"unknown --llm backend '{spec}' (use fake, ollama:<model>, or cli:<command>)")
 
 
 # ---- Output -----------------------------------------------------------------
