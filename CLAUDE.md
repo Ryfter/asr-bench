@@ -14,7 +14,7 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
 - **Owner:** Ryfter (Kevin Rank)
 - **License:** MIT
 
-## Status — v0.1 shipped 2026-05-30
+## Status — v0.2 shipped 2026-06-01
 
 Local Whisper variants only:
 
@@ -38,7 +38,20 @@ Local Whisper variants only:
 - **Cue-density anomaly detection** — flags any (model, clip) whose cue count is ≥ 1.5× the median of other models on the same clip
 - Reports under `./report/`, gitignored
 
-See [`SPEC.md`](./SPEC.md) for the v0.2 (WhisperX + diarization), v0.3 (NVIDIA NeMo / Canary-Qwen), v0.4 (community models) roadmap.
+### What's new in v0.2
+- **MER% and WIL%** — Match Error Rate and Word Information Lost (Morris, Maier & Green 2004) alongside WER%; bounded [0,1], information-theoretic, better reflect information communicated on lecture content
+- **Per-clip S/D/I counts** — substitution, deletion, and insertion counts per clip via `jiwer.process_words`
+- **`--show-alignment`** — prints per-clip alignment diffs to stdout for manual inspection
+- **Fusion stage (`--fuse`)** — post-benchmark pass that parses each model's VTT + the Panopto reference into timed cues, windows them (default 25 s / 5 s overlap), and feeds each window to a pluggable LLM; produces:
+  - **verbatim profile** → `<base>_Captions_Fused.vtt` (accessibility captions; also usable as a scoring reference)
+  - **kb profile** → `<base>_KB_Fused.jsonl` + `.md` (RAG knowledge base, overlapping time-tagged chunks)
+  - `--profile verbatim|kb|both` (default `both`)
+- **Pluggable LLM backend (`--llm`)** — `ollama:<model>` (default `ollama:qwen2.5`, local/offline), `cli:<command>` (shell out to an authenticated frontier CLI like `claude`/`gemini` — uses existing subscription, no API key), `fake` (tests/dry-runs)
+- **`--init-context [PATH]`** — writes a guided `context.md` template (schedule, names, jargon, mishearings, style, glossary) to fill in; pass result via `--context` (+ optional `--glossary`)
+- **Drift guard** — per-window WER(fused vs base model) flags potential hallucination or omission
+- **`--rescore-against-fused`** — re-scores every model against the verbatim fused VTT as reference; emits a second table explicitly labeled "fused verbatim consensus (agreement-biased)"
+
+See [`SPEC.md`](./SPEC.md) for the v0.3 (WhisperX + diarization), v0.4 (NVIDIA NeMo / Canary-Qwen), v0.5 (community models) roadmap.
 
 ## Reference benchmark — sample lecture corpus
 
@@ -105,6 +118,36 @@ python asr_bench.py --models large-v3-turbo,canary-nim --nim-url localhost:50051
 ```
 NIM rows report WER/RTFx/wall-clock normally; VRAM is shown as total-used (`*`) and disk as `n/a` (see the report's "Engines in this run" note). Ad-hoc unregistered NIM models: `--models nim:<riva-model-name>`.
 
+### Generate a context file template for fusion
+```powershell
+python asr_bench.py --init-context context.md
+```
+Fill in the generated `context.md` (course schedule, speaker names, domain jargon, common mishearings, style preferences, glossary). Pass it to a fusion run via `--context`.
+
+### Run a full fusion pass (local Ollama)
+```powershell
+python asr_bench.py --models small,medium,large-v3-turbo --fuse --profile both --llm ollama:qwen2.5 --context context.md
+```
+Produces `_Captions_Fused.vtt` (verbatim, ADA/WCAG-eligible) and `_KB_Fused.jsonl` + `.md` (RAG knowledge base) next to each audio file. Requires Ollama running locally with the `qwen2.5` model pulled.
+
+### Run fusion with a frontier CLI backend
+```powershell
+python asr_bench.py --models large-v3-turbo --fuse --profile verbatim --llm cli:claude --context context.md
+```
+`cli:claude` shells out to the `claude` CLI using your existing subscription — no API key needed. Substitute `cli:gemini` etc. for other authenticated CLIs.
+
+### Re-score all models against the fused verbatim reference
+```powershell
+python asr_bench.py --models small,medium,large-v3-turbo --fuse --rescore-against-fused --context context.md
+```
+Emits a second metrics table labeled "fused verbatim consensus (agreement-biased)" — useful for tracking improvement after fusion, but note the reference was built from the same models being scored.
+
+### Dry-run fusion without a live LLM
+```powershell
+python asr_bench.py --models small,medium --fuse --llm fake --limit 1
+```
+Uses `FakeLLMBackend` — no Ollama required. Good for verifying corpus layout and pipeline wiring before a real run.
+
 ### Watch live output from another shell
 ```powershell
 Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Select -First 1).FullName
@@ -113,7 +156,7 @@ Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Selec
 
 ## Development workflow
 
-- **Single-file script** — `asr_bench.py` is the whole tool. Resist the urge to break it up until v0.2 demands it (multi-engine support across NeMo + WhisperX will probably trigger a `engines/` subpackage).
+- **Single-file script** — `asr_bench.py` is the whole tool. Resist the urge to break it up until a third engine family (WhisperX/NeMo) lands and forces an `engines/` subpackage. The fusion stage and LLM backends live in-file for now; extract when the file becomes unwieldy.
 - **Add a new engine family**: implement the `Engine` ABC (`run(entry, pairs, cfg) -> ModelResult`), register the class in `ENGINES`, and give its models `"engine": "<name>"` in `MODELS`. `FasterWhisperEngine` and `NimEngine` are the two reference implementations. Share the metrics infrastructure (`ClipResult`, `ModelResult`, `render_markdown`). The `engines/` package split is deferred until a third family (WhisperX/NeMo) lands.
 - **Add a new Whisper variant**: extend the `MODELS` dict (`"engine": "faster-whisper"`) + add an entry to `_MODEL_VRAM_COST` for batch sizing.
 - **Tests**: pytest suite under `tests/` (added with the NIM engine). Run `python -m pytest`.
@@ -124,7 +167,7 @@ Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Selec
 - **No bundled audio in the repo.** `test-corpus/*` is gitignored. Distributing sample audio creates licensing headaches.
 - **WER labels reflect the reference.** Output explicitly labels gold vs proxy in the headline. Never silently pass off proxy WER as accuracy.
 - **VAD on by default**, but always toggleable via `--no-vad-filter`.
-- **Local engines only in v0.1**. No cloud API comparisons until at least v0.5.
+- **Local ASR engines only** (through v0.4). No cloud ASR API comparisons until at least v0.5. The fusion LLM backend (`--llm cli:...`) may call a frontier model CLI, but that is post-processing of local transcription output, not a cloud ASR engine comparison.
 - **CLI only.** No GUI. Audience is technical users + faculty IT staff.
 
 ## Related projects
@@ -140,3 +183,9 @@ Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Selec
 - **2026-05-30** — Batch size defaults to `auto` (NVML-probed) for non-CPU runs. Improves GPU utilization 50% → 80%+.
 - **2026-05-31** — Added NVIDIA NIM ASR (Riva gRPC) as the second engine family, ahead of its v0.3 roadmap slot. Implemented and *statically* verified against `nvidia-riva-client` 2.26.0, but **not yet run against a live NIM** (see the ship-as-is entry below). Stays within the "local engines only" rule: a self-hosted NIM is local inference behind a gRPC port, not a cloud ASR API. The `--nim-url` flag *permits* a hosted endpoint, but defaults are local. Introduced the `Engine` contract (`FasterWhisperEngine` + `NimEngine`) in-file; deferred the `engines/` package split until WhisperX/NeMo land.
 - **2026-05-31** — Shipped the NIM engine **as-is, without a live-NIM test run**. asr-bench's core purpose is benchmarking local Whisper variants; NIM and other extra engines are nice-to-have, not critical. Live validation was deferred because the reference box has no container runtime (no Docker, no WSL distro) and NIM is **container-only** (NVIDIA ships it as an `nvcr.io` image, not a native binary). Tested: audio decode, `main()`→engine dispatch, mixed-engine report rendering, graceful failure. Untested: the **local self-hosted Docker path**; the **remote/hosted (`--nim-api-key`/`--nim-ssl`) path is implemented but not fully tested**. Intent remains local self-hosted NIM. Pending live validation tracked in `memory/validate-live-nim.md`.
+- **2026-06-01** — Adopted MER (Match Error Rate) and WIL (Word Information Lost) from Morris, Maier & Green 2004 as primary information-quality metrics alongside WER. Both are bounded [0, 1] and information-theoretic; on lecture content they better reflect how much meaning was communicated vs lost, compared to raw WER which weights all errors equally.
+- **2026-06-01** — Fusion implemented as a **post-processing pass**, NOT a new Engine. It consumes multiple engines' VTT outputs (+ the Panopto reference cues) rather than running transcription itself. Keeping it outside the Engine ABC avoids conflating transcription benchmarking with post-processing quality.
+- **2026-06-01** — Two fusion profiles — **verbatim** (captions + scoring reference) and **kb** (RAG knowledge base) — share one chunked/timing-anchored, overlapping-window pipeline, differing only in prompt and output format. One pass per window; `--profile both` runs both prompts in the same pass rather than re-chunking.
+- **2026-06-01** — LLM backend is pluggable, **local-first default** (`ollama:qwen2.5` — offline, no API key). The `cli:<command>` backend shells out to an authenticated frontier CLI (e.g. `claude`, `gemini`) and uses an existing subscription rather than requiring an API key — consistent with the local-first ethos (billing stays with the user's existing account, not asr-bench's infrastructure).
+- **2026-06-01** — Only the **verbatim profile is ADA/WCAG caption-eligible**. The kb profile deliberately rephrases and condenses for retrieval quality; it is explicitly NOT compliant captions and is labeled as such in the report.
+- **2026-06-01** — The `--rescore-against-fused` reference is **agreement-biased** and labeled as such. The fused verbatim VTT is built from the same model outputs being scored — it measures consensus, not ground truth. Useful for tracking post-fusion improvement, but the caveat is printed in the report header so it is never mistaken for an independent gold reference.
