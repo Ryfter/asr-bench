@@ -1478,9 +1478,9 @@ def run_fusion_stage(
         if "kb" in profiles and res.kb_chunks:
             written.append(write_kb_jsonl(audio_path, res.kb_chunks).name)
             written.append(write_kb_md(audio_path, res.kb_chunks).name)
-        lines.append(f"- **{audio_name}** -> {', '.join(f'`{w}`' for w in written) or '(nothing written)'}")
+        lines.append(f"- **{audio_name}** → {', '.join(f'`{w}`' for w in written) or '(nothing written)'}")
         for flag in res.flags:
-            lines.append(f"  - WARNING: {flag}")
+            lines.append(f"  - ⚠️ {flag}")
     lines.append("")
 
     rescored = None
@@ -1959,6 +1959,28 @@ def main() -> int:
         print(f"Available: {', '.join(MODELS.keys())} (or ad-hoc 'nim:<riva-model-name>')", file=sys.stderr)
         return 2
 
+    # Pre-flight fusion setup (fail fast before the expensive benchmark run)
+    fusion_backend = None
+    fusion_context = ""
+    fusion_glossary = ""
+    if args.fuse:
+        try:
+            fusion_backend = make_llm_backend(args.llm)
+        except ValueError as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            return 2
+        for label, pth in (("--context", args.context), ("--glossary", args.glossary)):
+            if pth and not Path(pth).is_file():
+                print(f"ERROR: {label} file not found: {pth}", file=sys.stderr)
+                return 2
+        fusion_context, fusion_glossary = load_context(args.context, args.glossary)
+        if args.fuse_base not in requested:
+            print(
+                f"WARNING: --fuse-base '{args.fuse_base}' is not in --models ({', '.join(requested)}); "
+                f"its cues won't exist, so windows will have no timing anchor and drift checks won't fire.",
+                file=sys.stderr,
+            )
+
     pairs = discover_pairs(corpus)
     if args.include:
         include_re = re.compile(args.include, re.IGNORECASE)
@@ -2041,20 +2063,9 @@ def main() -> int:
 
     if args.fuse:
         profiles = ["verbatim", "kb"] if args.profile == "both" else [args.profile]
-        try:
-            backend = make_llm_backend(args.llm)
-        except ValueError as e:
-            print(f"ERROR: {e}", file=sys.stderr)
-            return 2
-        # Validate context/glossary paths up front for a clear error
-        for label, pth in (("--context", args.context), ("--glossary", args.glossary)):
-            if pth and not Path(pth).is_file():
-                print(f"ERROR: {label} file not found: {pth}", file=sys.stderr)
-                return 2
-        context_text, glossary_text = load_context(args.context, args.glossary)
         fusion_md, rescored = run_fusion_stage(
-            results=results, pairs=pairs, backend=backend, profiles=profiles,
-            base_label=args.fuse_base, context=context_text, glossary=glossary_text,
+            results=results, pairs=pairs, backend=fusion_backend, profiles=profiles,
+            base_label=args.fuse_base, context=fusion_context, glossary=fusion_glossary,
             window=args.window, overlap=args.overlap, drift_threshold=args.drift_threshold,
             rescore=args.rescore_against_fused,
         )
