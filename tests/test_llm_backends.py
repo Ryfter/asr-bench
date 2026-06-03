@@ -55,7 +55,7 @@ def test_ollama_backend_posts_prompt(monkeypatch):
     captured = {}
 
     def fake_urlopen(req, timeout=None):
-        import io, json
+        import json
         captured["url"] = req.full_url
         captured["body"] = json.loads(req.data.decode("utf-8"))
 
@@ -74,3 +74,26 @@ def test_ollama_backend_posts_prompt(monkeypatch):
     assert out == "ollama fused"
     assert captured["body"]["model"] == "qwen2.5"
     assert captured["body"]["prompt"] == "hi"
+
+
+def test_make_llm_backend_ollama_default_model():
+    b = asr_bench.make_llm_backend("ollama:")
+    assert b.model == "qwen2.5"
+
+
+def test_cli_backend_raises_on_nonzero_exit(monkeypatch):
+    class FakeCompleted:
+        stdout = ""
+        stderr = "boom"
+        returncode = 1
+
+    def fake_run(cmd, input=None, capture_output=None, text=None, timeout=None, check=None):
+        return FakeCompleted()
+
+    monkeypatch.setattr(asr_bench.subprocess, "run", fake_run)
+    b = asr_bench.CliBackend(["claude"])
+    try:
+        b.generate("x")
+        assert False, "expected RuntimeError"
+    except RuntimeError as e:
+        assert "boom" in str(e)

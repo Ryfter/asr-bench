@@ -1161,7 +1161,6 @@ class OllamaBackend(LLMBackend):
         self.timeout = timeout
 
     def generate(self, prompt: str) -> str:
-        import json
         body = json.dumps({"model": self.model, "prompt": prompt, "stream": False}).encode("utf-8")
         req = urllib.request.Request(
             f"{self.host}/api/generate", data=body,
