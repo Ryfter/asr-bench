@@ -12,6 +12,7 @@ See README.md for corpus layout. See SPEC.md for the v0.2/v0.3 roadmap.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import os
@@ -1354,6 +1355,58 @@ def fuse_clip(
                 res.kb_chunks.append({"start": w_start, "end": w_end, "text": text.strip()})
 
     return res
+
+
+# ---- Fusion re-scoring -------------------------------------------------------
+
+def rescore_against_reference(
+    results: List["ModelResult"],
+    reference_cues_by_clip: Dict[str, List[Cue]],
+) -> List["ModelResult"]:
+    """Return deep copies of `results` with each clip's metrics recomputed against
+    the fused verbatim reference (keyed by clip audio filename).
+
+    Models are scored on their stored `hypothesis`. Clips with no matching
+    reference are left unscored (NaN). The originals are not mutated.
+    """
+    out: List[ModelResult] = []
+    for r in results:
+        r2 = copy.deepcopy(r)
+        for c in r2.clips:
+            ref_cues = reference_cues_by_clip.get(c.audio)
+            if not ref_cues:
+                c.wer = c.mer = c.wil = float("nan")
+                continue
+            ref_text = normalize_for_wer(" ".join(cu.text for cu in ref_cues))
+            hyp_text = normalize_for_wer(c.hypothesis)
+            m = compute_word_metrics(ref_text, hyp_text)
+            c.wer, c.mer, c.wil = m.wer, m.mer, m.wil
+            c.hits, c.substitutions, c.deletions, c.insertions = (
+                m.hits, m.substitutions, m.deletions, m.insertions,
+            )
+        out.append(r2)
+    return out
+
+
+def render_fused_rescore_table(results: List["ModelResult"]) -> str:
+    lines: List[str] = []
+    lines.append("## Scores vs fused verbatim reference")
+    lines.append("")
+    lines.append(
+        "> **Reference = fused verbatim consensus (agreement-biased).** This reference "
+        "was built from the models below, so scores favor models that agreed with the "
+        "majority. Treat these as *relative*, not absolute accuracy."
+    )
+    lines.append("")
+    lines.append("| Model | WER% | MER% | WIL% |")
+    lines.append("|---|---|---|---|")
+    for r in results:
+        wer = _fmt_pct(r.avg_wer) if r.clips else "—"
+        mer = _fmt_pct(r.avg_mer) if r.clips else "—"
+        wil = _fmt_pct(r.avg_wil) if r.clips else "—"
+        lines.append(f"| {r.display} | {wer} | {mer} | {wil} |")
+    lines.append("")
+    return "\n".join(lines)
 
 
 # ---- LLM backends -----------------------------------------------------------

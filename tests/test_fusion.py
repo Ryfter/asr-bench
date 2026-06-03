@@ -107,3 +107,61 @@ def test_write_kb_md(tmp_path):
     assert out.name == "Lecture_KB_Fused.md"
     body = out.read_text(encoding="utf-8")
     assert "Knowledge base" in body and "first chunk" in body
+
+
+def test_rescore_against_reference_recomputes_metrics():
+    c1 = asr_bench.ClipResult(
+        audio="L.mp4", audio_sec=10, transcribe_sec=1, rtfx=10, vram_peak_bytes=None,
+        hypothesis="the cat sat", reference_normalized="x", hypothesis_normalized="the cat sat",
+        wer=0.9,
+    )
+    m1 = asr_bench.ModelResult(
+        model_id="a", display="A", fw_name="a", params="1", developer="d", languages="en",
+        notes="", disk_bytes=None, load_sec=0, clips=[c1],
+    )
+    ref_cues_by_clip = {"L.mp4": [asr_bench.Cue(0, 10, "the cat sat")]}
+    rescored = asr_bench.rescore_against_reference([m1], ref_cues_by_clip)
+    assert abs(rescored[0].clips[0].wer) < 1e-9   # perfect match -> 0 WER
+
+
+def test_rescore_does_not_mutate_original():
+    c1 = asr_bench.ClipResult(
+        audio="L.mp4", audio_sec=10, transcribe_sec=1, rtfx=10, vram_peak_bytes=None,
+        hypothesis="the cat sat", reference_normalized="x", hypothesis_normalized="the cat sat",
+        wer=0.9,
+    )
+    m1 = asr_bench.ModelResult(
+        model_id="a", display="A", fw_name="a", params="1", developer="d", languages="en",
+        notes="", disk_bytes=None, load_sec=0, clips=[c1],
+    )
+    asr_bench.rescore_against_reference([m1], {"L.mp4": [asr_bench.Cue(0, 10, "the cat sat")]})
+    assert m1.clips[0].wer == 0.9   # original untouched
+
+
+def test_rescore_unmatched_clip_is_nan():
+    import math
+    c1 = asr_bench.ClipResult(
+        audio="L.mp4", audio_sec=10, transcribe_sec=1, rtfx=10, vram_peak_bytes=None,
+        hypothesis="x", reference_normalized="", hypothesis_normalized="x", wer=0.5,
+    )
+    m1 = asr_bench.ModelResult(
+        model_id="a", display="A", fw_name="a", params="1", developer="d", languages="en",
+        notes="", disk_bytes=None, load_sec=0, clips=[c1],
+    )
+    rescored = asr_bench.rescore_against_reference([m1], {})  # no ref for L.mp4
+    assert math.isnan(rescored[0].clips[0].wer)
+
+
+def test_render_fused_rescore_table_labeled_biased():
+    c1 = asr_bench.ClipResult(
+        audio="L.mp4", audio_sec=10, transcribe_sec=1, rtfx=10, vram_peak_bytes=None,
+        hypothesis="hi", reference_normalized="hi", hypothesis_normalized="hi",
+        wer=0.0, mer=0.0, wil=0.0,
+    )
+    m1 = asr_bench.ModelResult(
+        model_id="a", display="A", fw_name="a", params="1", developer="d", languages="en",
+        notes="", disk_bytes=None, load_sec=0, clips=[c1],
+    )
+    md = asr_bench.render_fused_rescore_table([m1])
+    assert "fused verbatim consensus" in md.lower()
+    assert "biased" in md.lower()
