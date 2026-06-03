@@ -1236,6 +1236,129 @@ def build_fusion_prompt(payload: "WindowPayload", profile: str, context: str, gl
     return "\n".join(parts)
 
 
+# ---- Fusion orchestrator ----------------------------------------------------
+@dataclass
+class FusionResult:
+    verbatim_cues: List[Cue] = field(default_factory=list)
+    kb_chunks: List[Dict] = field(default_factory=list)   # {start, end, text}
+    flags: List[str] = field(default_factory=list)        # drift warnings
+
+
+def _fused_base(audio_path: Path) -> str:
+    stem = audio_path.stem
+    return stem[: -len("_default")] if stem.endswith("_default") else stem
+
+
+def write_fused_vtt(audio_path: Path, cues: List[Cue]) -> Path:
+    """Write a WebVTT from fused cues, named <base>_Captions_Fused.vtt."""
+    out = audio_path.parent / f"{_fused_base(audio_path)}_Captions_Fused.vtt"
+    lines: List[str] = ["WEBVTT", ""]
+    for i, c in enumerate(cues, start=1):
+        text = c.text.strip()
+        if not text:
+            continue
+        lines.append(str(i))
+        lines.append(f"{_fmt_vtt_time(c.start)} --> {_fmt_vtt_time(c.end)}")
+        lines.append(text)
+        lines.append("")
+    out.write_text("\n".join(lines), encoding="utf-8")
+    return out
+
+
+def write_kb_jsonl(audio_path: Path, chunks: List[Dict]) -> Path:
+    """Write overlapping KB chunks as newline-delimited JSON, named <base>_KB_Fused.jsonl."""
+    out = audio_path.parent / f"{_fused_base(audio_path)}_KB_Fused.jsonl"
+    lines = [json.dumps(c, ensure_ascii=False) for c in chunks]
+    out.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+    return out
+
+
+def write_kb_md(audio_path: Path, chunks: List[Dict]) -> Path:
+    """Write overlapping KB chunks as a readable Markdown file, named <base>_KB_Fused.md."""
+    out = audio_path.parent / f"{_fused_base(audio_path)}_KB_Fused.md"
+    lines: List[str] = [f"# Knowledge base — {_fused_base(audio_path)}", ""]
+    for c in chunks:
+        lines.append(f"## {_fmt_vtt_time(c['start'])} – {_fmt_vtt_time(c['end'])}")
+        lines.append("")
+        lines.append(c["text"].strip())
+        lines.append("")
+    out.write_text("\n".join(lines), encoding="utf-8")
+    return out
+
+
+def fuse_clip(
+    duration: float,
+    base_label: str,
+    sources: Dict[str, List[Cue]],
+    profiles: List[str],
+    backend: "LLMBackend",
+    context: str,
+    glossary: str,
+    window: float,
+    overlap: float,
+    drift_threshold: float,
+) -> FusionResult:
+    """Window the timeline, fuse each window per requested profile, assemble.
+
+    - verbatim cues tile without overlap: cue i spans [win_start_i, win_start_{i+1}]
+      (last to `duration`), text = LLM fusion of that window.
+    - kb chunks keep the full overlapping window span [start, end].
+    - drift guard: per window, WER(fused vs base text); flagged if > threshold.
+    """
+    res = FusionResult()
+    windows = build_windows(duration, window, overlap)
+    base_cues = sources.get(base_label, [])
+
+    verbatim_prev = ""
+    kb_prev = ""
+    fused_by_profile: Dict[str, List[Tuple[Tuple[float, float], str]]] = {p: [] for p in profiles}
+
+    for (w_start, w_end) in windows:
+        payload_sources = {
+            label: collect_window_text(cues, w_start, w_end) for label, cues in sources.items()
+        }
+        base_text = collect_window_text(base_cues, w_start, w_end)
+        for profile in profiles:
+            prev = verbatim_prev if profile == "verbatim" else kb_prev
+            payload = WindowPayload(w_start, w_end, payload_sources, prev_fused=prev)
+            prompt = build_fusion_prompt(payload, profile, context, glossary)
+            try:
+                fused = backend.generate(prompt).strip()
+            except Exception as e:
+                fused = ""
+                res.flags.append(f"[{w_start:.0f}-{w_end:.0f}s {profile}] backend error: {e}")
+            fused_by_profile[profile].append(((w_start, w_end), fused))
+            if profile == "verbatim":
+                verbatim_prev = fused
+            else:
+                kb_prev = fused
+            # Drift guard: high WER between base source and fused output signals
+            # the LLM may have hallucinated or radically paraphrased.
+            if base_text and fused:
+                drift = compute_word_metrics(
+                    normalize_for_wer(base_text), normalize_for_wer(fused)
+                ).wer
+                if not math.isnan(drift) and drift > drift_threshold:
+                    res.flags.append(
+                        f"[{w_start:.0f}-{w_end:.0f}s {profile}] drift WER {drift*100:.0f}% vs base — review"
+                    )
+
+    if "verbatim" in profiles:
+        items = fused_by_profile["verbatim"]
+        for idx, ((w_start, w_end), text) in enumerate(items):
+            # Non-overlapping cue boundaries: cue i ends where cue i+1 starts.
+            cue_end = items[idx + 1][0][0] if idx + 1 < len(items) else w_end
+            if text.strip():
+                res.verbatim_cues.append(Cue(w_start, max(cue_end, w_start), text.strip()))
+
+    if "kb" in profiles:
+        for (w_start, w_end), text in fused_by_profile["kb"]:
+            if text.strip():
+                res.kb_chunks.append({"start": w_start, "end": w_end, "text": text.strip()})
+
+    return res
+
+
 # ---- LLM backends -----------------------------------------------------------
 class LLMBackend(ABC):
     """Minimal contract: turn a prompt into text. Fusion builds the prompt; the
