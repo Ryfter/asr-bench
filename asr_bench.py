@@ -1409,6 +1409,86 @@ def render_fused_rescore_table(results: List["ModelResult"]) -> str:
     return "\n".join(lines)
 
 
+def run_fusion_stage(
+    results: List["ModelResult"],
+    pairs: List["Pair"],
+    backend: "LLMBackend",
+    profiles: List[str],
+    base_label: str,
+    context: str,
+    glossary: str,
+    window: float,
+    overlap: float,
+    drift_threshold: float,
+    rescore: bool,
+) -> Tuple[str, Optional[List["ModelResult"]]]:
+    """Fuse every clip and write outputs. Returns (markdown_section, rescored_or_None).
+
+    Sources per clip = each model's written VTT (parsed back to timed cues) +
+    the Panopto/reference caption file (if it parses as timed cues).
+    """
+    lines: List[str] = ["## Fusion", ""]
+    lines.append(f"- Backend: `{backend.name}`  Profiles: `{', '.join(profiles)}`  "
+                 f"Window: {window:.0f}s / overlap {overlap:.0f}s  Base: `{base_label}`")
+    lines.append("")
+    lines.append(
+        "> **Accessibility note:** only the *verbatim* output targets ADA/WCAG caption "
+        "fidelity. The *kb* output is rephrased and is **not** compliant captions."
+    )
+    lines.append("")
+
+    verbatim_ref_by_clip: Dict[str, List[Cue]] = {}
+    pair_by_audio = {p.audio.name: p for p in pairs}
+
+    for clip_idx in range(len(results[0].clips) if results else 0):
+        audio_name = results[0].clips[clip_idx].audio
+        pair = pair_by_audio.get(audio_name)
+        if pair is None:
+            continue
+        audio_path = pair.audio
+
+        sources: Dict[str, List[Cue]] = {}
+        duration = results[0].clips[clip_idx].audio_sec or 1.0
+        for r in results:
+            if clip_idx < len(r.clips) and r.clips[clip_idx].vtt_path:
+                vp = Path(r.clips[clip_idx].vtt_path)
+                if vp.is_file():
+                    sources[r.model_id] = parse_caption_cues(vp)
+        try:
+            ref_cues = parse_caption_cues(pair.reference)
+            if ref_cues:
+                sources["Panopto"] = ref_cues
+        except Exception:
+            pass
+
+        if not sources:
+            lines.append(f"- {audio_name}: no parseable sources — skipped")
+            continue
+
+        res = fuse_clip(
+            duration=duration, base_label=base_label, sources=sources,
+            profiles=profiles, backend=backend, context=context, glossary=glossary,
+            window=window, overlap=overlap, drift_threshold=drift_threshold,
+        )
+        written: List[str] = []
+        if "verbatim" in profiles and res.verbatim_cues:
+            vtt_out = write_fused_vtt(audio_path, res.verbatim_cues)
+            verbatim_ref_by_clip[audio_name] = res.verbatim_cues
+            written.append(vtt_out.name)
+        if "kb" in profiles and res.kb_chunks:
+            written.append(write_kb_jsonl(audio_path, res.kb_chunks).name)
+            written.append(write_kb_md(audio_path, res.kb_chunks).name)
+        lines.append(f"- **{audio_name}** -> {', '.join(f'`{w}`' for w in written) or '(nothing written)'}")
+        for flag in res.flags:
+            lines.append(f"  - WARNING: {flag}")
+    lines.append("")
+
+    rescored = None
+    if rescore and verbatim_ref_by_clip:
+        rescored = rescore_against_reference(results, verbatim_ref_by_clip)
+    return "\n".join(lines), rescored
+
+
 # ---- LLM backends -----------------------------------------------------------
 class LLMBackend(ABC):
     """Minimal contract: turn a prompt into text. Fusion builds the prompt; the
@@ -1833,7 +1913,34 @@ def main() -> int:
         action="store_true",
         help="Append a per-clip word-level alignment diff (jiwer) to the report. Verbose — one fenced block per (model, clip) pair; can add many hundreds of lines.",
     )
+    ap.add_argument("--fuse", action="store_true",
+                    help="After benchmarking, fuse all models + reference into a best transcript.")
+    ap.add_argument("--profile", default="both", choices=["verbatim", "kb", "both"],
+                    help="Fusion profile(s). verbatim=captions/reference, kb=RAG knowledge base.")
+    ap.add_argument("--fuse-base", default="large-v3-turbo",
+                    help="Model whose cue timing anchors the fusion windows.")
+    ap.add_argument("--llm", default="ollama:qwen2.5",
+                    help="Fusion LLM backend: fake | ollama:<model> | cli:<command>.")
+    ap.add_argument("--context", default=None, help="Path to a fusion context file (see --init-context).")
+    ap.add_argument("--glossary", default=None, help="Optional separate glossary file (overrides in-context glossary).")
+    ap.add_argument("--window", type=float, default=25.0, help="Fusion window length in seconds.")
+    ap.add_argument("--overlap", type=float, default=5.0, help="Fusion window overlap in seconds (context carryover).")
+    ap.add_argument("--drift-threshold", type=float, default=1.0,
+                    help="Flag a fused window whose WER vs the base model exceeds this (1.0 = 100%%).")
+    ap.add_argument("--rescore-against-fused", action="store_true",
+                    help="Re-score every model against the verbatim fused reference (agreement-biased; labeled as such).")
+    ap.add_argument("--init-context", nargs="?", const="context.md", default=None,
+                    metavar="PATH", help="Write a context.md template to PATH (default context.md) and exit.")
     args = ap.parse_args()
+
+    if args.init_context is not None:
+        dest = Path(args.init_context)
+        if dest.exists():
+            print(f"ERROR: {dest} already exists — refusing to overwrite", file=sys.stderr)
+            return 2
+        dest.write_text(init_context_template(), encoding="utf-8")
+        print(f"Wrote fusion context template to {dest}. Edit it, then pass --context {dest} --fuse.")
+        return 0
 
     corpus = Path(args.corpus).resolve()
     if not corpus.is_dir():
@@ -1931,6 +2038,30 @@ def main() -> int:
         results.append(engine_cls().run(entry, pairs, cfg))
 
     md = render_markdown(results, corpus, args, gold_label)
+
+    if args.fuse:
+        profiles = ["verbatim", "kb"] if args.profile == "both" else [args.profile]
+        try:
+            backend = make_llm_backend(args.llm)
+        except ValueError as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            return 2
+        # Validate context/glossary paths up front for a clear error
+        for label, pth in (("--context", args.context), ("--glossary", args.glossary)):
+            if pth and not Path(pth).is_file():
+                print(f"ERROR: {label} file not found: {pth}", file=sys.stderr)
+                return 2
+        context_text, glossary_text = load_context(args.context, args.glossary)
+        fusion_md, rescored = run_fusion_stage(
+            results=results, pairs=pairs, backend=backend, profiles=profiles,
+            base_label=args.fuse_base, context=context_text, glossary=glossary_text,
+            window=args.window, overlap=args.overlap, drift_threshold=args.drift_threshold,
+            rescore=args.rescore_against_fused,
+        )
+        md = md + "\n" + fusion_md
+        if rescored is not None:
+            md = md + "\n" + render_fused_rescore_table(rescored)
+
     print()
     print(md)
 

@@ -165,3 +165,34 @@ def test_render_fused_rescore_table_labeled_biased():
     md = asr_bench.render_fused_rescore_table([m1])
     assert "fused verbatim consensus" in md.lower()
     assert "biased" in md.lower()
+
+
+def test_run_fusion_stage_end_to_end(tmp_path, monkeypatch):
+    audio = tmp_path / "Lecture_default.mp4"
+    audio.write_bytes(b"x")
+    vtt = tmp_path / "Lecture_Captions_LargeV3Turbo.vtt"
+    vtt.write_text("WEBVTT\n\n1\n00:00:00.000 --> 00:00:10.000\nthe AI model\n", encoding="utf-8")
+
+    clip = asr_bench.ClipResult(
+        audio="Lecture_default.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="the AI model", reference_normalized="",
+        hypothesis_normalized="the ai model", wer=0.0, vtt_path=str(vtt),
+    )
+    mr = asr_bench.ModelResult(
+        model_id="large-v3-turbo", display="Whisper Large V3 Turbo", fw_name="large-v3-turbo",
+        params="809M", developer="OpenAI", languages="99", notes="", disk_bytes=None,
+        load_sec=0.0, clips=[clip],
+    )
+    pair = asr_bench.Pair(audio=audio, reference=vtt)
+
+    backend = asr_bench.FakeLLMBackend(lambda prompt: "the AI model")
+    fusion_md, rescored = asr_bench.run_fusion_stage(
+        results=[mr], pairs=[pair], backend=backend,
+        profiles=["verbatim", "kb"], base_label="large-v3-turbo",
+        context="", glossary="", window=25.0, overlap=5.0, drift_threshold=2.0,
+        rescore=True,
+    )
+    assert (tmp_path / "Lecture_Captions_Fused.vtt").exists()
+    assert (tmp_path / "Lecture_KB_Fused.jsonl").exists()
+    assert "Fusion" in fusion_md
+    assert rescored is not None
