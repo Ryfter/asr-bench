@@ -1253,11 +1253,13 @@ def write_fused_vtt(audio_path: Path, cues: List[Cue]) -> Path:
     """Write a WebVTT from fused cues, named <base>_Captions_Fused.vtt."""
     out = audio_path.parent / f"{_fused_base(audio_path)}_Captions_Fused.vtt"
     lines: List[str] = ["WEBVTT", ""]
-    for i, c in enumerate(cues, start=1):
+    cue_num = 0
+    for c in cues:
         text = c.text.strip()
         if not text:
             continue
-        lines.append(str(i))
+        cue_num += 1
+        lines.append(str(cue_num))
         lines.append(f"{_fmt_vtt_time(c.start)} --> {_fmt_vtt_time(c.end)}")
         lines.append(text)
         lines.append("")
@@ -1307,19 +1309,17 @@ def fuse_clip(
     """
     res = FusionResult()
     windows = build_windows(duration, window, overlap)
-    base_cues = sources.get(base_label, [])
 
-    verbatim_prev = ""
-    kb_prev = ""
+    prev_by_profile: Dict[str, str] = {p: "" for p in profiles}
     fused_by_profile: Dict[str, List[Tuple[Tuple[float, float], str]]] = {p: [] for p in profiles}
 
     for (w_start, w_end) in windows:
         payload_sources = {
             label: collect_window_text(cues, w_start, w_end) for label, cues in sources.items()
         }
-        base_text = collect_window_text(base_cues, w_start, w_end)
+        base_text = payload_sources.get(base_label, "")
         for profile in profiles:
-            prev = verbatim_prev if profile == "verbatim" else kb_prev
+            prev = prev_by_profile[profile]
             payload = WindowPayload(w_start, w_end, payload_sources, prev_fused=prev)
             prompt = build_fusion_prompt(payload, profile, context, glossary)
             try:
@@ -1328,10 +1328,7 @@ def fuse_clip(
                 fused = ""
                 res.flags.append(f"[{w_start:.0f}-{w_end:.0f}s {profile}] backend error: {e}")
             fused_by_profile[profile].append(((w_start, w_end), fused))
-            if profile == "verbatim":
-                verbatim_prev = fused
-            else:
-                kb_prev = fused
+            prev_by_profile[profile] = fused
             # Drift guard: high WER between base source and fused output signals
             # the LLM may have hallucinated or radically paraphrased.
             if base_text and fused:

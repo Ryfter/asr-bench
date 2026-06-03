@@ -97,3 +97,13 @@ def test_write_kb_jsonl(tmp_path):
     assert out.name == "Lecture_KB_Fused.jsonl"
     rows = [json.loads(l) for l in out.read_text(encoding="utf-8").splitlines() if l.strip()]
     assert rows[1]["text"] == "b"
+
+
+def test_write_kb_md(tmp_path):
+    audio = tmp_path / "Lecture_default.mp4"
+    audio.write_bytes(b"x")
+    chunks = [{"start": 0.0, "end": 25.0, "text": "first chunk"}]
+    out = asr_bench.write_kb_md(audio, chunks)
+    assert out.name == "Lecture_KB_Fused.md"
+    body = out.read_text(encoding="utf-8")
+    assert "Knowledge base" in body and "first chunk" in body
