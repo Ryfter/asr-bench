@@ -9,6 +9,7 @@ def _whisper_result():
         vram_peak_bytes=200 * 1024**2, hypothesis="hi", reference_normalized="hi",
         hypothesis_normalized="hi", wer=0.10, cue_count=50,
         reference_origin="unknown", reference_label="user-provided reference",
+        mer=0.09, wil=0.12, hits=90, substitutions=5, deletions=3, insertions=2,
     )
     return asr_bench.ModelResult(
         model_id="large-v3-turbo", display="Whisper Large V3 Turbo",
@@ -24,6 +25,7 @@ def _nim_result():
         vram_peak_bytes=9 * 1024**3, hypothesis="hi", reference_normalized="hi",
         hypothesis_normalized="hi", wer=0.09, cue_count=48,
         reference_origin="unknown", reference_label="user-provided reference",
+        mer=0.09, wil=0.12, hits=90, substitutions=5, deletions=3, insertions=2,
     )
     return asr_bench.ModelResult(
         model_id="canary-nim", display="Canary (NIM)", fw_name="", params="—",
@@ -38,6 +40,7 @@ def _args():
         vad_filter=True, models=["large-v3-turbo", "canary-nim"],
         nim_url="localhost:50051", nim_model="", nim_language="en-US",
         nim_api_key=None, nim_ssl=False,
+        show_alignment=False,
     )
 
 
@@ -73,3 +76,48 @@ def test_whisper_row_has_no_star_marker():
     md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
     wl = [l for l in md.splitlines() if l.startswith("| Whisper Large V3 Turbo")][0]
     assert "*" not in wl
+
+
+def test_headline_has_mer_and_wil_columns():
+    md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
+    header = [l for l in md.splitlines() if l.startswith("| Model | Params")][0]
+    assert "MER%" in header and "WIL%" in header
+
+
+def test_per_clip_table_has_sdi_columns():
+    md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
+    assert "| S | D | I |" in md
+
+
+def test_nan_metric_renders_as_dash():
+    r = _whisper_result()
+    r.clips[0].wer = float("nan")
+    r.clips[0].mer = float("nan")
+    r.clips[0].wil = float("nan")
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    assert "nan" not in md.lower().split("reproducibility")[0]  # no literal 'nan' in the tables
+
+
+def test_show_alignment_section_emitted_when_flag_on():
+    args = _args()
+    args.show_alignment = True
+    r = _whisper_result()
+    r.clips[0].reference_normalized = "the quick brown fox"
+    r.clips[0].hypothesis_normalized = "the quick brown box"
+    md = asr_bench.render_markdown([r], Path("."), args, "proxy")
+    assert "## Alignment detail" in md
+
+
+def test_no_alignment_section_by_default():
+    md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
+    assert "## Alignment detail" not in md
+
+
+def test_no_empty_alignment_header_when_all_clips_skipped():
+    args = _args()
+    args.show_alignment = True
+    r = _whisper_result()
+    r.clips[0].reference_normalized = ""
+    r.clips[0].hypothesis_normalized = ""
+    md = asr_bench.render_markdown([r], Path("."), args, "proxy")
+    assert "## Alignment detail" not in md

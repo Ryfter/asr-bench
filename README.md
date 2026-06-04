@@ -17,11 +17,15 @@ last year. Outputs markdown tables you can paste into a doc.
 
 ## Status
 
-**v0.1 — released 2026-05-30. Local Whisper variants only:**
+**v0.2 — released 2026-06-01. Local Whisper variants + optional fusion stage:**
 - `small` (244M, ~470MB)
 - `medium` (769M, ~1.5GB)
 - `large-v3` (1550M, ~3.1GB)
 - `large-v3-turbo` (809M, ~1.6GB)
+
+New in v0.2: MER/WIL metrics, per-clip S/D/I counts, `--show-alignment`, and the
+`--fuse` post-processing stage (verbatim captions + RAG knowledge base). See
+[What it measures](#what-it-measures) and [Fusion](#fusion-optional) below.
 
 See [SPEC.md](./SPEC.md) for the full roadmap (WhisperX + diarization,
 Canary-Qwen + NVIDIA NeMo, multi-language coverage, hand-corrected reference
@@ -32,9 +36,12 @@ sets).
 | Metric | What it means |
 |---|---|
 | WER% | Word Error Rate vs your reference transcript |
+| MER% | Match Error Rate — fraction of reference+hypothesis words that are errors (bounded [0,1]) |
+| WIL% | Word Information Lost — information-theoretic complement to WER (bounded [0,1]) |
+| S/D/I | Per-clip substitution / deletion / insertion counts |
 | RTFx | Audio seconds processed per wall-clock second (higher = faster than realtime) |
 | Wall clock | Total processing time |
-| Peak VRAM | NVIDIA GPU memory peak during transcription (requires `nvidia-ml-py3`) |
+| Peak VRAM | NVIDIA GPU memory peak during transcription (requires `nvidia-ml-py`) |
 | Disk size | Model file size after first download |
 | Params | Model parameter count |
 
@@ -42,6 +49,13 @@ WER is the load-bearing metric and **requires a reference transcript**. If your
 reference is hand-corrected gold standard, the numbers are defensible. If you
 use auto-generated captions (like Panopto exports) as the reference, treat the
 WER as a *relative* divergence rate rather than an absolute accuracy score.
+
+**MER and WIL** (Morris, Maier & Green 2004) sit alongside WER in every table.
+Both are bounded [0, 1] and information-theoretic: WIL in particular captures
+how much information was *lost* rather than just counting token-level edits,
+which makes it a better proxy for comprehension quality on lecture content. Use
+`--show-alignment` to print per-clip alignment diffs when you want to see
+exactly what was substituted, deleted, or inserted.
 
 ## Quick start
 
@@ -52,8 +66,9 @@ WER as a *relative* divergence rate rather than an absolute accuracy score.
 python -m pip install -r requirements.txt
 ```
 
-The `nvidia-ml-py3` dep is optional but enables peak-VRAM tracking. Without it
-the VRAM column shows `n/a`.
+The `nvidia-ml-py` dep is optional but enables peak-VRAM tracking. Without it
+the VRAM column shows `n/a`. For the fusion stage, [Ollama](https://ollama.ai)
+is an additional optional dependency (only needed with `--llm ollama:...`).
 
 ### Prepare your corpus
 
@@ -191,6 +206,79 @@ absolute accuracy?"
 Worst: use one ASR model's output as the reference for benchmarking another
 ASR model. This produces numbers that look real but measure nothing.
 
+## Fusion (optional)
+
+The `--fuse` flag adds a post-benchmark pass that combines each model's VTT output
+with the Panopto reference into a consensus transcript. It works by windowing the
+timed cues into overlapping chunks (default 25 s windows, 5 s overlap) and asking
+a pluggable LLM to fuse each window into one of two profiles:
+
+| Profile | Output | Use for |
+|---|---|---|
+| `verbatim` | `<base>_Captions_Fused.vtt` | Accessibility captions; optional rescoring reference |
+| `kb` | `<base>_KB_Fused.jsonl` + `.md` | RAG / knowledge-base ingestion |
+
+`--profile both` (the default) produces both from a single chunked pass.
+
+**Two important caveats:**
+1. **Only the verbatim profile is ADA/WCAG caption-eligible.** The kb profile
+   deliberately rephrases and condenses for retrieval quality — it is explicitly
+   NOT compliant captions and is labeled as such in the report.
+2. **`--rescore-against-fused` is agreement-biased.** The fused verbatim VTT is
+   built from the same model outputs it is then used to score — it measures
+   consensus, not ground truth. The report labels this table clearly.
+
+### LLM backend
+
+Pass `--llm <backend>` to choose how the fusion prompt is served:
+
+- **`ollama:<model>`** (default: `ollama:qwen2.5`) — calls a locally-running
+  [Ollama](https://ollama.ai) server. Fully offline, no API key. Requires
+  `ollama serve` and the model pulled (`ollama pull qwen2.5`).
+- **`cli:<command>`** — shells out to an authenticated frontier CLI (e.g.
+  `cli:claude`, `cli:gemini`). Uses your existing subscription — no asr-bench
+  API key required. Consistent with the local-first ethos: billing stays with
+  your own account.
+- **`fake`** — returns deterministic stub output. No LLM required. Good for
+  testing pipeline wiring before you have Ollama set up.
+
+### Context file
+
+Provide domain context to improve fusion quality:
+
+```bash
+# Generate a guided template
+python asr_bench.py --init-context context.md
+
+# Fill in context.md (course schedule, speaker names, jargon, glossary, …)
+# Then pass it to a fusion run:
+python asr_bench.py --models large-v3-turbo --fuse --context context.md
+```
+
+### Example fusion commands
+
+```bash
+# Local Ollama — both profiles, with context
+python asr_bench.py --models small,medium,large-v3-turbo \
+  --fuse --profile both --llm ollama:qwen2.5 --context context.md
+
+# Frontier CLI backend — verbatim captions only
+python asr_bench.py --models large-v3-turbo \
+  --fuse --profile verbatim --llm cli:claude --context context.md
+
+# Re-score all models against the fused verbatim reference
+python asr_bench.py --models small,medium,large-v3-turbo \
+  --fuse --rescore-against-fused --context context.md
+
+# Dry-run with no LLM (FakeLLMBackend — no Ollama required)
+python asr_bench.py --models small --fuse --llm fake --limit 1
+```
+
+> **Note:** Fusion is fully unit-tested via `FakeLLMBackend` but has not yet
+> been validated end-to-end against a live Ollama or `cli:` backend on real
+> lecture audio. Expect to tune the drift-guard threshold and review output
+> quality on your first real run.
+
 ## NVIDIA NIM engine (optional)
 
 > **Status — experimental; not yet validated against a live NIM.** asr-bench's
@@ -236,5 +324,7 @@ to add new engines. Each engine needs a wrapper that exposes
 ## Acknowledgments
 
 - [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — CTranslate2 port of OpenAI Whisper
-- [jiwer](https://github.com/jitsi/jiwer) — WER computation
-- [nvidia-ml-py3](https://pypi.org/project/nvidia-ml-py3/) — GPU memory tracking
+- [jiwer](https://github.com/jitsi/jiwer) — WER / MER / WIL computation
+- [nvidia-ml-py](https://pypi.org/project/nvidia-ml-py/) — GPU memory tracking
+- [Ollama](https://ollama.ai) — optional local LLM backend for fusion
+- Morris, Maier & Green (2004) — MER and WIL metric definitions

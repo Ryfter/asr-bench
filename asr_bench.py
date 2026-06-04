@@ -12,12 +12,16 @@ See README.md for corpus layout. See SPEC.md for the v0.2/v0.3 roadmap.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
+import math
 import os
 import re
 import sys
+import subprocess
 import threading
 import time
+import urllib.request
 
 # Windows console defaults to cp1252 and chokes on most non-ASCII glyphs.
 # Force UTF-8 on stdout/stderr so the progress + report render correctly.
@@ -234,6 +238,65 @@ def load_reference_text(path: Path) -> str:
     return " ".join(out)
 
 
+# ---- Caption cue parsing ----------------------------------------------------
+@dataclass
+class Cue:
+    start: float
+    end: float
+    text: str
+
+
+_VTT_TS_RE = re.compile(
+    r"(\d{2}):(\d{2}):(\d{2})[.,](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[.,](\d{3})"
+)
+
+
+def _ts_to_seconds(h: str, m: str, s: str, ms: str) -> float:
+    return int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000.0
+
+
+def parse_caption_cues(path: Path) -> List[Cue]:
+    """Parse a VTT or SRT file into timed cues.
+
+    Tolerant of both '.' (VTT) and ',' (SRT) millisecond separators. Drops the
+    WEBVTT header, numeric cue indices, and any fully bracketed line (e.g.
+    ``[Applause]``, ``[Music]``, Panopto's ``[Auto-generated transcript...]``).
+    Multi-line cue text is joined with spaces.
+    """
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    cues: List[Cue] = []
+    start = end = None
+    buf: List[str] = []
+
+    def flush() -> None:
+        nonlocal start, end, buf
+        if start is not None and buf:
+            text = " ".join(buf).strip()
+            if text:
+                cues.append(Cue(start, end, text))
+        start = end = None
+        buf = []
+
+    for line in raw.splitlines():
+        s = line.strip()
+        m = _VTT_TS_RE.search(s)
+        if m:
+            flush()
+            start = _ts_to_seconds(m.group(1), m.group(2), m.group(3), m.group(4))
+            end = _ts_to_seconds(m.group(5), m.group(6), m.group(7), m.group(8))
+            continue
+        if not s:
+            flush()
+            continue
+        # Also drops a cue body that is a bare integer or fully bracketed — harmless for ASR content.
+        if s.upper() == "WEBVTT" or _CUE_NUM_RE.match(s) or _BRACKETED_RE.match(s):
+            continue
+        if start is not None:
+            buf.append(s)
+    flush()
+    return cues
+
+
 def normalize_for_wer(text: str) -> str:
     """Lowercase, strip punctuation except apostrophes, collapse whitespace.
 
@@ -244,6 +307,50 @@ def normalize_for_wer(text: str) -> str:
     text = re.sub(r"[^\w\s']", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
+
+
+# ---- Word metrics -----------------------------------------------------------
+@dataclass
+class WordMetrics:
+    """All word-level scores from a single jiwer alignment.
+
+    WER  = (S+D+I)/N1                      (edit cost; can exceed 1.0)
+    MER  = (S+D+I)/(H+S+D+I)               (Morris et al.; bounded [0,1])
+    WIL  = 1 - H*H/(N1*N2)                 (Morris et al.; bounded [0,1])
+    where N1 = ref words = H+S+D, N2 = hyp words = H+S+I.
+    """
+    wer: float
+    mer: float
+    wil: float
+    hits: int
+    substitutions: int
+    deletions: int
+    insertions: int
+
+
+def compute_word_metrics(reference: str, hypothesis: str) -> WordMetrics:
+    """One jiwer.process_words call -> WER, MER, WIL, and H/S/D/I counts.
+
+    Inputs should already be normalized (see normalize_for_wer). Returns NaN
+    metrics (not an exception) when alignment is impossible (e.g. empty ref).
+    """
+    nan = float("nan")
+    if not reference.strip():
+        return WordMetrics(nan, nan, nan, 0, 0, 0, 0)
+    from jiwer import process_words
+    try:
+        out = process_words(reference, hypothesis)
+        return WordMetrics(
+            wer=float(out.wer),
+            mer=float(out.mer),
+            wil=float(out.wil),
+            hits=int(out.hits),
+            substitutions=int(out.substitutions),
+            deletions=int(out.deletions),
+            insertions=int(out.insertions),
+        )
+    except Exception:
+        return WordMetrics(nan, nan, nan, 0, 0, 0, 0)
 
 
 # ---- Pair discovery ---------------------------------------------------------
@@ -461,6 +568,13 @@ def _model_label(model_id: str) -> str:
     return "".join(p.capitalize() for p in model_id.split("-"))
 
 
+def _fmt_pct(value: float) -> str:
+    """Format a 0-1 metric as a 1-decimal percentage, or '—' if NaN/None."""
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return "—"
+    return f"{value * 100:.1f}"
+
+
 def _vram_cell(value: Optional[int], is_total: bool) -> str:
     """Render a VRAM cell; mark NIM 'total used' values with a trailing '*'."""
     if value is None:
@@ -484,6 +598,12 @@ class ClipResult:
     reference_normalized: str
     hypothesis_normalized: str
     wer: float
+    mer: float = float("nan")
+    wil: float = float("nan")
+    hits: int = 0
+    substitutions: int = 0
+    deletions: int = 0
+    insertions: int = 0
     cue_count: int = 0
     vtt_path: Optional[str] = None
     reference_origin: str = "unknown"
@@ -510,6 +630,18 @@ class ModelResult:
         if not self.clips:
             return 0.0
         return sum(c.wer for c in self.clips) / len(self.clips)
+
+    @property
+    def avg_mer(self) -> float:
+        if not self.clips:
+            return 0.0
+        return sum(c.mer for c in self.clips) / len(self.clips)
+
+    @property
+    def avg_wil(self) -> float:
+        if not self.clips:
+            return 0.0
+        return sum(c.wil for c in self.clips) / len(self.clips)
 
     @property
     def total_audio_sec(self) -> float:
@@ -719,7 +851,6 @@ class FasterWhisperEngine(Engine):
 
         # Late import so the script can show --help without requiring the model dep
         from faster_whisper import WhisperModel
-        from jiwer import wer as jiwer_wer
 
         t0 = time.time()
         try:
@@ -800,10 +931,8 @@ class FasterWhisperEngine(Engine):
 
             ref_norm = normalize_for_wer(ref_text)
             hyp_norm = normalize_for_wer(hypothesis)
-            try:
-                wer_val = jiwer_wer(ref_norm, hyp_norm)
-            except Exception:
-                wer_val = float("nan")
+            metrics = compute_word_metrics(ref_norm, hyp_norm)
+            wer_val = metrics.wer
 
             audio_sec = float(audio_info.duration)
             rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
@@ -826,6 +955,12 @@ class FasterWhisperEngine(Engine):
                     reference_normalized=ref_norm,
                     hypothesis_normalized=hyp_norm,
                     wer=wer_val,
+                    mer=metrics.mer,
+                    wil=metrics.wil,
+                    hits=metrics.hits,
+                    substitutions=metrics.substitutions,
+                    deletions=metrics.deletions,
+                    insertions=metrics.insertions,
                     cue_count=len(cue_tuples),
                     vtt_path=str(vtt_path),
                     reference_origin=ref_origin,
@@ -862,8 +997,6 @@ class NimEngine(Engine):
                 languages=entry.get("languages", "—"), notes=f"LOAD FAILED: {msg}",
                 disk_bytes=None, load_sec=0.0, engine="nim", vram_is_total=True,
             )
-
-        from jiwer import wer as jiwer_wer
 
         t0 = time.time()
         try:
@@ -936,10 +1069,8 @@ class NimEngine(Engine):
 
             ref_norm = normalize_for_wer(ref_text)
             hyp_norm = normalize_for_wer(hypothesis)
-            try:
-                wer_val = jiwer_wer(ref_norm, hyp_norm)
-            except Exception:
-                wer_val = float("nan")
+            metrics = compute_word_metrics(ref_norm, hyp_norm)
+            wer_val = metrics.wer
 
             rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
             print(
@@ -954,7 +1085,10 @@ class NimEngine(Engine):
                     transcribe_sec=transcribe_sec, rtfx=rtfx,
                     vram_peak_bytes=vram_peak, hypothesis=hypothesis,
                     reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
-                    wer=wer_val, cue_count=len(cue_tuples), vtt_path=str(vtt_path),
+                    wer=wer_val, mer=metrics.mer, wil=metrics.wil,
+                    hits=metrics.hits, substitutions=metrics.substitutions,
+                    deletions=metrics.deletions, insertions=metrics.insertions,
+                    cue_count=len(cue_tuples), vtt_path=str(vtt_path),
                     reference_origin=ref_origin, reference_label=ref_label,
                 )
             )
@@ -967,6 +1101,479 @@ ENGINES: Dict[str, type] = {
     "faster-whisper": FasterWhisperEngine,
     "nim": NimEngine,
 }
+
+
+# ---- Fusion -----------------------------------------------------------------
+_CONTEXT_GLOSSARY_HEADER_RE = re.compile(r"^#+\s*glossary\b", re.IGNORECASE | re.MULTILINE)
+
+
+def init_context_template() -> str:
+    """A guided context.md the user fills in, then passes via --context."""
+    return """# Fusion context
+
+Fill in what the fusion LLM should know about this corpus. Everything here is
+fed to the model for every clip. Delete sections you don't need.
+
+## Topic / course
+<!-- e.g. "Undergraduate intro statistics; lectures cover hypothesis testing." -->
+
+## Schedule & recurring times
+<!-- e.g. "I teach 9-11am; there are no evening sessions, so 'final at 9pm' is wrong." -->
+
+## Names (people, places) — canonical spelling
+<!-- e.g. "Dr. Nguyen; the dataset is called CIFAR-10." -->
+
+## Jargon & acronyms
+<!-- e.g. "Spell 'AI' (not 'I'); 'p-value' (not 'p value')." -->
+
+## Known mishearings to watch for
+<!-- e.g. "'their' vs 'there'; 'affect' vs 'effect'." -->
+
+## Style preferences
+<!-- e.g. captions: keep verbatim; KB: full sentences, normalize numbers. -->
+
+## Glossary
+<!-- One correction per line, e.g.:
+AI not I
+CIFAR-10 not cipher ten
+-->
+"""
+
+
+def load_context(context_path: Optional[str], glossary_path: Optional[str]) -> Tuple[str, str]:
+    """Return (context_text, glossary_text).
+
+    The glossary is the '## Glossary' section of the context file, unless a
+    separate --glossary file is given (which overrides it). Missing files -> "".
+    """
+    context_text = ""
+    glossary_text = ""
+    if context_path:
+        raw = Path(context_path).read_text(encoding="utf-8", errors="replace")
+        m = _CONTEXT_GLOSSARY_HEADER_RE.search(raw)
+        if m:
+            context_text = raw[: m.start()].strip()
+            glossary_text = raw[m.end():].strip()
+        else:
+            context_text = raw.strip()
+    if glossary_path:
+        glossary_text = Path(glossary_path).read_text(encoding="utf-8", errors="replace").strip()
+    return context_text, glossary_text
+
+
+def build_windows(duration: float, window: float, overlap: float) -> List[Tuple[float, float]]:
+    """Tile [0, duration] into (start, end) spans of length `window`, stepping by
+    stride = window - overlap. The overlap is carried into prompts as context; the
+    final window is clamped to `duration`. Returns a single full-span window when
+    the clip is shorter than one window.
+    """
+    if duration <= window or window <= 0:
+        return [(0.0, duration)]
+    stride = max(window - overlap, 1.0)
+    spans: List[Tuple[float, float]] = []
+    start = 0.0
+    while start < duration:
+        end = min(start + window, duration)
+        spans.append((round(start, 3), round(end, 3)))
+        if end >= duration:
+            break
+        start += stride
+    return spans
+
+
+def collect_window_text(cues: List[Cue], start: float, end: float) -> str:
+    """Concatenate the text of all cues that overlap [start, end)."""
+    parts = [c.text for c in cues if c.end > start and c.start < end]
+    return " ".join(parts).strip()
+
+
+def collect_window_text_midpoint(cues: List[Cue], start: float, end: float) -> str:
+    """Text of cues whose MIDPOINT falls in [start, end). Assigns each cue to
+    exactly one window (no shared boundary cues) — used for non-overlapping
+    verbatim tiling so captions don't duplicate across cues."""
+    parts = [c.text for c in cues if start <= (c.start + c.end) / 2.0 < end]
+    return " ".join(parts).strip()
+
+
+@dataclass
+class WindowPayload:
+    start: float
+    end: float
+    sources: Dict[str, str]          # source label -> text in this window
+    prev_fused: str = ""             # previous window's fused output (carryover)
+
+
+_VERBATIM_INSTRUCTIONS = (
+    "You are reconciling several speech-to-text transcripts of the SAME audio span "
+    "into the single most accurate VERBATIM transcript of what was actually said.\n"
+    "Rules:\n"
+    "- Restore the actually-spoken words. When sources disagree (e.g. 'AI' vs 'I'), "
+    "choose the reading that fits the context and glossary.\n"
+    "- Do NOT rephrase, summarize, or clean up grammar. Preserve the speaker's wording "
+    "and disfluencies.\n"
+    "- Output ONLY the corrected transcript text for this span. No commentary, no labels."
+)
+
+_KB_INSTRUCTIONS = (
+    "You are merging several speech-to-text transcripts of the SAME audio span into "
+    "one clean, readable passage for a searchable knowledge base.\n"
+    "Rules:\n"
+    "- Rewrite for clarity and correct grammar. Normalize times, numbers and dates "
+    "(e.g. '9 to 11' -> '9:00-11:00 am') using the context.\n"
+    "- Fix mishearings and proper nouns using the glossary and context. Prefer meaning "
+    "over literal wording, but never invent facts.\n"
+    "- Output ONLY the cleaned passage text for this span. No commentary, no labels."
+)
+
+
+def build_fusion_prompt(payload: "WindowPayload", profile: str, context: str, glossary: str) -> str:
+    instructions = _KB_INSTRUCTIONS if profile == "kb" else _VERBATIM_INSTRUCTIONS
+    parts: List[str] = [instructions, ""]
+    if context.strip():
+        parts += ["## Context", context.strip(), ""]
+    if glossary.strip():
+        parts += ["## Glossary (canonical spellings / corrections)", glossary.strip(), ""]
+    if payload.prev_fused.strip():
+        parts += ["## Preceding text (already finalized — for continuity only, do not repeat)",
+                  payload.prev_fused.strip(), ""]
+    parts.append(f"## Transcripts for span {payload.start:.1f}s-{payload.end:.1f}s")
+    for label, text in payload.sources.items():
+        parts.append(f"### {label}")
+        parts.append(text.strip() or "(empty)")
+    parts.append("")
+    parts.append("## Output")
+    return "\n".join(parts)
+
+
+# ---- Fusion orchestrator ----------------------------------------------------
+@dataclass
+class FusionResult:
+    verbatim_cues: List[Cue] = field(default_factory=list)
+    kb_chunks: List[Dict] = field(default_factory=list)   # {start, end, text}
+    flags: List[str] = field(default_factory=list)        # drift warnings
+
+
+def _fused_base(audio_path: Path) -> str:
+    stem = audio_path.stem
+    return stem[: -len("_default")] if stem.endswith("_default") else stem
+
+
+def write_fused_vtt(audio_path: Path, cues: List[Cue]) -> Path:
+    """Write a WebVTT from fused cues, named <base>_Captions_Fused.vtt."""
+    out = audio_path.parent / f"{_fused_base(audio_path)}_Captions_Fused.vtt"
+    lines: List[str] = ["WEBVTT", ""]
+    cue_num = 0
+    for c in cues:
+        text = c.text.strip()
+        if not text:
+            continue
+        cue_num += 1
+        lines.append(str(cue_num))
+        lines.append(f"{_fmt_vtt_time(c.start)} --> {_fmt_vtt_time(c.end)}")
+        lines.append(text)
+        lines.append("")
+    out.write_text("\n".join(lines), encoding="utf-8")
+    return out
+
+
+def write_kb_jsonl(audio_path: Path, chunks: List[Dict]) -> Path:
+    """Write overlapping KB chunks as newline-delimited JSON, named <base>_KB_Fused.jsonl."""
+    out = audio_path.parent / f"{_fused_base(audio_path)}_KB_Fused.jsonl"
+    lines = [json.dumps(c, ensure_ascii=False) for c in chunks]
+    out.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+    return out
+
+
+def write_kb_md(audio_path: Path, chunks: List[Dict]) -> Path:
+    """Write overlapping KB chunks as a readable Markdown file, named <base>_KB_Fused.md."""
+    out = audio_path.parent / f"{_fused_base(audio_path)}_KB_Fused.md"
+    lines: List[str] = [f"# Knowledge base — {_fused_base(audio_path)}", ""]
+    for c in chunks:
+        lines.append(f"## {_fmt_vtt_time(c['start'])} – {_fmt_vtt_time(c['end'])}")
+        lines.append("")
+        lines.append(c["text"].strip())
+        lines.append("")
+    out.write_text("\n".join(lines), encoding="utf-8")
+    return out
+
+
+def fuse_clip(
+    duration: float,
+    base_label: str,
+    sources: Dict[str, List[Cue]],
+    profiles: List[str],
+    backend: "LLMBackend",
+    context: str,
+    glossary: str,
+    window: float,
+    overlap: float,
+    drift_threshold: float,
+) -> FusionResult:
+    """Window the timeline, fuse each window per requested profile, assemble.
+
+    - verbatim: non-overlapping window tiling (overlap=0) with midpoint cue
+      assignment — each source cue belongs to exactly one window (no shared
+      boundary cues), so caption text never duplicates across adjacent cues.
+      Verbatim cue span equals the non-overlapping window itself.
+    - kb: overlapping windows (overlap as supplied) with full boundary-cue
+      inclusion via collect_window_text — preserves RAG context continuity.
+    - drift guard: per window, WER(fused vs base text); flagged if > threshold.
+    """
+    res = FusionResult()
+    for profile in profiles:
+        if profile == "verbatim":
+            wins = build_windows(duration, window, 0.0)        # non-overlapping tiles
+            collect = collect_window_text_midpoint
+        else:
+            wins = build_windows(duration, window, overlap)    # overlapping (RAG)
+            collect = collect_window_text
+        prev = ""
+        for (w_start, w_end) in wins:
+            payload_sources = {label: collect(cues, w_start, w_end) for label, cues in sources.items()}
+            base_text = payload_sources.get(base_label, "")
+            payload = WindowPayload(w_start, w_end, payload_sources, prev_fused=prev)
+            prompt = build_fusion_prompt(payload, profile, context, glossary)
+            try:
+                fused = backend.generate(prompt).strip()
+            except Exception as e:
+                fused = ""
+                res.flags.append(f"[{w_start:.0f}-{w_end:.0f}s {profile}] backend error: {e}")
+            prev = fused
+            # Drift guard: high WER between base source and fused output signals
+            # the LLM may have hallucinated or radically paraphrased.
+            if base_text and fused:
+                drift = compute_word_metrics(
+                    normalize_for_wer(base_text), normalize_for_wer(fused)
+                ).wer
+                if not math.isnan(drift) and drift > drift_threshold:
+                    res.flags.append(
+                        f"[{w_start:.0f}-{w_end:.0f}s {profile}] drift WER {drift*100:.0f}% vs base — review"
+                    )
+            if not fused.strip():
+                continue
+            if profile == "verbatim":
+                res.verbatim_cues.append(Cue(w_start, w_end, fused.strip()))
+            else:
+                res.kb_chunks.append({"start": w_start, "end": w_end, "text": fused.strip()})
+    return res
+
+
+# ---- Fusion re-scoring -------------------------------------------------------
+
+def rescore_against_reference(
+    results: List["ModelResult"],
+    reference_cues_by_clip: Dict[str, List[Cue]],
+) -> List["ModelResult"]:
+    """Return deep copies of `results` with each clip's metrics recomputed against
+    the fused verbatim reference (keyed by clip audio filename).
+
+    Models are scored on their stored `hypothesis`. Clips with no matching
+    reference are left unscored (NaN). The originals are not mutated.
+    """
+    out: List[ModelResult] = []
+    for r in results:
+        r2 = copy.deepcopy(r)
+        for c in r2.clips:
+            ref_cues = reference_cues_by_clip.get(c.audio)
+            if not ref_cues:
+                c.wer = c.mer = c.wil = float("nan")
+                continue
+            ref_text = normalize_for_wer(" ".join(cu.text for cu in ref_cues))
+            hyp_text = normalize_for_wer(c.hypothesis)
+            m = compute_word_metrics(ref_text, hyp_text)
+            c.wer, c.mer, c.wil = m.wer, m.mer, m.wil
+            c.hits, c.substitutions, c.deletions, c.insertions = (
+                m.hits, m.substitutions, m.deletions, m.insertions,
+            )
+        out.append(r2)
+    return out
+
+
+def render_fused_rescore_table(results: List["ModelResult"]) -> str:
+    lines: List[str] = []
+    lines.append("## Scores vs fused verbatim reference")
+    lines.append("")
+    lines.append(
+        "> **Reference = fused verbatim consensus (agreement-biased).** This reference "
+        "was built from the models below, so scores favor models that agreed with the "
+        "majority. Treat these as *relative*, not absolute accuracy."
+    )
+    lines.append("")
+    lines.append("| Model | WER% | MER% | WIL% |")
+    lines.append("|---|---|---|---|")
+    for r in results:
+        wer = _fmt_pct(r.avg_wer) if r.clips else "—"
+        mer = _fmt_pct(r.avg_mer) if r.clips else "—"
+        wil = _fmt_pct(r.avg_wil) if r.clips else "—"
+        lines.append(f"| {r.display} | {wer} | {mer} | {wil} |")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def run_fusion_stage(
+    results: List["ModelResult"],
+    pairs: List["Pair"],
+    backend: "LLMBackend",
+    profiles: List[str],
+    base_label: str,
+    context: str,
+    glossary: str,
+    window: float,
+    overlap: float,
+    drift_threshold: float,
+    rescore: bool,
+) -> Tuple[str, Optional[List["ModelResult"]]]:
+    """Fuse every clip and write outputs. Returns (markdown_section, rescored_or_None).
+
+    Sources per clip = each model's written VTT (parsed back to timed cues) +
+    the Panopto/reference caption file (if it parses as timed cues).
+    """
+    lines: List[str] = ["## Fusion", ""]
+    lines.append(f"- Backend: `{backend.name}`  Profiles: `{', '.join(profiles)}`  "
+                 f"Window: {window:.0f}s / overlap {overlap:.0f}s  Base: `{base_label}`")
+    lines.append("")
+    lines.append(
+        "> **Accessibility note:** only the *verbatim* output targets ADA/WCAG caption "
+        "fidelity. The *kb* output is rephrased and is **not** compliant captions."
+    )
+    lines.append("")
+
+    verbatim_ref_by_clip: Dict[str, List[Cue]] = {}
+    pair_by_audio = {p.audio.name: p for p in pairs}
+
+    for clip_idx in range(len(results[0].clips) if results else 0):
+        audio_name = results[0].clips[clip_idx].audio
+        pair = pair_by_audio.get(audio_name)
+        if pair is None:
+            continue
+        audio_path = pair.audio
+
+        sources: Dict[str, List[Cue]] = {}
+        duration = results[0].clips[clip_idx].audio_sec or 1.0
+        for r in results:
+            if clip_idx < len(r.clips) and r.clips[clip_idx].vtt_path:
+                vp = Path(r.clips[clip_idx].vtt_path)
+                if vp.is_file():
+                    sources[r.model_id] = parse_caption_cues(vp)
+        try:
+            ref_cues = parse_caption_cues(pair.reference)
+            if ref_cues:
+                sources["Panopto"] = ref_cues
+        except Exception:
+            pass
+
+        if not sources:
+            lines.append(f"- {audio_name}: no parseable sources — skipped")
+            continue
+
+        res = fuse_clip(
+            duration=duration, base_label=base_label, sources=sources,
+            profiles=profiles, backend=backend, context=context, glossary=glossary,
+            window=window, overlap=overlap, drift_threshold=drift_threshold,
+        )
+        written: List[str] = []
+        if "verbatim" in profiles and res.verbatim_cues:
+            vtt_out = write_fused_vtt(audio_path, res.verbatim_cues)
+            verbatim_ref_by_clip[audio_name] = res.verbatim_cues
+            written.append(vtt_out.name)
+        if "kb" in profiles and res.kb_chunks:
+            written.append(write_kb_jsonl(audio_path, res.kb_chunks).name)
+            written.append(write_kb_md(audio_path, res.kb_chunks).name)
+        lines.append(f"- **{audio_name}** → {', '.join(f'`{w}`' for w in written) or '(nothing written)'}")
+        for flag in res.flags:
+            lines.append(f"  - ⚠️ {flag}")
+    lines.append("")
+
+    rescored = None
+    if rescore and verbatim_ref_by_clip:
+        rescored = rescore_against_reference(results, verbatim_ref_by_clip)
+    return "\n".join(lines), rescored
+
+
+# ---- LLM backends -----------------------------------------------------------
+class LLMBackend(ABC):
+    """Minimal contract: turn a prompt into text. Fusion builds the prompt; the
+    backend only generates. Keeps profile/prompt logic in one place (DRY)."""
+    name: str = ""
+
+    @abstractmethod
+    def generate(self, prompt: str) -> str:
+        ...
+
+
+class FakeLLMBackend(LLMBackend):
+    """Deterministic, dependency-free backend for tests."""
+    name = "fake"
+
+    def __init__(self, fn=None):
+        self._fn = fn or (lambda prompt: prompt)
+
+    def generate(self, prompt: str) -> str:
+        return self._fn(prompt)
+
+
+class OllamaBackend(LLMBackend):
+    """Local Ollama HTTP backend (default). Offline, free, no API key."""
+    name = "ollama"
+
+    def __init__(self, model: str = "qwen2.5", host: str = "http://localhost:11434", timeout: float = 300.0):
+        self.model = model
+        self.host = host.rstrip("/")
+        self.timeout = timeout
+
+    def generate(self, prompt: str) -> str:
+        body = json.dumps({"model": self.model, "prompt": prompt, "stream": False}).encode("utf-8")
+        req = urllib.request.Request(
+            f"{self.host}/api/generate", data=body,
+            headers={"Content-Type": "application/json"}, method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        return (data.get("response") or "").strip()
+
+
+class CliBackend(LLMBackend):
+    """Shell out to an authenticated frontier CLI (e.g. `claude -p`, `gemini`).
+
+    The prompt is passed on stdin to avoid arg-length limits. Uses the operator's
+    existing subscription — no API key is stored in asr-bench.
+    """
+    name = "cli"
+
+    def __init__(self, command: List[str], timeout: float = 300.0):
+        self.command = command
+        self.timeout = timeout
+
+    def generate(self, prompt: str) -> str:
+        proc = subprocess.run(
+            self.command, input=prompt, capture_output=True, text=True,
+            timeout=self.timeout, check=False,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(f"LLM CLI {self.command} exited {proc.returncode}: {proc.stderr[:500]}")
+        return (proc.stdout or "").strip()
+
+
+def make_llm_backend(spec: str) -> LLMBackend:
+    """Parse a --llm spec into a backend.
+
+    'fake'                 -> FakeLLMBackend (echo)
+    'ollama:<model>'       -> OllamaBackend  (default model qwen2.5 if omitted)
+    'cli:<command words>'  -> CliBackend     (command split on whitespace)
+    """
+    spec = (spec or "").strip()
+    if spec == "fake":
+        return FakeLLMBackend()
+    kind, _, rest = spec.partition(":")
+    kind = kind.strip().lower()
+    rest = rest.strip()
+    if kind == "ollama":
+        return OllamaBackend(model=rest or "qwen2.5")
+    if kind == "cli":
+        if not rest:
+            raise ValueError("cli backend needs a command, e.g. --llm cli:claude")
+        return CliBackend(rest.split())
+    raise ValueError(f"unknown --llm backend '{spec}' (use fake, ollama:<model>, or cli:<command>)")
 
 
 # ---- Output -----------------------------------------------------------------
@@ -1007,16 +1614,18 @@ def render_markdown(
     # ---- Headline: one row per model, the key numbers ----
     lines.append("## Headline")
     lines.append("")
-    lines.append("| Model | Params | Disk | Overall WER% | RTFx | Total time | Peak VRAM | Notes |")
-    lines.append("|---|---|---|---|---|---|---|---|")
+    lines.append("| Model | Params | Disk | Overall WER% | MER% | WIL% | RTFx | Total time | Peak VRAM | Notes |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|")
     for r in results:
         wall_clock = f"{r.total_transcribe_sec:.1f}s"
-        wer_pct = f"{r.avg_wer * 100:.1f}" if r.clips else "—"
+        wer_pct = _fmt_pct(r.avg_wer) if r.clips else "—"
+        mer_pct = _fmt_pct(r.avg_mer) if r.clips else "—"
+        wil_pct = _fmt_pct(r.avg_wil) if r.clips else "—"
         rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
         vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         disk = _disk_cell(r)
         lines.append(
-            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {rtfx} | {wall_clock} | {vram} | {r.notes} |"
+            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {mer_pct} | {wil_pct} | {rtfx} | {wall_clock} | {vram} | {r.notes} |"
         )
     lines.append("")
 
@@ -1052,15 +1661,17 @@ def render_markdown(
             audio_min = sample.audio_sec / 60.0
             lines.append(f"### {sample.audio} — {audio_min:.1f} min")
             lines.append("")
-            lines.append("| Model | WER% | RTFx | Transcribe time | VRAM peak |")
-            lines.append("|---|---|---|---|---|")
+            lines.append("| Model | WER% | MER% | WIL% | S | D | I | RTFx | Transcribe time | VRAM peak |")
+            lines.append("|---|---|---|---|---|---|---|---|---|---|")
             for r in results:
                 if i < len(r.clips):
                     c = r.clips[i]
-                    wer_pct = f"{c.wer * 100:.1f}"
+                    wer_pct = _fmt_pct(c.wer)
+                    mer_pct = _fmt_pct(c.mer)
+                    wil_pct = _fmt_pct(c.wil)
                     vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
                     lines.append(
-                        f"| {r.display} | {wer_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
+                        f"| {r.display} | {wer_pct} | {mer_pct} | {wil_pct} | {c.substitutions} | {c.deletions} | {c.insertions} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
                     )
             lines.append("")
 
@@ -1072,22 +1683,25 @@ def render_markdown(
     for r in results:
         lines.append(f"### {r.display}")
         lines.append("")
-        lines.append("| Clip | Audio | WER% | RTFx | Transcribe time | VRAM peak |")
-        lines.append("|---|---|---|---|---|---|")
+        lines.append("| Clip | Audio | WER% | MER% | WIL% | RTFx | Transcribe time | VRAM peak |")
+        lines.append("|---|---|---|---|---|---|---|---|")
         for c in r.clips:
-            wer_pct = f"{c.wer * 100:.1f}"
+            wer_pct = _fmt_pct(c.wer)
+            mer_pct = _fmt_pct(c.mer)
+            wil_pct = _fmt_pct(c.wil)
             vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
             audio_label = f"{c.audio_sec / 60:.1f} min"
             lines.append(
-                f"| {c.audio} | {audio_label} | {wer_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
+                f"| {c.audio} | {audio_label} | {wer_pct} | {mer_pct} | {wil_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
             )
-        # Overall row
         overall_audio = f"{r.total_audio_sec / 60:.1f} min"
-        overall_wer = f"{r.avg_wer * 100:.1f}" if r.clips else "—"
+        overall_wer = _fmt_pct(r.avg_wer) if r.clips else "—"
+        overall_mer = _fmt_pct(r.avg_mer) if r.clips else "—"
+        overall_wil = _fmt_pct(r.avg_wil) if r.clips else "—"
         overall_rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
         overall_vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         lines.append(
-            f"| **OVERALL** | **{overall_audio}** | **{overall_wer}** | **{overall_rtfx}** | **{r.total_transcribe_sec:.1f}s** | **{overall_vram}** |"
+            f"| **OVERALL** | **{overall_audio}** | **{overall_wer}** | **{overall_mer}** | **{overall_wil}** | **{overall_rtfx}** | **{r.total_transcribe_sec:.1f}s** | **{overall_vram}** |"
         )
         lines.append("")
 
@@ -1151,6 +1765,36 @@ def render_markdown(
                     lines.append(f"  - `{name}`")
         lines.append("")
 
+    # ---- Optional alignment detail ----
+    if getattr(args, "show_alignment", False) and results and results[0].clips:
+        from jiwer import process_words, visualize_alignment
+        blocks: List[str] = []
+        for r in results:
+            for c in r.clips:
+                if not c.reference_normalized or not c.hypothesis_normalized:
+                    continue
+                name = Path(c.audio).name
+                try:
+                    viz = visualize_alignment(
+                        process_words(c.reference_normalized, c.hypothesis_normalized),
+                        show_measures=False,
+                    )
+                except Exception:
+                    blocks.append(f"<!-- alignment unavailable for {name} -->")
+                    continue
+                blocks.append(f"### {r.display} — {name}")
+                blocks.append("")
+                blocks.append("```")
+                blocks.append(viz.rstrip())
+                blocks.append("```")
+                blocks.append("")
+        if blocks:
+            lines.append("## Alignment detail")
+            lines.append("")
+            lines.append("Word-level reference→hypothesis alignment (S=substitution, D=deletion, I=insertion).")
+            lines.append("")
+            lines.extend(blocks)
+
     # ---- Reproducibility footnote ----
     lines.append("## Reproducibility")
     lines.append("")
@@ -1166,6 +1810,7 @@ def render_markdown(
     lines.append(f"- VAD filter: {'on (Silero VAD pre-segments audio — prevents the Whisper-Large 1-second-cue decoder lock)' if args.vad_filter else 'off (--no-vad-filter)'}")
     lines.append(f"- Reference normalization: lowercase, strip punctuation (keep apostrophes), collapse whitespace.")
     lines.append(f"- WER computed via [jiwer](https://github.com/jitsi/jiwer).")
+    lines.append("- **MER** (match error rate) and **WIL** (word information lost) are the bounded-[0,1] measures from Morris, Maier & Green (2004); both derive from the same H/S/D/I alignment as WER. S/D/I in the per-clip table are raw substitution/deletion/insertion counts.")
     if any(c.reference_origin in {"panopto-asr", "asr-generic"} for r in results for c in r.clips):
         lines.append(
             "- **Reference origin warning:** at least one clip's reference was auto-detected as ASR-generated "
@@ -1264,7 +1909,39 @@ def main() -> int:
         default=None,
         help="Regex; only include clips whose audio filename matches.",
     )
+    ap.add_argument(
+        "--show-alignment",
+        action="store_true",
+        help="Append a per-clip word-level alignment diff (jiwer) to the report. Verbose — one fenced block per (model, clip) pair; can add many hundreds of lines.",
+    )
+    ap.add_argument("--fuse", action="store_true",
+                    help="After benchmarking, fuse all models + reference into a best transcript.")
+    ap.add_argument("--profile", default="both", choices=["verbatim", "kb", "both"],
+                    help="Fusion profile(s). verbatim=captions/reference, kb=RAG knowledge base.")
+    ap.add_argument("--fuse-base", default="large-v3-turbo",
+                    help="Model whose cue timing anchors the fusion windows.")
+    ap.add_argument("--llm", default="ollama:qwen2.5",
+                    help="Fusion LLM backend: fake | ollama:<model> | cli:<command>.")
+    ap.add_argument("--context", default=None, help="Path to a fusion context file (see --init-context).")
+    ap.add_argument("--glossary", default=None, help="Optional separate glossary file (overrides in-context glossary).")
+    ap.add_argument("--window", type=float, default=25.0, help="Fusion window length in seconds.")
+    ap.add_argument("--overlap", type=float, default=5.0, help="Fusion window overlap in seconds (context carryover).")
+    ap.add_argument("--drift-threshold", type=float, default=1.0,
+                    help="Flag a fused window whose WER vs the base model exceeds this (1.0 = 100%%).")
+    ap.add_argument("--rescore-against-fused", action="store_true",
+                    help="Re-score every model against the verbatim fused reference (agreement-biased; labeled as such).")
+    ap.add_argument("--init-context", nargs="?", const="context.md", default=None,
+                    metavar="PATH", help="Write a context.md template to PATH (default context.md) and exit.")
     args = ap.parse_args()
+
+    if args.init_context is not None:
+        dest = Path(args.init_context)
+        if dest.exists():
+            print(f"ERROR: {dest} already exists — refusing to overwrite", file=sys.stderr)
+            return 2
+        dest.write_text(init_context_template(), encoding="utf-8")
+        print(f"Wrote fusion context template to {dest}. Edit it, then pass --context {dest} --fuse.")
+        return 0
 
     corpus = Path(args.corpus).resolve()
     if not corpus.is_dir():
@@ -1282,6 +1959,28 @@ def main() -> int:
         print(f"ERROR: unknown models: {', '.join(unknown)}", file=sys.stderr)
         print(f"Available: {', '.join(MODELS.keys())} (or ad-hoc 'nim:<riva-model-name>')", file=sys.stderr)
         return 2
+
+    # Pre-flight fusion setup (fail fast before the expensive benchmark run)
+    fusion_backend = None
+    fusion_context = ""
+    fusion_glossary = ""
+    if args.fuse:
+        try:
+            fusion_backend = make_llm_backend(args.llm)
+        except ValueError as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            return 2
+        for label, pth in (("--context", args.context), ("--glossary", args.glossary)):
+            if pth and not Path(pth).is_file():
+                print(f"ERROR: {label} file not found: {pth}", file=sys.stderr)
+                return 2
+        fusion_context, fusion_glossary = load_context(args.context, args.glossary)
+        if args.fuse_base not in requested:
+            print(
+                f"WARNING: --fuse-base '{args.fuse_base}' is not in --models ({', '.join(requested)}); "
+                f"its cues won't exist, so windows will have no timing anchor and drift checks won't fire.",
+                file=sys.stderr,
+            )
 
     pairs = discover_pairs(corpus)
     if args.include:
@@ -1362,6 +2061,19 @@ def main() -> int:
         results.append(engine_cls().run(entry, pairs, cfg))
 
     md = render_markdown(results, corpus, args, gold_label)
+
+    if args.fuse:
+        profiles = ["verbatim", "kb"] if args.profile == "both" else [args.profile]
+        fusion_md, rescored = run_fusion_stage(
+            results=results, pairs=pairs, backend=fusion_backend, profiles=profiles,
+            base_label=args.fuse_base, context=fusion_context, glossary=fusion_glossary,
+            window=args.window, overlap=args.overlap, drift_threshold=args.drift_threshold,
+            rescore=args.rescore_against_fused,
+        )
+        md = md + "\n" + fusion_md
+        if rescored is not None:
+            md = md + "\n" + render_fused_rescore_table(rescored)
+
     print()
     print(md)
 
