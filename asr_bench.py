@@ -17,6 +17,7 @@ import json
 import math
 import os
 import re
+import shutil
 import sys
 import subprocess
 import threading
@@ -1533,10 +1534,22 @@ class OllamaBackend(LLMBackend):
 
 
 class CliBackend(LLMBackend):
-    """Shell out to an authenticated frontier CLI (e.g. `claude -p`, `gemini`).
+    """Shell out to an authenticated frontier CLI (e.g. `claude -p`, `gemini -p {prompt}`).
 
-    The prompt is passed on stdin to avoid arg-length limits. Uses the operator's
-    existing subscription — no API key is stored in asr-bench.
+    If the command contains a ``{prompt}`` token it is substituted with the
+    prompt as an argument (for CLIs like ``gemini -p`` that take the prompt as
+    an arg); otherwise the prompt is piped on stdin (for CLIs like ``claude
+    -p``).  Arg substitution is subject to OS arg-length limits; prefer stdin
+    for very large prompts.
+
+    The executable (cmd[0]) is resolved via ``shutil.which`` before invoking
+    subprocess so that npm-installed CLI shims (e.g. ``gemini.CMD``,
+    ``codex.CMD`` on Windows) are found without requiring ``shell=True``.
+    Falls back to the bare name when ``which`` returns None, so a missing CLI
+    still raises a clear ``FileNotFoundError``.
+
+    Uses the operator's existing subscription — no API key is stored in
+    asr-bench.
     """
     name = "cli"
 
@@ -1545,12 +1558,20 @@ class CliBackend(LLMBackend):
         self.timeout = timeout
 
     def generate(self, prompt: str) -> str:
+        if any("{prompt}" in part for part in self.command):
+            cmd = [part.replace("{prompt}", prompt) for part in self.command]
+            stdin = None
+        else:
+            cmd = list(self.command)
+            stdin = prompt
+        exe = shutil.which(cmd[0]) or cmd[0]
+        cmd = [exe, *cmd[1:]]
         proc = subprocess.run(
-            self.command, input=prompt, capture_output=True, text=True,
+            cmd, input=stdin, capture_output=True, text=True,
             timeout=self.timeout, check=False,
         )
         if proc.returncode != 0:
-            raise RuntimeError(f"LLM CLI {self.command} exited {proc.returncode}: {proc.stderr[:500]}")
+            raise RuntimeError(f"LLM CLI {cmd} exited {proc.returncode}: {proc.stderr[:500]}")
         return (proc.stdout or "").strip()
 
 
@@ -1921,7 +1942,10 @@ def main() -> int:
     ap.add_argument("--fuse-base", default="large-v3-turbo",
                     help="Model whose cue timing anchors the fusion windows.")
     ap.add_argument("--llm", default="ollama:qwen2.5",
-                    help="Fusion LLM backend: fake | ollama:<model> | cli:<command>.")
+                    help="Fusion LLM backend: fake | ollama:<model> | cli:<command>. "
+                         "cli pipes the prompt on stdin (e.g. 'cli:claude -p'); a {prompt} "
+                         "token is substituted as an arg instead (e.g. 'cli:gemini -p {prompt}'). "
+                         "Agentic CLIs are slow per call — prefer ollama for bulk runs.")
     ap.add_argument("--context", default=None, help="Path to a fusion context file (see --init-context).")
     ap.add_argument("--glossary", default=None, help="Optional separate glossary file (overrides in-context glossary).")
     ap.add_argument("--window", type=float, default=25.0, help="Fusion window length in seconds.")

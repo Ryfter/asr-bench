@@ -235,10 +235,16 @@ Pass `--llm <backend>` to choose how the fusion prompt is served:
 - **`ollama:<model>`** (default: `ollama:qwen2.5`) — calls a locally-running
   [Ollama](https://ollama.ai) server. Fully offline, no API key. Requires
   `ollama serve` and the model pulled (`ollama pull qwen2.5`).
-- **`cli:<command>`** — shells out to an authenticated frontier CLI (e.g.
-  `cli:claude`, `cli:gemini`). Uses your existing subscription — no asr-bench
-  API key required. Consistent with the local-first ethos: billing stays with
-  your own account.
+- **`cli:<command>`** — shells out to an authenticated frontier CLI. Uses your
+  existing subscription — no asr-bench API key required. The prompt is piped on
+  **stdin** by default (e.g. `cli:claude -p`); if the command contains a
+  `{prompt}` token it is substituted as an **argument** instead, which some CLIs
+  require (e.g. `"cli:gemini -p {prompt}"`). The executable is resolved via
+  `PATH` (Windows `.cmd`/`.bat` shims included). **Caveat:** agentic CLIs like
+  `gemini` reload their whole harness per invocation (often 10s–minutes per
+  call), so they are impractical for bulk per-window fusion — prefer **Ollama**
+  for full runs and reserve `cli:` for one-off/small fusions or a fast headless
+  completion CLI.
 - **`fake`** — returns deterministic stub output. No LLM required. Good for
   testing pipeline wiring before you have Ollama set up.
 
@@ -262,9 +268,13 @@ python asr_bench.py --models large-v3-turbo --fuse --context context.md
 python asr_bench.py --models small,medium,large-v3-turbo \
   --fuse --profile both --llm ollama:qwen2.5 --context context.md
 
-# Frontier CLI backend — verbatim captions only
+# Frontier CLI backend — verbatim captions only (prompt on stdin)
 python asr_bench.py --models large-v3-turbo \
-  --fuse --profile verbatim --llm cli:claude --context context.md
+  --fuse --profile verbatim --llm "cli:claude -p" --context context.md
+
+# Frontier CLI that needs the prompt as an argument (e.g. gemini)
+python asr_bench.py --models large-v3-turbo \
+  --fuse --profile verbatim --llm "cli:gemini -p {prompt}" --context context.md
 
 # Re-score all models against the fused verbatim reference
 python asr_bench.py --models small,medium,large-v3-turbo \
