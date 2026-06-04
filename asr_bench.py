@@ -1104,6 +1104,37 @@ ENGINES: Dict[str, type] = {
 }
 
 
+# ---- WhisperX ---------------------------------------------------------------
+@dataclass
+class WhisperXResult:
+    """Parsed output of a WhisperX run (transcribe + align + optional diarize)."""
+    segments: List[Dict]                 # [{start, end, text, speaker?}]
+    words: List[Dict] = field(default_factory=list)
+    speakers: List[str] = field(default_factory=list)
+    der: Optional[float] = None
+    language: str = ""
+
+    @classmethod
+    def from_dict(cls, d: Dict) -> "WhisperXResult":
+        return cls(
+            segments=list(d.get("segments") or []),
+            words=list(d.get("words") or []),
+            speakers=list(d.get("speakers") or []),
+            der=d.get("der"),
+            language=d.get("language") or "",
+        )
+
+    def text(self) -> str:
+        return " ".join(s.get("text", "").strip() for s in self.segments).strip()
+
+    def speaker_segments(self) -> List[Tuple[float, float, str]]:
+        out: List[Tuple[float, float, str]] = []
+        for s in self.segments:
+            if s.get("speaker"):
+                out.append((float(s["start"]), float(s["end"]), s["speaker"]))
+        return out
+
+
 # ---- Fusion -----------------------------------------------------------------
 _CONTEXT_GLOSSARY_HEADER_RE = re.compile(r"^#+\s*glossary\b", re.IGNORECASE | re.MULTILINE)
 
