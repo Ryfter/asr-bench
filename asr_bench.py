@@ -1942,7 +1942,10 @@ def main() -> int:
     ap.add_argument("--fuse-base", default="large-v3-turbo",
                     help="Model whose cue timing anchors the fusion windows.")
     ap.add_argument("--llm", default="ollama:qwen2.5",
-                    help="Fusion LLM backend: fake | ollama:<model> | cli:<command>.")
+                    help="Fusion LLM backend: fake | ollama:<model> | cli:<command>. "
+                         "cli pipes the prompt on stdin (e.g. 'cli:claude -p'); a {prompt} "
+                         "token is substituted as an arg instead (e.g. 'cli:gemini -p {prompt}'). "
+                         "Agentic CLIs are slow per call — prefer ollama for bulk runs.")
     ap.add_argument("--context", default=None, help="Path to a fusion context file (see --init-context).")
     ap.add_argument("--glossary", default=None, help="Optional separate glossary file (overrides in-context glossary).")
     ap.add_argument("--window", type=float, default=25.0, help="Fusion window length in seconds.")
