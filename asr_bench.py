@@ -626,6 +626,9 @@ class ClipResult:
     substitutions: int = 0
     deletions: int = 0
     insertions: int = 0
+    speaker_segments: List[Tuple[float, float, str]] = field(default_factory=list)
+    num_speakers: int = 0
+    der: float = float("nan")
     cue_count: int = 0
     vtt_path: Optional[str] = None
     reference_origin: str = "unknown"
@@ -702,6 +705,12 @@ class RunConfig:
     nim_language: str = "en-US"
     nim_api_key: Optional[str] = None
     nim_ssl: bool = False
+    # whisperx only
+    whisperx_python: Optional[str] = None
+    diarize: bool = True
+    hf_token: Optional[str] = None
+    min_speakers: Optional[int] = None
+    max_speakers: Optional[int] = None
 
 
 class Engine(ABC):

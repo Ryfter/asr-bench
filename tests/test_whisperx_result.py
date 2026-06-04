@@ -34,3 +34,21 @@ def test_speaker_segments_helper():
          "speakers": ["SPEAKER_00", "SPEAKER_01"], "language": "en"}
     r = asr_bench.WhisperXResult.from_dict(d)
     assert r.speaker_segments() == [(0.0, 1.0, "SPEAKER_00"), (1.0, 2.0, "SPEAKER_01")]
+
+
+def test_clipresult_speaker_fields_default():
+    c = asr_bench.ClipResult(
+        audio="a.mp4", audio_sec=1, transcribe_sec=1, rtfx=1, vram_peak_bytes=None,
+        hypothesis="h", reference_normalized="r", hypothesis_normalized="h", wer=0.1,
+    )
+    assert c.speaker_segments == []
+    assert c.num_speakers == 0
+    import math; assert math.isnan(c.der)
+
+
+def test_runconfig_whisperx_fields_default():
+    cfg = asr_bench.RunConfig(device="cpu", compute_type="int8")
+    assert cfg.whisperx_python is None
+    assert cfg.diarize is True
+    assert cfg.hf_token is None
+    assert cfg.min_speakers is None and cfg.max_speakers is None
