@@ -1165,6 +1165,37 @@ class WhisperXResult:
         return out
 
 
+def write_whisperx_vtt(audio_path: Path, model_label: str, result: "WhisperXResult") -> Path:
+    """WebVTT with speaker-prefixed cues (e.g. 'SPEAKER_00: text'). Named like the
+    other engines' VTTs: <base>_Captions_<Model>.vtt."""
+    safe_model = re.sub(r"[^A-Za-z0-9._-]+", "-", model_label).strip("-")
+    out = audio_path.parent / f"{_fused_base(audio_path)}_Captions_{safe_model}.vtt"
+    lines: List[str] = ["WEBVTT", ""]
+    n = 0
+    for s in result.segments:
+        text = (s.get("text") or "").strip()
+        if not text:
+            continue
+        spk = s.get("speaker")
+        if spk:
+            text = f"{spk}: {text}"
+        n += 1
+        lines.append(str(n))
+        lines.append(f"{_fmt_vtt_time(float(s['start']))} --> {_fmt_vtt_time(float(s['end']))}")
+        lines.append(text)
+        lines.append("")
+    out.write_text("\n".join(lines), encoding="utf-8")
+    return out
+
+
+def write_words_sidecar(audio_path: Path, model_label: str, result: "WhisperXResult") -> Path:
+    """Write word-level timestamps (and speaker, if present) to a JSON sidecar."""
+    safe_model = re.sub(r"[^A-Za-z0-9._-]+", "-", model_label).strip("-")
+    out = audio_path.parent / f"{_fused_base(audio_path)}_Words_{safe_model}.json"
+    out.write_text(json.dumps(result.words, ensure_ascii=False, indent=0), encoding="utf-8")
+    return out
+
+
 # ---- Fusion -----------------------------------------------------------------
 _CONTEXT_GLOSSARY_HEADER_RE = re.compile(r"^#+\s*glossary\b", re.IGNORECASE | re.MULTILINE)
 
