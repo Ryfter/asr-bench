@@ -43,6 +43,7 @@ def test_cli_backend_invokes_subprocess(monkeypatch):
         calls["input"] = input
         return FakeCompleted()
 
+    monkeypatch.setattr(asr_bench.shutil, "which", lambda name: None)
     monkeypatch.setattr(asr_bench.subprocess, "run", fake_run)
     b = asr_bench.CliBackend(["claude", "-p"])
     out = b.generate("my prompt")
@@ -90,6 +91,7 @@ def test_cli_backend_raises_on_nonzero_exit(monkeypatch):
     def fake_run(cmd, input=None, capture_output=None, text=None, timeout=None, check=None):
         return FakeCompleted()
 
+    monkeypatch.setattr(asr_bench.shutil, "which", lambda name: None)
     monkeypatch.setattr(asr_bench.subprocess, "run", fake_run)
     b = asr_bench.CliBackend(["claude"])
     try:
@@ -112,6 +114,7 @@ def test_cli_backend_prompt_placeholder_substitutes_arg(monkeypatch):
         calls["input"] = input
         return FakeCompleted()
 
+    monkeypatch.setattr(asr_bench.shutil, "which", lambda name: None)
     monkeypatch.setattr(asr_bench.subprocess, "run", fake_run)
     b = asr_bench.CliBackend(["gemini", "-p", "{prompt}"])
     out = b.generate("fuse this please")
@@ -134,6 +137,7 @@ def test_cli_backend_without_placeholder_uses_stdin(monkeypatch):
         calls["input"] = input
         return FakeCompleted()
 
+    monkeypatch.setattr(asr_bench.shutil, "which", lambda name: None)
     monkeypatch.setattr(asr_bench.subprocess, "run", fake_run)
     b = asr_bench.CliBackend(["claude", "-p"])
     out = b.generate("fuse this")
@@ -146,3 +150,44 @@ def test_make_llm_backend_cli_with_placeholder():
     b = asr_bench.make_llm_backend("cli:gemini -p {prompt}")
     assert isinstance(b, asr_bench.CliBackend)
     assert b.command == ["gemini", "-p", "{prompt}"]
+
+
+def test_cli_backend_resolves_executable_via_which(monkeypatch):
+    calls = {}
+
+    class FakeCompleted:
+        stdout = "resolved out"
+        stderr = ""
+        returncode = 0
+
+    def fake_run(cmd, input=None, capture_output=None, text=None, timeout=None, check=None):
+        calls["cmd"] = cmd
+        return FakeCompleted()
+
+    def fake_which(name):
+        return r"C:\tools\gemini.CMD" if name == "gemini" else None
+
+    monkeypatch.setattr(asr_bench.shutil, "which", fake_which)
+    monkeypatch.setattr(asr_bench.subprocess, "run", fake_run)
+    b = asr_bench.CliBackend(["gemini", "-p", "{prompt}"])
+    out = b.generate("hi there")
+    assert out == "resolved out"
+    # executable resolved to the .CMD path; placeholder still substituted
+    assert calls["cmd"] == [r"C:\tools\gemini.CMD", "-p", "hi there"]
+
+
+def test_cli_backend_which_miss_falls_back_to_name(monkeypatch):
+    calls = {}
+
+    class FakeCompleted:
+        stdout = "ok"
+        stderr = ""
+        returncode = 0
+
+    monkeypatch.setattr(asr_bench.shutil, "which", lambda name: None)
+    monkeypatch.setattr(asr_bench.subprocess, "run",
+                        lambda cmd, **kw: calls.update(cmd=cmd) or FakeCompleted())
+    b = asr_bench.CliBackend(["claude", "-p"])
+    out = b.generate("x")
+    assert out == "ok"
+    assert calls["cmd"][0] == "claude"   # fell back to bare name

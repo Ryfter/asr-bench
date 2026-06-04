@@ -17,6 +17,7 @@ import json
 import math
 import os
 import re
+import shutil
 import sys
 import subprocess
 import threading
@@ -1541,6 +1542,12 @@ class CliBackend(LLMBackend):
     -p``).  Arg substitution is subject to OS arg-length limits; prefer stdin
     for very large prompts.
 
+    The executable (cmd[0]) is resolved via ``shutil.which`` before invoking
+    subprocess so that npm-installed CLI shims (e.g. ``gemini.CMD``,
+    ``codex.CMD`` on Windows) are found without requiring ``shell=True``.
+    Falls back to the bare name when ``which`` returns None, so a missing CLI
+    still raises a clear ``FileNotFoundError``.
+
     Uses the operator's existing subscription — no API key is stored in
     asr-bench.
     """
@@ -1555,8 +1562,10 @@ class CliBackend(LLMBackend):
             cmd = [part.replace("{prompt}", prompt) for part in self.command]
             stdin = None
         else:
-            cmd = self.command
+            cmd = list(self.command)
             stdin = prompt
+        exe = shutil.which(cmd[0]) or cmd[0]
+        cmd = [exe, *cmd[1:]]
         proc = subprocess.run(
             cmd, input=stdin, capture_output=True, text=True,
             timeout=self.timeout, check=False,
