@@ -167,6 +167,28 @@ def test_render_fused_rescore_table_labeled_biased():
     assert "biased" in md.lower()
 
 
+def test_verbatim_windows_do_not_duplicate_cue_text():
+    import re
+    # Backend echoes the large-v3-turbo source block it is given for each window.
+    def echo_turbo(prompt):
+        m = re.search(r"### large-v3-turbo\n(.+?)(?:\n###|\n\n## Output)", prompt, re.S)
+        return m.group(1).strip() if m else ""
+    turbo = [asr_bench.Cue(0, 10, "alpha"), asr_bench.Cue(10, 20, "bravo"),
+             asr_bench.Cue(20, 30, "charlie"), asr_bench.Cue(30, 40, "delta")]
+    res = asr_bench.fuse_clip(
+        duration=40.0, base_label="large-v3-turbo",
+        sources={"large-v3-turbo": turbo}, profiles=["verbatim"],
+        backend=asr_bench.FakeLLMBackend(echo_turbo), context="", glossary="",
+        window=20.0, overlap=5.0, drift_threshold=10.0,
+    )
+    joined = " ".join(c.text for c in res.verbatim_cues)
+    for w in ["alpha", "bravo", "charlie", "delta"]:
+        assert joined.count(w) == 1, (w, joined)   # each word appears exactly once
+    # verbatim cues must tile without overlap
+    for a, b in zip(res.verbatim_cues, res.verbatim_cues[1:]):
+        assert b.start >= a.end - 1e-6
+
+
 def test_run_fusion_stage_end_to_end(tmp_path, monkeypatch):
     audio = tmp_path / "Lecture_default.mp4"
     audio.write_bytes(b"x")

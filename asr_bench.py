@@ -1187,6 +1187,14 @@ def collect_window_text(cues: List[Cue], start: float, end: float) -> str:
     return " ".join(parts).strip()
 
 
+def collect_window_text_midpoint(cues: List[Cue], start: float, end: float) -> str:
+    """Text of cues whose MIDPOINT falls in [start, end). Assigns each cue to
+    exactly one window (no shared boundary cues) — used for non-overlapping
+    verbatim tiling so captions don't duplicate across cues."""
+    parts = [c.text for c in cues if start <= (c.start + c.end) / 2.0 < end]
+    return " ".join(parts).strip()
+
+
 @dataclass
 class WindowPayload:
     start: float
@@ -1303,24 +1311,26 @@ def fuse_clip(
 ) -> FusionResult:
     """Window the timeline, fuse each window per requested profile, assemble.
 
-    - verbatim cues tile without overlap: cue i spans [win_start_i, win_start_{i+1}]
-      (last to `duration`), text = LLM fusion of that window.
-    - kb chunks keep the full overlapping window span [start, end].
+    - verbatim: non-overlapping window tiling (overlap=0) with midpoint cue
+      assignment — each source cue belongs to exactly one window (no shared
+      boundary cues), so caption text never duplicates across adjacent cues.
+      Verbatim cue span equals the non-overlapping window itself.
+    - kb: overlapping windows (overlap as supplied) with full boundary-cue
+      inclusion via collect_window_text — preserves RAG context continuity.
     - drift guard: per window, WER(fused vs base text); flagged if > threshold.
     """
     res = FusionResult()
-    windows = build_windows(duration, window, overlap)
-
-    prev_by_profile: Dict[str, str] = {p: "" for p in profiles}
-    fused_by_profile: Dict[str, List[Tuple[Tuple[float, float], str]]] = {p: [] for p in profiles}
-
-    for (w_start, w_end) in windows:
-        payload_sources = {
-            label: collect_window_text(cues, w_start, w_end) for label, cues in sources.items()
-        }
-        base_text = payload_sources.get(base_label, "")
-        for profile in profiles:
-            prev = prev_by_profile[profile]
+    for profile in profiles:
+        if profile == "verbatim":
+            wins = build_windows(duration, window, 0.0)        # non-overlapping tiles
+            collect = collect_window_text_midpoint
+        else:
+            wins = build_windows(duration, window, overlap)    # overlapping (RAG)
+            collect = collect_window_text
+        prev = ""
+        for (w_start, w_end) in wins:
+            payload_sources = {label: collect(cues, w_start, w_end) for label, cues in sources.items()}
+            base_text = payload_sources.get(base_label, "")
             payload = WindowPayload(w_start, w_end, payload_sources, prev_fused=prev)
             prompt = build_fusion_prompt(payload, profile, context, glossary)
             try:
@@ -1328,8 +1338,7 @@ def fuse_clip(
             except Exception as e:
                 fused = ""
                 res.flags.append(f"[{w_start:.0f}-{w_end:.0f}s {profile}] backend error: {e}")
-            fused_by_profile[profile].append(((w_start, w_end), fused))
-            prev_by_profile[profile] = fused
+            prev = fused
             # Drift guard: high WER between base source and fused output signals
             # the LLM may have hallucinated or radically paraphrased.
             if base_text and fused:
@@ -1340,20 +1349,12 @@ def fuse_clip(
                     res.flags.append(
                         f"[{w_start:.0f}-{w_end:.0f}s {profile}] drift WER {drift*100:.0f}% vs base — review"
                     )
-
-    if "verbatim" in profiles:
-        items = fused_by_profile["verbatim"]
-        for idx, ((w_start, w_end), text) in enumerate(items):
-            # Non-overlapping cue boundaries: cue i ends where cue i+1 starts.
-            cue_end = items[idx + 1][0][0] if idx + 1 < len(items) else w_end
-            if text.strip():
-                res.verbatim_cues.append(Cue(w_start, max(cue_end, w_start), text.strip()))
-
-    if "kb" in profiles:
-        for (w_start, w_end), text in fused_by_profile["kb"]:
-            if text.strip():
-                res.kb_chunks.append({"start": w_start, "end": w_end, "text": text.strip()})
-
+            if not fused.strip():
+                continue
+            if profile == "verbatim":
+                res.verbatim_cues.append(Cue(w_start, w_end, fused.strip()))
+            else:
+                res.kb_chunks.append({"start": w_start, "end": w_end, "text": fused.strip()})
     return res
 
 
