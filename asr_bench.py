@@ -154,6 +154,8 @@ MODELS: Dict[str, Dict] = {
 }
 
 _NIM_ADHOC_RE = re.compile(r"^nim:(.+)$")
+_WHISPERX_RE = re.compile(r"^(.+)\+whisperx$")
+_WHISPERX_SIZES = {"small", "medium", "large-v3", "large-v3-turbo"}
 
 
 def resolve_model_entry(model_id: str) -> Dict:
@@ -168,6 +170,25 @@ def resolve_model_entry(model_id: str) -> Dict:
         entry.setdefault("engine", "faster-whisper")
         entry["id"] = model_id
         return entry
+    wx = _WHISPERX_RE.match(model_id)
+    if wx:
+        size = wx.group(1).strip()
+        if size not in _WHISPERX_SIZES:
+            raise ValueError(
+                f"unknown WhisperX base size '{size}' in '{model_id}' "
+                f"(choices: {', '.join(sorted(_WHISPERX_SIZES))})"
+            )
+        base = MODELS[size]
+        return {
+            "id": model_id,
+            "engine": "whisperx",
+            "display": f"{base['display']} + WhisperX",
+            "developer": base["developer"],
+            "params": base["params"],
+            "languages": base["languages"],
+            "fw_name": size,
+            "notes": "WhisperX: wav2vec2 word alignment + pyannote diarization.",
+        }
     m = _NIM_ADHOC_RE.match(model_id)
     if m:
         name = m.group(1).strip()
