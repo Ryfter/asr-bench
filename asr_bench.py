@@ -1533,10 +1533,16 @@ class OllamaBackend(LLMBackend):
 
 
 class CliBackend(LLMBackend):
-    """Shell out to an authenticated frontier CLI (e.g. `claude -p`, `gemini`).
+    """Shell out to an authenticated frontier CLI (e.g. `claude -p`, `gemini -p {prompt}`).
 
-    The prompt is passed on stdin to avoid arg-length limits. Uses the operator's
-    existing subscription — no API key is stored in asr-bench.
+    If the command contains a ``{prompt}`` token it is substituted with the
+    prompt as an argument (for CLIs like ``gemini -p`` that take the prompt as
+    an arg); otherwise the prompt is piped on stdin (for CLIs like ``claude
+    -p``).  Arg substitution is subject to OS arg-length limits; prefer stdin
+    for very large prompts.
+
+    Uses the operator's existing subscription — no API key is stored in
+    asr-bench.
     """
     name = "cli"
 
@@ -1545,12 +1551,18 @@ class CliBackend(LLMBackend):
         self.timeout = timeout
 
     def generate(self, prompt: str) -> str:
+        if any("{prompt}" in part for part in self.command):
+            cmd = [part.replace("{prompt}", prompt) for part in self.command]
+            stdin = None
+        else:
+            cmd = self.command
+            stdin = prompt
         proc = subprocess.run(
-            self.command, input=prompt, capture_output=True, text=True,
+            cmd, input=stdin, capture_output=True, text=True,
             timeout=self.timeout, check=False,
         )
         if proc.returncode != 0:
-            raise RuntimeError(f"LLM CLI {self.command} exited {proc.returncode}: {proc.stderr[:500]}")
+            raise RuntimeError(f"LLM CLI {cmd} exited {proc.returncode}: {proc.stderr[:500]}")
         return (proc.stdout or "").strip()
 
 

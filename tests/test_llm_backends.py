@@ -97,3 +97,52 @@ def test_cli_backend_raises_on_nonzero_exit(monkeypatch):
         assert False, "expected RuntimeError"
     except RuntimeError as e:
         assert "boom" in str(e)
+
+
+def test_cli_backend_prompt_placeholder_substitutes_arg(monkeypatch):
+    calls = {}
+
+    class FakeCompleted:
+        stdout = "placeholder out"
+        stderr = ""
+        returncode = 0
+
+    def fake_run(cmd, input=None, capture_output=None, text=None, timeout=None, check=None):
+        calls["cmd"] = cmd
+        calls["input"] = input
+        return FakeCompleted()
+
+    monkeypatch.setattr(asr_bench.subprocess, "run", fake_run)
+    b = asr_bench.CliBackend(["gemini", "-p", "{prompt}"])
+    out = b.generate("fuse this please")
+    assert out == "placeholder out"
+    # prompt substituted into the arg, NOT passed on stdin
+    assert calls["cmd"] == ["gemini", "-p", "fuse this please"]
+    assert calls["input"] is None
+
+
+def test_cli_backend_without_placeholder_uses_stdin(monkeypatch):
+    calls = {}
+
+    class FakeCompleted:
+        stdout = "stdin out"
+        stderr = ""
+        returncode = 0
+
+    def fake_run(cmd, input=None, capture_output=None, text=None, timeout=None, check=None):
+        calls["cmd"] = cmd
+        calls["input"] = input
+        return FakeCompleted()
+
+    monkeypatch.setattr(asr_bench.subprocess, "run", fake_run)
+    b = asr_bench.CliBackend(["claude", "-p"])
+    out = b.generate("fuse this")
+    assert out == "stdin out"
+    assert calls["cmd"] == ["claude", "-p"]      # command unchanged
+    assert calls["input"] == "fuse this"          # prompt on stdin
+
+
+def test_make_llm_backend_cli_with_placeholder():
+    b = asr_bench.make_llm_backend("cli:gemini -p {prompt}")
+    assert isinstance(b, asr_bench.CliBackend)
+    assert b.command == ["gemini", "-p", "{prompt}"]
