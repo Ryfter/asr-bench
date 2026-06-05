@@ -601,12 +601,12 @@ def _fmt_pct(value: float) -> str:
 def _vram_cell(value: Optional[int], is_total: bool) -> str:
     """Render a VRAM cell; mark NIM 'total used' values with a trailing '*'."""
     if value is None:
-        return "n/a" if not _HAS_NVML else "0"
+        return "n/a"
     return fmt_bytes(value) + ("*" if is_total else "")
 
 
 def _disk_cell(result: "ModelResult") -> str:
-    return "n/a" if result.engine == "nim" else fmt_bytes(result.disk_bytes)
+    return "n/a" if result.disk_bytes is None else fmt_bytes(result.disk_bytes)
 
 
 # ---- Per-model run ----------------------------------------------------------
@@ -1322,7 +1322,7 @@ class WhisperXEngine(Engine):
             engine="whisperx", vram_is_total=False,
         )
         for clip_idx, pair in enumerate(pairs, start=1):
-            print(f"  [{clip_idx}/{len(pairs)}] whisperx {pair.audio.name}...", flush=True)
+            print(f"  [{clip_idx}/{len(pairs)}] transcribing {pair.audio.name}...", flush=True)
             ref_text = load_reference_text(pair.reference)
             ref_origin, ref_label = detect_reference_origin(pair.reference)
             rttm = find_rttm(pair.audio)
@@ -1340,8 +1340,9 @@ class WhisperXEngine(Engine):
             hyp_norm = normalize_for_wer(hypothesis)
             metrics = compute_word_metrics(ref_norm, hyp_norm)
 
-            vtt_path = write_whisperx_vtt(pair.audio, _model_label(entry["id"]), wx)
-            write_words_sidecar(pair.audio, _model_label(entry["id"]), wx)
+            label = _model_label(entry["id"])
+            vtt_path = write_whisperx_vtt(pair.audio, label, wx)
+            write_words_sidecar(pair.audio, label, wx)
 
             spk_segs = wx.speaker_segments()
             audio_sec = _audio_duration_sec(str(pair.audio)) or (
