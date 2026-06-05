@@ -89,7 +89,7 @@ def run_whisperx(audio: str, model: str, device: str, language: str = "en",
         try:
             try:
                 from whisperx.diarize import DiarizationPipeline  # newer layout
-            except Exception:
+            except ImportError:
                 from whisperx import DiarizationPipeline           # older layout
             dia = DiarizationPipeline(use_auth_token=hf_token, device=device)
             kw = {}
@@ -120,6 +120,9 @@ def run_whisperx(audio: str, model: str, device: str, language: str = "en",
                 der = compute_der_from_rttm(hyp, rttm)
             except Exception as e:
                 print(f"WARN: DER computation failed ({e})", file=sys.stderr)
+        else:
+            print("WARN: --rttm provided but no diarized segments (no DER). "
+                  "Enable diarization (--diarize + HF token) to score DER.", file=sys.stderr)
 
     return {"segments": segments, "words": words, "speakers": speakers,
             "der": der, "language": lang}

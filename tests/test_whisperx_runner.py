@@ -36,3 +36,16 @@ def test_compute_der_all_wrong(tmp_path):
     hyp = [(0.0, 4.0, "X")]
     der = wr.compute_der_from_rttm(hyp, str(p))
     assert abs(der - 0.5) < 1e-6
+
+
+def test_parse_rttm_skips_comments_and_headers(tmp_path):
+    content = (
+        ";; this is a comment\n"
+        "SPKR-INFO file 1 <NA> <NA> <NA> unknown A <NA> <NA>\n"
+        "SPEAKER file 1 0.000 1.500 <NA> <NA> A <NA> <NA>\n"
+        "\n"
+        "SPEAKER file 1 1.500 0.500 <NA> <NA> B <NA> <NA>\n"
+    )
+    p = tmp_path / "f.rttm"; p.write_text(content, encoding="utf-8")
+    segs = wr.parse_rttm(str(p))
+    assert segs == [(0.0, 1.5, "A"), (1.5, 2.0, "B")]
