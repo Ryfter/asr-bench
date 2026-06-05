@@ -131,12 +131,31 @@ def run_whisperx(audio: str, model: str, device: str, language: str = "en",
 def main() -> int:
     ns = build_arg_parser().parse_args()
     hf_token = ns.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
-    out = run_whisperx(
-        audio=ns.audio, model=ns.model, device=ns.device, language=ns.language,
-        diarize=ns.diarize, hf_token=hf_token, min_speakers=ns.min_speakers,
-        max_speakers=ns.max_speakers, rttm=ns.rttm, batch_size=ns.batch_size,
-    )
+    # The runner's contract is a SINGLE JSON document on stdout, but whisperx,
+    # torch.hub, lightning and pyannote all emit progress bars + logging there.
+    # Send every such write to stderr during processing, then restore the real
+    # stdout only for the final JSON. We redirect on two levels so nothing leaks:
+    #   * sys.stdout = sys.stderr  -> Python-level print()/file=sys.stdout
+    #   * os.dup2(2, 1)            -> OS fd 1 (logging handlers bound to the
+    #                                 original stdout, and C-extension writes)
+    saved_stdout = sys.stdout
+    sys.stdout.flush()
+    saved_stdout_fd = os.dup(1)
+    os.dup2(2, 1)
+    sys.stdout = sys.stderr
+    try:
+        out = run_whisperx(
+            audio=ns.audio, model=ns.model, device=ns.device, language=ns.language,
+            diarize=ns.diarize, hf_token=hf_token, min_speakers=ns.min_speakers,
+            max_speakers=ns.max_speakers, rttm=ns.rttm, batch_size=ns.batch_size,
+        )
+    finally:
+        sys.stderr.flush()
+        os.dup2(saved_stdout_fd, 1)
+        os.close(saved_stdout_fd)
+        sys.stdout = saved_stdout
     sys.stdout.write(json.dumps(out, ensure_ascii=False))
+    sys.stdout.flush()
     return 0
 
 

@@ -28,6 +28,8 @@ def test_make_adapter_subprocess_when_no_torch_but_venv(monkeypatch, tmp_path):
 
 def test_make_adapter_errors_when_neither(monkeypatch):
     monkeypatch.setattr(asr_bench.importlib.util, "find_spec", lambda name: None)
+    # Hermetic: a real ./.venv-whisperx on the dev box must not satisfy "neither".
+    monkeypatch.setattr(asr_bench, "_default_whisperx_python", lambda: None)
     try:
         asr_bench.make_whisperx_adapter(RunConfig(device="cpu", compute_type="int8"))
         assert False, "expected RuntimeError"
