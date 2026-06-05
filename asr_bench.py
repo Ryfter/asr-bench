@@ -164,7 +164,7 @@ def resolve_model_entry(model_id: str) -> Dict:
 
     Returns a dict that always carries: id, engine, display, developer, params,
     languages, notes. NIM entries also carry riva_model; whisper entries carry
-    fw_name. Raises ValueError for unknown ids.
+    fw_name. WhisperX entries also carry fw_name. Raises ValueError for unknown ids.
     """
     if model_id in MODELS:
         entry = dict(MODELS[model_id])
@@ -1294,6 +1294,81 @@ def make_whisperx_adapter(cfg: "RunConfig") -> WhisperXAdapter:
         "(py -3.12 -m venv .venv-whisperx && .venv-whisperx/Scripts/pip install whisperx) "
         "and pass --whisperx-python, or run asr-bench under a torch-enabled interpreter."
     )
+
+
+def _audio_duration_sec(audio_path: str) -> float:
+    """Best-effort audio duration in seconds via pyav (a faster-whisper dep).
+    Returns 0.0 on failure; callers fall back to the last segment end."""
+    try:
+        import av
+        with av.open(audio_path) as container:
+            if container.duration:
+                return float(container.duration) / 1_000_000.0
+    except Exception:
+        pass
+    return 0.0
+
+
+class WhisperXEngine(Engine):
+    name = "whisperx"
+
+    def run(self, entry: Dict, pairs: List[Pair], cfg: RunConfig) -> ModelResult:
+        adapter = make_whisperx_adapter(cfg)
+        print(f"\n[{entry['display']}] using WhisperX adapter: {adapter.name}", flush=True)
+        result_model = ModelResult(
+            model_id=entry["id"], display=entry["display"], fw_name=entry.get("fw_name", ""),
+            params=entry["params"], developer=entry["developer"], languages=entry["languages"],
+            notes=entry["notes"], disk_bytes=None, load_sec=0.0,
+            engine="whisperx", vram_is_total=False,
+        )
+        for clip_idx, pair in enumerate(pairs, start=1):
+            print(f"  [{clip_idx}/{len(pairs)}] whisperx {pair.audio.name}...", flush=True)
+            ref_text = load_reference_text(pair.reference)
+            ref_origin, ref_label = detect_reference_origin(pair.reference)
+            rttm = find_rttm(pair.audio)
+            t0 = time.time()
+            try:
+                wx = adapter.transcribe(str(pair.audio), entry["fw_name"], cfg,
+                                        str(rttm) if rttm else None)
+            except Exception as e:
+                print(f"  ERROR whisperx on {pair.audio.name}: {e}", file=sys.stderr)
+                continue
+            transcribe_sec = time.time() - t0
+
+            hypothesis = wx.text()
+            ref_norm = normalize_for_wer(ref_text)
+            hyp_norm = normalize_for_wer(hypothesis)
+            metrics = compute_word_metrics(ref_norm, hyp_norm)
+
+            vtt_path = write_whisperx_vtt(pair.audio, _model_label(entry["id"]), wx)
+            write_words_sidecar(pair.audio, _model_label(entry["id"]), wx)
+
+            spk_segs = wx.speaker_segments()
+            audio_sec = _audio_duration_sec(str(pair.audio)) or (
+                wx.segments[-1]["end"] if wx.segments else 0.0)
+            rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
+            der_val = wx.der if wx.der is not None else float("nan")
+
+            print(f"    {audio_sec:.1f}s in {transcribe_sec:.1f}s "
+                  f"(RTFx {rtfx:.2f}, WER {metrics.wer*100:.1f}%, "
+                  f"{len(wx.speakers)} speaker(s))", flush=True)
+
+            result_model.clips.append(ClipResult(
+                audio=pair.audio.name, audio_sec=audio_sec, transcribe_sec=transcribe_sec,
+                rtfx=rtfx, vram_peak_bytes=None, hypothesis=hypothesis,
+                reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
+                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, hits=metrics.hits,
+                substitutions=metrics.substitutions, deletions=metrics.deletions,
+                insertions=metrics.insertions, cue_count=len(wx.segments),
+                vtt_path=str(vtt_path), reference_origin=ref_origin, reference_label=ref_label,
+                speaker_segments=spk_segs, num_speakers=len(wx.speakers), der=der_val,
+            ))
+        if not result_model.clips:
+            result_model.notes = "ALL CLIPS FAILED — check WhisperX setup/venv/token and stderr above"
+        return result_model
+
+
+ENGINES["whisperx"] = WhisperXEngine
 
 
 # ---- Fusion -----------------------------------------------------------------
