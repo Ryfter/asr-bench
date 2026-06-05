@@ -1227,8 +1227,6 @@ def _runner_args(audio_path: str, model: str, cfg: "RunConfig", rttm: Optional[s
             "--device", cfg.device, "--language", "en"]
     if cfg.diarize:
         args.append("--diarize")
-        if cfg.hf_token:
-            args += ["--hf-token", cfg.hf_token]
         if cfg.min_speakers is not None:
             args += ["--min-speakers", str(cfg.min_speakers)]
         if cfg.max_speakers is not None:
@@ -1263,9 +1261,13 @@ class SubprocessWhisperX(WhisperXAdapter):
     def transcribe(self, audio_path, model, cfg, rttm):
         exe = shutil.which(self.python) or self.python
         cmd = [exe, *_runner_args(audio_path, model, cfg, rttm)]
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=self.timeout, check=False)
+        env = dict(os.environ)
+        if cfg.hf_token:
+            env["HF_TOKEN"] = cfg.hf_token
+        proc = subprocess.run(cmd, capture_output=True, text=True,
+                              timeout=self.timeout, check=False, env=env)
         if proc.returncode != 0:
-            raise RuntimeError(f"whisperx_runner failed ({proc.returncode}): {proc.stderr[:800]}")
+            raise RuntimeError(f"whisperx_runner failed ({proc.returncode}): {proc.stderr[:500]}")
         return WhisperXResult.from_dict(json.loads(proc.stdout))
 
 

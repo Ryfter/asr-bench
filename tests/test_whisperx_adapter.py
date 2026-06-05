@@ -46,8 +46,9 @@ def test_subprocess_adapter_parses_json(monkeypatch, tmp_path):
         returncode = 0
 
     calls = {}
-    def fake_run(cmd, capture_output=None, text=None, timeout=None, check=None):
+    def fake_run(cmd, capture_output=None, text=None, timeout=None, check=None, env=None):
         calls["cmd"] = cmd
+        calls["env"] = env
         return FakeCompleted()
 
     monkeypatch.setattr(asr_bench.shutil, "which", lambda n: None)
@@ -57,4 +58,6 @@ def test_subprocess_adapter_parses_json(monkeypatch, tmp_path):
     out = a.transcribe(str(tmp_path / "a.wav"), model="small", cfg=cfg, rttm=str(tmp_path / "a.rttm"))
     assert out.der == 0.2 and out.speakers == ["SPEAKER_00"]
     assert any("whisperx_runner.py" in str(c) for c in calls["cmd"])
-    assert "--diarize" in calls["cmd"] and "--rttm" in calls["cmd"]
+    assert "--rttm" in calls["cmd"]
+    assert "--hf-token" not in calls["cmd"]          # token NOT in argv
+    assert calls["env"].get("HF_TOKEN") == "tok"     # token passed via env
