@@ -14,16 +14,15 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
 - **Owner:** Ryfter (Kevin Rank)
 - **License:** MIT
 
-## Status — v0.2 shipped 2026-06-01
+## Status — v0.3 on feat/whisperx-diarization (not yet merged to main)
 
-Local Whisper variants only:
-
-| Model | Params | Disk | Run via |
+| Model ID | Params | Disk | Run via |
 |---|---|---|---|
-| Whisper Small | 244M | ~470MB | faster-whisper |
-| Whisper Medium | 769M | ~1.5GB | faster-whisper |
-| Whisper Large V3 | 1550M | ~3.1GB | faster-whisper |
-| Whisper Large V3 Turbo | 809M | ~1.6GB | faster-whisper |
+| `small` | 244M | ~470MB | faster-whisper |
+| `medium` | 769M | ~1.5GB | faster-whisper |
+| `large-v3` | 1550M | ~3.1GB | faster-whisper |
+| `large-v3-turbo` | 809M | ~1.6GB | faster-whisper |
+| `<size>+whisperx` | same | same | WhisperX (align + diarize) |
 
 ### What works in v0.1
 - Multi-model benchmark with one report-per-run
@@ -51,7 +50,18 @@ Local Whisper variants only:
 - **Drift guard** — per-window WER(fused vs base model) flags potential hallucination or omission
 - **`--rescore-against-fused`** — re-scores every model against the verbatim fused VTT as reference; emits a second table explicitly labeled "fused verbatim consensus (agreement-biased)"
 
-See [`SPEC.md`](./SPEC.md) for the v0.3 (WhisperX + diarization), v0.4 (NVIDIA NeMo / Canary-Qwen), v0.5 (community models) roadmap.
+### What's new in v0.3 (feat/whisperx-diarization — 119 tests pass, 2 skipped)
+- **`<size>+whisperx` model IDs** — e.g. `large-v3-turbo+whisperx`; pairs any Whisper size with WhisperX word alignment + pyannote speaker diarization
+- **Two execution paths, auto-selected** — in-process when `torch` is importable in the running interpreter; otherwise a subprocess to a Python ≤ 3.13 venv (`--whisperx-python`, auto-detects `./.venv-whisperx`). Rationale: torch has no Python 3.14 wheels and asr-bench's core runs on 3.14.
+- **`whisperx_runner.py`** — standalone script: transcribe → align → diarize (pyannote) → DER; runs in the WhisperX venv, communicates via JSON
+- **Speaker-labeled VTT** — cues prefixed `SPEAKER_00: text`; `<base>_Words_<Model>.json` word-timestamp sidecar
+- **DER (Diarization Error Rate)** — computed via pyannote.metrics; gated on a `<base>.rttm` ground-truth sidecar next to the audio. Report shows DER% + Speakers columns only when diarization data is present.
+- **Auth** — diarization needs a free HuggingFace token (`--hf-token` or `HF_TOKEN`/`HUGGINGFACE_TOKEN` env) + accepting the gated `pyannote/speaker-diarization-community-1` model (pyannote-audio 4.x default; self-contained — bundles segmentation + embedding). Missing token warns and falls back to alignment-only; `--no-diarize` skips diarization entirely. `--diarize-model` overrides (e.g. `pyannote/speaker-diarization-3.1` on a pyannote 3.x install).
+- **New CLI flags** — `--diarize`/`--no-diarize`, `--hf-token`, `--min-speakers`, `--max-speakers`, `--whisperx-python`
+
+Branch `feat/whisperx-diarization` is pushed to GitHub. **Not yet merged to main** (live WhisperX + diarization run pending — no pyannote venv set up on reference machine yet).
+
+See [`SPEC.md`](./SPEC.md) for the v0.4 (NVIDIA NeMo / Canary-Qwen) and v0.5 (community models) roadmap.
 
 ## Reference benchmark — sample lecture corpus
 
@@ -81,6 +91,16 @@ These need to be true on any machine that runs asr-bench against GPU. Document e
 - **CUDA runtime libs**: from pip wheels (`nvidia-cublas-cu12`, `nvidia-cudnn-cu12`). asr-bench's `_add_nvidia_dll_directories()` auto-adds them to PATH at startup — both via `os.environ['PATH']` (universal) and `os.add_dll_directory()` (belt-and-suspenders for native loaders).
 - **NVML DLL**: at `C:\Windows\System32\nvml.dll` (modern install). The deprecated `nvidia-ml-py3` package looks at `C:\Program Files\NVIDIA Corporation\NVSMI\` which is the old layout — use `nvidia-ml-py` (no `3`) instead.
 - **nvidia-riva-client** (for NIM engine): `pip install nvidia-riva-client`. Lazy-imported — only required when a `nim`-engine model (e.g. `canary-nim`, `nim:<name>`) is requested. Whisper-only runs don't need it.
+
+### WhisperX setup notes (reference machine)
+
+- **Python 3.12 venv** — WhisperX and PyTorch have no Python 3.14 wheels. Use `./setup_whisperx_venv.ps1` (creates `.venv-whisperx`, installs CUDA torch + whisperx, verifies CUDA). asr-bench auto-detects this path; `--whisperx-python` overrides.
+- **CUDA wheels — install torch FIRST** — live-validated 2026-06-05: a bare `pip install whisperx` pulls the **CPU-only** torch wheel on Windows (`torch.cuda.is_available()` == False, silent CPU fallback). Install `torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128` BEFORE whisperx (cu128 = Blackwell/RTX 5090/sm_120). The setup script does this. Always verify `cuda True` in the venv.
+- **HuggingFace token** — diarization uses the gated `pyannote/speaker-diarization-community-1` model (pyannote-audio 4.x default; self-contained, bundles segmentation + embedding — accept just this one repo). Loading the old `3.1` id under pyannote 4.x pulls community-1 assets anyway. Accept terms at huggingface.co/pyannote/speaker-diarization-community-1, set `HF_TOKEN` (or `--hf-token`). Token passed to the subprocess via env, not argv. Override with `--diarize-model` for pyannote 3.x.
+- **Missing token behavior** — pre-flight check in `main()` warns and falls back to alignment-only (no diarization, no DER). Does not hard-fail.
+- **RTTM sidecars** — to get DER scoring, drop `<base>.rttm` next to the audio file. The `find_rttm` helper locates it by stem match.
+- **Speaker hints for long audio** — pyannote over-clusters on long noisy recordings (an 82-min 2-speaker Zoom call estimated as 12 speakers, DER 27.4%). Pass `--min-speakers`/`--max-speakers` when the count is known — constraining to 2 gave 2 speakers, DER 13.8%.
+- **Live validation (2026-06-05)** — full path exercised on RTX 5090 (torch 2.8.0+cu128, whisperx 3.8.6, pyannote-audio 4.0.4): transcribe+align (82 min → 763 segs / 11,274 words), diarization (community-1), DER end-to-end (13.8% @ 2-speaker hint). Runner fixes the live run required: pure-JSON stdout (lib chatter → stderr), `use_auth_token`→`token` kwarg, community-1 default + `--diarize-model`.
 
 ## Common workflows
 
@@ -117,6 +137,28 @@ python asr_bench.py --no-vad-filter
 python asr_bench.py --models large-v3-turbo,canary-nim --nim-url localhost:50051
 ```
 NIM rows report WER/RTFx/wall-clock normally; VRAM is shown as total-used (`*`) and disk as `n/a` (see the report's "Engines in this run" note). Ad-hoc unregistered NIM models: `--models nim:<riva-model-name>`.
+
+### Run WhisperX (word alignment + speaker diarization)
+```powershell
+python asr_bench.py --models large-v3-turbo+whisperx --diarize --hf-token hf_...
+```
+Auto-detects `.venv-whisperx`; runs as subprocess if torch not importable in current interpreter. Produces speaker-labeled VTT and a `_Words_<Model>.json` word-timestamp sidecar. DER column appears if a `<base>.rttm` sidecar is present.
+
+### WhisperX alignment-only (no auth required)
+```powershell
+python asr_bench.py --models large-v3-turbo+whisperx --no-diarize
+```
+Word timestamps and VTT without speaker labels; no HF token needed.
+
+### WhisperX with a custom Python path
+```powershell
+python asr_bench.py --models large-v3-turbo+whisperx --whisperx-python C:\venvs\wx312\Scripts\python.exe
+```
+
+### WhisperX with speaker count hints
+```powershell
+python asr_bench.py --models large-v3-turbo+whisperx --diarize --min-speakers 2 --max-speakers 4 --hf-token hf_...
+```
 
 ### Generate a context file template for fusion
 ```powershell
@@ -156,10 +198,11 @@ Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Selec
 
 ## Development workflow
 
-- **Single-file script** — `asr_bench.py` is the whole tool. Resist the urge to break it up until a third engine family (WhisperX/NeMo) lands and forces an `engines/` subpackage. The fusion stage and LLM backends live in-file for now; extract when the file becomes unwieldy.
-- **Add a new engine family**: implement the `Engine` ABC (`run(entry, pairs, cfg) -> ModelResult`), register the class in `ENGINES`, and give its models `"engine": "<name>"` in `MODELS`. `FasterWhisperEngine` and `NimEngine` are the two reference implementations. Share the metrics infrastructure (`ClipResult`, `ModelResult`, `render_markdown`). The `engines/` package split is deferred until a third family (WhisperX/NeMo) lands.
+- **Main script** — `asr_bench.py` is the core. `whisperx_runner.py` is the only file broken out so far (it must run inside a Python ≤ 3.13 venv). The `engines/` subpackage split remains deferred until a fourth engine family (NeMo/Canary-Qwen) lands.
+- **Add a new engine family**: implement the `Engine` ABC (`run(entry, pairs, cfg) -> ModelResult`), register the class in `ENGINES`, and give its models `"engine": "<name>"` in `MODELS`. `FasterWhisperEngine`, `NimEngine`, and `WhisperXEngine` are the three reference implementations. Share the metrics infrastructure (`ClipResult`, `ModelResult`, `render_markdown`).
 - **Add a new Whisper variant**: extend the `MODELS` dict (`"engine": "faster-whisper"`) + add an entry to `_MODEL_VRAM_COST` for batch sizing.
-- **Tests**: pytest suite under `tests/` (added with the NIM engine). Run `python -m pytest`.
+- **Add a new WhisperX variant**: extend `MODELS` with `"engine": "whisperx"` and ensure the base model name (before `+whisperx`) maps to a valid faster-whisper model key.
+- **Tests**: pytest suite under `tests/`. Run `python -m pytest`. 119 pass, 2 skipped (pyannote not installed in core venv — WhisperX diarization tests are subprocess-gated).
 - **Linting**: none yet — follow the style already in `asr_bench.py`
 
 ## Hard rules
@@ -189,3 +232,8 @@ Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Selec
 - **2026-06-01** — LLM backend is pluggable, **local-first default** (`ollama:qwen2.5` — offline, no API key). The `cli:<command>` backend shells out to an authenticated frontier CLI (e.g. `claude`, `gemini`) and uses an existing subscription rather than requiring an API key — consistent with the local-first ethos (billing stays with the user's existing account, not asr-bench's infrastructure).
 - **2026-06-01** — Only the **verbatim profile is ADA/WCAG caption-eligible**. The kb profile deliberately rephrases and condenses for retrieval quality; it is explicitly NOT compliant captions and is labeled as such in the report.
 - **2026-06-01** — The `--rescore-against-fused` reference is **agreement-biased** and labeled as such. The fused verbatim VTT is built from the same model outputs being scored — it measures consensus, not ground truth. Useful for tracking post-fusion improvement, but the caveat is printed in the report header so it is never mistaken for an independent gold reference.
+- **2026-06-04** — Added WhisperX as the third engine family (`WhisperXEngine` + `whisperx_runner.py`). Design doc: `docs/superpowers/specs/2026-06-04-whisperx-diarization-design.md`. Key decisions: (1) `<size>+whisperx` model IDs pair any Whisper size with the WhisperX pipeline so users see a direct comparison in the same report; (2) in-process vs subprocess auto-detection solves the torch/Python 3.14 incompatibility without forcing users to manage two Python versions manually; (3) `WhisperXAdapter` factory encapsulates mode selection, keeping `WhisperXEngine` and `whisperx_runner.py` testable independently.
+- **2026-06-04** — DER scoring gated on an RTTM sidecar (`<base>.rttm` next to the audio). Rationale: ground-truth speaker boundaries are labor-intensive; not every run has them. Diarization still runs (speaker labels in VTT) when no RTTM is present — only DER% and Speakers columns are suppressed. This keeps the default behavior useful without requiring annotation work.
+- **2026-06-04** — Diarization auth uses a missing-token-warns-and-falls-back strategy rather than a hard fail. Rationale: the core value of a `+whisperx` run (word timestamps, better alignment) is available without a HF token. Forcing auth for alignment-only would be hostile UX. Token is passed to the subprocess via `HF_TOKEN` env var, not argv (avoids token appearing in `ps` output).
+- **2026-06-04** — `engines/` package split deferred again. `whisperx_runner.py` is the only file broken out (forced by the venv boundary). The full split waits for a fourth engine family (NeMo/Canary-Qwen) where the weight of three Engine subclasses in one file becomes unwieldy.
+- **2026-06-05** — **Live-validated WhisperX end-to-end** (Task 13) on the RTX 5090; merged after. Three fixes the real run forced: (1) the runner now emits **pure JSON on stdout** — whisperx/torch/pyannote write progress + logging there, which broke `SubprocessWhisperX`'s `json.loads(stdout)`; main() redirects both `sys.stdout` and OS fd 1 to stderr during processing. (2) **pyannote-audio 4.x kwarg** `use_auth_token` → `token` (try-new-fall-back-to-old). (3) **Default diarization model is now `pyannote/speaker-diarization-community-1`**, not 3.1 — pyannote 4.x unified on this one self-contained gated repo (loading the 3.1 id under 4.x pulls community-1 assets anyway); `--diarize-model` overrides for 3.x. Also: a bare `pip install whisperx` pulls **CPU-only torch** on Windows — the setup script now installs the cu128 build first. And pyannote **over-clusters on long audio** (82-min 2-speaker call → 12 speakers / DER 27.4%); `--min/max-speakers 2` → 2 speakers / DER 13.8%.

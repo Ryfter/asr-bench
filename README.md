@@ -17,19 +17,22 @@ last year. Outputs markdown tables you can paste into a doc.
 
 ## Status
 
-**v0.2 — released 2026-06-01. Local Whisper variants + optional fusion stage:**
+**v0.3 — feat/whisperx-diarization branch. Local Whisper variants + optional fusion + WhisperX word alignment and speaker diarization:**
 - `small` (244M, ~470MB)
 - `medium` (769M, ~1.5GB)
 - `large-v3` (1550M, ~3.1GB)
 - `large-v3-turbo` (809M, ~1.6GB)
+- `<size>+whisperx` — any of the above paired with WhisperX alignment + diarization (e.g. `large-v3-turbo+whisperx`)
 
 New in v0.2: MER/WIL metrics, per-clip S/D/I counts, `--show-alignment`, and the
 `--fuse` post-processing stage (verbatim captions + RAG knowledge base). See
 [What it measures](#what-it-measures) and [Fusion](#fusion-optional) below.
 
-See [SPEC.md](./SPEC.md) for the full roadmap (WhisperX + diarization,
-Canary-Qwen + NVIDIA NeMo, multi-language coverage, hand-corrected reference
-sets).
+New in v0.3: WhisperX word-level alignment, speaker-labeled VTT, DER scoring, and
+word-timestamp sidecars. See [WhisperX (word alignment + diarization)](#whisperx-word-alignment--diarization-optional) below.
+
+See [SPEC.md](./SPEC.md) for the full roadmap (Canary-Qwen + NVIDIA NeMo,
+multi-language coverage, hand-corrected reference sets).
 
 ## What it measures
 
@@ -175,16 +178,113 @@ clip; it's the failure mode the default VAD filter now prevents. This is exactly
 the kind of per-corpus surprise the tool exists to surface — run it on *your*
 audio rather than trusting a generic leaderboard.
 
+## WhisperX (word alignment + diarization) (optional)
+
+WhisperX adds forced wav2vec2 word-level alignment and pyannote speaker
+diarization on top of any Whisper size. Use `<size>+whisperx` model IDs:
+
+```bash
+python asr_bench.py --models large-v3-turbo+whisperx --diarize
+```
+
+What it adds compared to plain Whisper:
+- **Word-level timestamps** — `<base>_Words_<Model>.json` sidecar next to each audio file.
+- **Speaker-labeled VTT** — cues prefixed `SPEAKER_00: text`, `SPEAKER_01: text`, etc.
+- **DER column** — Diarization Error Rate appears in the headline table whenever a
+  `<base>.rttm` ground-truth sidecar is present next to the audio. Without an RTTM
+  file the DER column is omitted and diarization still runs (speaker labels in VTT).
+- **Speakers column** — detected speaker count alongside DER.
+
+### Setup
+
+WhisperX requires a Python ≤ 3.13 environment (PyTorch has no 3.14 wheels). The
+convenience script sets up the venv asr-bench auto-detects:
+
+```powershell
+./setup_whisperx_venv.ps1            # default CUDA build (cu128, RTX 50xx/Blackwell)
+./setup_whisperx_venv.ps1 -CudaIndex cu124   # older CUDA toolkit
+./setup_whisperx_venv.ps1 -CudaIndex cpu     # CPU-only
+```
+
+Or by hand:
+
+```bash
+py -3.12 -m venv .venv-whisperx
+# Install the CUDA torch build FIRST — `pip install whisperx` otherwise pulls the
+# CPU-only torch wheel on Windows (torch.cuda.is_available() == False, silent CPU).
+.venv-whisperx\Scripts\pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+.venv-whisperx\Scripts\pip install whisperx
+.venv-whisperx\Scripts\python -c "import torch; print(torch.cuda.is_available())"   # expect True
+```
+
+asr-bench auto-detects `./.venv-whisperx` and uses it as a subprocess for
+WhisperX runs. To use a different path:
+
+```bash
+python asr_bench.py --models large-v3-turbo+whisperx --whisperx-python path\to\python.exe
+```
+
+If `torch` is already importable in the running interpreter (e.g. you are running
+asr-bench from a 3.12 venv that already has WhisperX installed), asr-bench runs
+WhisperX in-process automatically — no subprocess overhead.
+
+### Auth (diarization only)
+
+Speaker diarization uses the gated `pyannote/speaker-diarization-community-1`
+model from HuggingFace (pyannote-audio 4.x unified on this single self-contained
+repo — it bundles segmentation + embedding, so you accept just one). To use it:
+
+1. Create a free account at [huggingface.co](https://huggingface.co).
+2. Accept the model terms at [huggingface.co/pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1).
+3. Generate a **read** token and pass it via `--hf-token` or the `HF_TOKEN` /
+   `HUGGINGFACE_TOKEN` environment variable.
+
+> On a pyannote 3.x install, pass `--diarize-model pyannote/speaker-diarization-3.1`
+> (and accept that repo + `pyannote/segmentation-3.0` instead). The runner defaults
+> to community-1 for pyannote 4.x.
+
+```bash
+python asr_bench.py --models large-v3-turbo+whisperx --diarize --hf-token hf_...
+```
+
+**Missing token:** asr-bench warns and falls back to alignment-only (word timestamps
++ VTT without speaker labels) — it does not hard-fail. To skip diarization entirely:
+
+```bash
+python asr_bench.py --models large-v3-turbo+whisperx --no-diarize
+```
+
+### DER scoring
+
+Drop a `<base>.rttm` ground-truth annotation file next to the audio file. asr-bench
+picks it up automatically and adds the DER% and Speakers columns to the report.
+Without an RTTM file diarization still runs but DER is not computed.
+
+**Tip — long recordings:** pyannote tends to over-cluster on long, noisy audio
+(e.g. a 2-person call estimated as 12 speakers). If you know the speaker count,
+pass `--min-speakers`/`--max-speakers` — on an 82-min 2-speaker validation clip
+this took the detected count 12 → 2 and DER 27.4% → 13.8%.
+
+### Speaker count hints
+
+```bash
+python asr_bench.py --models large-v3-turbo+whisperx --diarize \
+  --min-speakers 2 --max-speakers 4
+```
+
+`--min-speakers` / `--max-speakers` are hints to pyannote, not hard limits.
+
 ## What's in the box
 
 ```
 asr-bench/
-├── README.md            ← this file
-├── SPEC.md              ← full roadmap including WhisperX + Canary-Qwen
+├── README.md              ← this file
+├── SPEC.md                ← full roadmap including Canary-Qwen + NeMo
 ├── requirements.txt
-├── asr_bench.py         ← the script
-├── test-corpus/         ← bring-your-own (gitignored except README)
-└── report/              ← timestamped markdown outputs (gitignored)
+├── asr_bench.py           ← the script
+├── whisperx_runner.py     ← standalone subprocess for WhisperX runs
+├── test-corpus/           ← bring-your-own (gitignored except README)
+└── report/                ← timestamped markdown outputs (gitignored)
 ```
 
 ## Ground-truth strategy — read this before trusting the WER numbers
@@ -334,6 +434,8 @@ to add new engines. Each engine needs a wrapper that exposes
 ## Acknowledgments
 
 - [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — CTranslate2 port of OpenAI Whisper
+- [WhisperX](https://github.com/m-bain/whisperX) — word-level alignment + speaker diarization
+- [pyannote.audio](https://github.com/pyannote/pyannote-audio) — speaker diarization model
 - [jiwer](https://github.com/jitsi/jiwer) — WER / MER / WIL computation
 - [nvidia-ml-py](https://pypi.org/project/nvidia-ml-py/) — GPU memory tracking
 - [Ollama](https://ollama.ai) — optional local LLM backend for fusion

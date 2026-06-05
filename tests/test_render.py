@@ -121,3 +121,48 @@ def test_no_empty_alignment_header_when_all_clips_skipped():
     r.clips[0].hypothesis_normalized = ""
     md = asr_bench.render_markdown([r], Path("."), args, "proxy")
     assert "## Alignment detail" not in md
+
+
+def _whisperx_result():
+    clip = asr_bench.ClipResult(
+        audio="lec.mp4", audio_sec=600.0, transcribe_sec=20.0, rtfx=30.0,
+        vram_peak_bytes=None, hypothesis="hi", reference_normalized="hi",
+        hypothesis_normalized="hi", wer=0.10, mer=0.09, wil=0.12,
+        hits=90, substitutions=5, deletions=3, insertions=2,
+        num_speakers=2, der=0.15,
+        speaker_segments=[(0.0, 300.0, "SPEAKER_00"), (300.0, 600.0, "SPEAKER_01")],
+        reference_origin="unknown", reference_label="user-provided reference",
+    )
+    return asr_bench.ModelResult(
+        model_id="large-v3-turbo+whisperx", display="Whisper Large V3 Turbo + WhisperX",
+        fw_name="large-v3-turbo", params="809M", developer="OpenAI", languages="99",
+        notes="x", disk_bytes=None, load_sec=0.0, engine="whisperx",
+        vram_is_total=False, clips=[clip])
+
+
+def test_der_and_speakers_shown_when_whisperx():
+    md = asr_bench.render_markdown([_whisperx_result()], Path("."), _args(), "proxy")
+    assert "DER%" in md and "Speakers" in md
+    assert "15.0" in md   # der 0.15 -> 15.0
+
+
+def test_der_absent_for_plain_whisper():
+    md = asr_bench.render_markdown([_whisper_result()], Path("."), _args(), "proxy")
+    assert "DER%" not in md
+
+
+def test_whisperx_disk_and_vram_render_na():
+    clip = asr_bench.ClipResult(
+        audio="lec.mp4", audio_sec=600.0, transcribe_sec=20.0, rtfx=30.0,
+        vram_peak_bytes=None, hypothesis="hi", reference_normalized="hi",
+        hypothesis_normalized="hi", wer=0.10, mer=0.09, wil=0.12,
+        num_speakers=1, der=float("nan"),
+        reference_origin="unknown", reference_label="user-provided reference",
+    )
+    mr = asr_bench.ModelResult(
+        model_id="small+whisperx", display="Whisper Small + WhisperX", fw_name="small",
+        params="244M", developer="OpenAI", languages="99", notes="x", disk_bytes=None,
+        load_sec=0.0, engine="whisperx", vram_is_total=False, clips=[clip])
+    md = asr_bench.render_markdown([mr], Path("."), _args(), "proxy")
+    row = [l for l in md.splitlines() if l.startswith("| Whisper Small + WhisperX")][0]
+    assert "n/a" in row   # disk n/a; vram n/a

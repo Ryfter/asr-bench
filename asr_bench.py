@@ -22,6 +22,7 @@ import sys
 import subprocess
 import threading
 import time
+import importlib.util
 import urllib.request
 
 # Windows console defaults to cp1252 and chokes on most non-ASCII glyphs.
@@ -154,6 +155,8 @@ MODELS: Dict[str, Dict] = {
 }
 
 _NIM_ADHOC_RE = re.compile(r"^nim:(.+)$")
+_WHISPERX_RE = re.compile(r"^(.+)\+whisperx$")
+_WHISPERX_SIZES = {"small", "medium", "large-v3", "large-v3-turbo"}
 
 
 def resolve_model_entry(model_id: str) -> Dict:
@@ -161,13 +164,32 @@ def resolve_model_entry(model_id: str) -> Dict:
 
     Returns a dict that always carries: id, engine, display, developer, params,
     languages, notes. NIM entries also carry riva_model; whisper entries carry
-    fw_name. Raises ValueError for unknown ids.
+    fw_name. WhisperX entries also carry fw_name. Raises ValueError for unknown ids.
     """
     if model_id in MODELS:
         entry = dict(MODELS[model_id])
         entry.setdefault("engine", "faster-whisper")
         entry["id"] = model_id
         return entry
+    wx = _WHISPERX_RE.match(model_id)
+    if wx:
+        size = wx.group(1).strip()
+        if size not in _WHISPERX_SIZES:
+            raise ValueError(
+                f"unknown WhisperX base size '{size}' in '{model_id}' "
+                f"(choices: {', '.join(sorted(_WHISPERX_SIZES))})"
+            )
+        base = MODELS[size]
+        return {
+            "id": model_id,
+            "engine": "whisperx",
+            "display": f"{base['display']} + WhisperX",
+            "developer": base["developer"],
+            "params": base["params"],
+            "languages": base["languages"],
+            "fw_name": size,
+            "notes": "WhisperX: wav2vec2 word alignment + pyannote diarization.",
+        }
     m = _NIM_ADHOC_RE.match(model_id)
     if m:
         name = m.group(1).strip()
@@ -579,12 +601,12 @@ def _fmt_pct(value: float) -> str:
 def _vram_cell(value: Optional[int], is_total: bool) -> str:
     """Render a VRAM cell; mark NIM 'total used' values with a trailing '*'."""
     if value is None:
-        return "n/a" if not _HAS_NVML else "0"
+        return "n/a"
     return fmt_bytes(value) + ("*" if is_total else "")
 
 
 def _disk_cell(result: "ModelResult") -> str:
-    return "n/a" if result.engine == "nim" else fmt_bytes(result.disk_bytes)
+    return "n/a" if result.disk_bytes is None else fmt_bytes(result.disk_bytes)
 
 
 # ---- Per-model run ----------------------------------------------------------
@@ -605,6 +627,9 @@ class ClipResult:
     substitutions: int = 0
     deletions: int = 0
     insertions: int = 0
+    speaker_segments: List[Tuple[float, float, str]] = field(default_factory=list)
+    num_speakers: int = 0
+    der: float = float("nan")
     cue_count: int = 0
     vtt_path: Optional[str] = None
     reference_origin: str = "unknown"
@@ -681,6 +706,12 @@ class RunConfig:
     nim_language: str = "en-US"
     nim_api_key: Optional[str] = None
     nim_ssl: bool = False
+    # whisperx only
+    whisperx_python: Optional[str] = None
+    diarize: bool = True
+    hf_token: Optional[str] = None
+    min_speakers: Optional[int] = None
+    max_speakers: Optional[int] = None
 
 
 class Engine(ABC):
@@ -1104,6 +1135,243 @@ ENGINES: Dict[str, type] = {
 }
 
 
+# ---- WhisperX ---------------------------------------------------------------
+@dataclass
+class WhisperXResult:
+    """Parsed output of a WhisperX run (transcribe + align + optional diarize)."""
+    segments: List[Dict]                 # [{start, end, text, speaker?}]
+    words: List[Dict] = field(default_factory=list)
+    speakers: List[str] = field(default_factory=list)
+    der: Optional[float] = None
+    language: str = ""
+
+    @classmethod
+    def from_dict(cls, d: Dict) -> "WhisperXResult":
+        return cls(
+            segments=list(d.get("segments") or []),
+            words=list(d.get("words") or []),
+            speakers=list(d.get("speakers") or []),
+            der=d.get("der"),
+            language=d.get("language") or "",
+        )
+
+    def text(self) -> str:
+        return " ".join(s.get("text", "").strip() for s in self.segments).strip()
+
+    def speaker_segments(self) -> List[Tuple[float, float, str]]:
+        out: List[Tuple[float, float, str]] = []
+        for s in self.segments:
+            if s.get("speaker"):
+                out.append((float(s["start"]), float(s["end"]), s["speaker"]))
+        return out
+
+
+def write_whisperx_vtt(audio_path: Path, model_label: str, result: "WhisperXResult") -> Path:
+    """WebVTT with speaker-prefixed cues (e.g. 'SPEAKER_00: text'). Named like the
+    other engines' VTTs: <base>_Captions_<Model>.vtt."""
+    safe_model = re.sub(r"[^A-Za-z0-9._-]+", "-", model_label).strip("-")
+    out = audio_path.parent / f"{_fused_base(audio_path)}_Captions_{safe_model}.vtt"
+    lines: List[str] = ["WEBVTT", ""]
+    n = 0
+    for s in result.segments:
+        text = (s.get("text") or "").strip()
+        if not text:
+            continue
+        spk = s.get("speaker")
+        if spk:
+            text = f"{spk}: {text}"
+        n += 1
+        lines.append(str(n))
+        lines.append(f"{_fmt_vtt_time(float(s['start']))} --> {_fmt_vtt_time(float(s['end']))}")
+        lines.append(text)
+        lines.append("")
+    out.write_text("\n".join(lines), encoding="utf-8")
+    return out
+
+
+def write_words_sidecar(audio_path: Path, model_label: str, result: "WhisperXResult") -> Path:
+    """Write word-level timestamps (and speaker, if present) to a JSON sidecar."""
+    safe_model = re.sub(r"[^A-Za-z0-9._-]+", "-", model_label).strip("-")
+    out = audio_path.parent / f"{_fused_base(audio_path)}_Words_{safe_model}.json"
+    out.write_text(json.dumps(result.words, ensure_ascii=False, indent=0), encoding="utf-8")
+    return out
+
+
+# ---- WhisperX adapter -------------------------------------------------------
+_RUNNER_PATH = str(Path(__file__).resolve().parent / "whisperx_runner.py")
+
+
+class WhisperXAdapter(ABC):
+    """Turns an audio file into a WhisperXResult. Two real impls (in-process /
+    subprocess to a 3.12 venv) + a Fake for tests."""
+    name: str = ""
+
+    @abstractmethod
+    def transcribe(self, audio_path: str, model: str, cfg: "RunConfig",
+                   rttm: Optional[str]) -> "WhisperXResult":
+        ...
+
+
+class FakeWhisperXAdapter(WhisperXAdapter):
+    name = "fake"
+
+    def __init__(self, result: "WhisperXResult"):
+        self._result = result
+
+    def transcribe(self, audio_path, model, cfg, rttm):
+        return self._result
+
+
+def _runner_args(audio_path: str, model: str, cfg: "RunConfig", rttm: Optional[str]) -> List[str]:
+    args = [_RUNNER_PATH, "--audio", audio_path, "--model", model,
+            "--device", cfg.device, "--language", "en"]
+    if cfg.diarize:
+        args.append("--diarize")
+        if cfg.min_speakers is not None:
+            args += ["--min-speakers", str(cfg.min_speakers)]
+        if cfg.max_speakers is not None:
+            args += ["--max-speakers", str(cfg.max_speakers)]
+    if rttm:
+        args += ["--rttm", rttm]
+    return args
+
+
+class InProcessWhisperX(WhisperXAdapter):
+    """Calls whisperx_runner.run_whisperx directly (torch importable here)."""
+    name = "in-process"
+
+    def transcribe(self, audio_path, model, cfg, rttm):
+        import whisperx_runner
+        d = whisperx_runner.run_whisperx(
+            audio=audio_path, model=model, device=cfg.device, language="en",
+            diarize=cfg.diarize, hf_token=cfg.hf_token,
+            min_speakers=cfg.min_speakers, max_speakers=cfg.max_speakers, rttm=rttm,
+        )
+        return WhisperXResult.from_dict(d)
+
+
+class SubprocessWhisperX(WhisperXAdapter):
+    """Runs whisperx_runner.py under a configured 3.12 venv python; parses JSON."""
+    name = "subprocess"
+
+    def __init__(self, python: str, timeout: float = 3600.0):
+        self.python = python
+        self.timeout = timeout
+
+    def transcribe(self, audio_path, model, cfg, rttm):
+        exe = shutil.which(self.python) or self.python
+        cmd = [exe, *_runner_args(audio_path, model, cfg, rttm)]
+        env = dict(os.environ)
+        if cfg.hf_token:
+            env["HF_TOKEN"] = cfg.hf_token
+        proc = subprocess.run(cmd, capture_output=True, text=True,
+                              timeout=self.timeout, check=False, env=env)
+        if proc.returncode != 0:
+            raise RuntimeError(f"whisperx_runner failed ({proc.returncode}): {proc.stderr[:500]}")
+        return WhisperXResult.from_dict(json.loads(proc.stdout))
+
+
+def _default_whisperx_python() -> Optional[str]:
+    """Look for a conventional sibling venv (./.venv-whisperx)."""
+    root = Path(__file__).resolve().parent
+    for rel in (".venv-whisperx/Scripts/python.exe", ".venv-whisperx/bin/python"):
+        cand = root / rel
+        if cand.is_file():
+            return str(cand)
+    return None
+
+
+def make_whisperx_adapter(cfg: "RunConfig") -> WhisperXAdapter:
+    """Auto-select: in-process if torch importable; else subprocess to a venv
+    python (cfg.whisperx_python or a default ./.venv-whisperx); else error."""
+    if importlib.util.find_spec("torch") is not None:
+        return InProcessWhisperX()
+    venv_py = cfg.whisperx_python or _default_whisperx_python()
+    if venv_py:
+        return SubprocessWhisperX(venv_py)
+    raise RuntimeError(
+        "WhisperX needs torch (not importable here) or a 3.12 venv. Create one "
+        "(py -3.12 -m venv .venv-whisperx && .venv-whisperx/Scripts/pip install whisperx) "
+        "and pass --whisperx-python, or run asr-bench under a torch-enabled interpreter."
+    )
+
+
+def _audio_duration_sec(audio_path: str) -> float:
+    """Best-effort audio duration in seconds via pyav (a faster-whisper dep).
+    Returns 0.0 on failure; callers fall back to the last segment end."""
+    try:
+        import av
+        with av.open(audio_path) as container:
+            if container.duration:
+                return float(container.duration) / 1_000_000.0
+    except Exception:
+        pass
+    return 0.0
+
+
+class WhisperXEngine(Engine):
+    name = "whisperx"
+
+    def run(self, entry: Dict, pairs: List[Pair], cfg: RunConfig) -> ModelResult:
+        adapter = make_whisperx_adapter(cfg)
+        print(f"\n[{entry['display']}] using WhisperX adapter: {adapter.name}", flush=True)
+        result_model = ModelResult(
+            model_id=entry["id"], display=entry["display"], fw_name=entry.get("fw_name", ""),
+            params=entry["params"], developer=entry["developer"], languages=entry["languages"],
+            notes=entry["notes"], disk_bytes=None, load_sec=0.0,
+            engine="whisperx", vram_is_total=False,
+        )
+        for clip_idx, pair in enumerate(pairs, start=1):
+            print(f"  [{clip_idx}/{len(pairs)}] transcribing {pair.audio.name}...", flush=True)
+            ref_text = load_reference_text(pair.reference)
+            ref_origin, ref_label = detect_reference_origin(pair.reference)
+            rttm = find_rttm(pair.audio)
+            t0 = time.time()
+            try:
+                wx = adapter.transcribe(str(pair.audio), entry["fw_name"], cfg,
+                                        str(rttm) if rttm else None)
+            except Exception as e:
+                print(f"  ERROR whisperx on {pair.audio.name}: {e}", file=sys.stderr)
+                continue
+            transcribe_sec = time.time() - t0
+
+            hypothesis = wx.text()
+            ref_norm = normalize_for_wer(ref_text)
+            hyp_norm = normalize_for_wer(hypothesis)
+            metrics = compute_word_metrics(ref_norm, hyp_norm)
+
+            label = _model_label(entry["id"])
+            vtt_path = write_whisperx_vtt(pair.audio, label, wx)
+            write_words_sidecar(pair.audio, label, wx)
+
+            spk_segs = wx.speaker_segments()
+            audio_sec = _audio_duration_sec(str(pair.audio)) or (
+                wx.segments[-1]["end"] if wx.segments else 0.0)
+            rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
+            der_val = wx.der if wx.der is not None else float("nan")
+
+            print(f"    {audio_sec:.1f}s in {transcribe_sec:.1f}s "
+                  f"(RTFx {rtfx:.2f}, WER {metrics.wer*100:.1f}%, "
+                  f"{len(wx.speakers)} speaker(s))", flush=True)
+
+            result_model.clips.append(ClipResult(
+                audio=pair.audio.name, audio_sec=audio_sec, transcribe_sec=transcribe_sec,
+                rtfx=rtfx, vram_peak_bytes=None, hypothesis=hypothesis,
+                reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
+                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, hits=metrics.hits,
+                substitutions=metrics.substitutions, deletions=metrics.deletions,
+                insertions=metrics.insertions, cue_count=len(wx.segments),
+                vtt_path=str(vtt_path), reference_origin=ref_origin, reference_label=ref_label,
+                speaker_segments=spk_segs, num_speakers=len(wx.speakers), der=der_val,
+            ))
+        if not result_model.clips:
+            result_model.notes = "ALL CLIPS FAILED — check WhisperX setup/venv/token and stderr above"
+        return result_model
+
+
+ENGINES["whisperx"] = WhisperXEngine
+
+
 # ---- Fusion -----------------------------------------------------------------
 _CONTEXT_GLOSSARY_HEADER_RE = re.compile(r"^#+\s*glossary\b", re.IGNORECASE | re.MULTILINE)
 
@@ -1257,6 +1525,13 @@ class FusionResult:
 def _fused_base(audio_path: Path) -> str:
     stem = audio_path.stem
     return stem[: -len("_default")] if stem.endswith("_default") else stem
+
+
+def find_rttm(audio_path: Path) -> Optional[Path]:
+    """Return the <base>.rttm ground-truth sidecar next to the audio, or None.
+    Matches the same base as the VTT writers (strips a trailing _default)."""
+    cand = audio_path.parent / f"{_fused_base(audio_path)}.rttm"
+    return cand if cand.is_file() else None
 
 
 def write_fused_vtt(audio_path: Path, cues: List[Cue]) -> Path:
@@ -1633,10 +1908,17 @@ def render_markdown(
     lines.append("")
 
     # ---- Headline: one row per model, the key numbers ----
+    any_diar = any(
+        (not math.isnan(c.der)) or c.num_speakers > 0
+        for r in results for c in r.clips
+    )
+
     lines.append("## Headline")
     lines.append("")
-    lines.append("| Model | Params | Disk | Overall WER% | MER% | WIL% | RTFx | Total time | Peak VRAM | Notes |")
-    lines.append("|---|---|---|---|---|---|---|---|---|---|")
+    diar_hdr = " DER% | Speakers |" if any_diar else ""
+    diar_sep = "---|---|" if any_diar else ""
+    lines.append("| Model | Params | Disk | Overall WER% | MER% | WIL% | RTFx | Total time | Peak VRAM |" + diar_hdr + " Notes |")
+    lines.append("|---|---|---|---|---|---|---|---|---|" + diar_sep + "---|")
     for r in results:
         wall_clock = f"{r.total_transcribe_sec:.1f}s"
         wer_pct = _fmt_pct(r.avg_wer) if r.clips else "—"
@@ -1645,10 +1927,22 @@ def render_markdown(
         rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
         vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         disk = _disk_cell(r)
+        diar_cells = ""
+        if any_diar:
+            der_vals = [c.der for c in r.clips if not math.isnan(c.der)]
+            der_avg = _fmt_pct(sum(der_vals) / len(der_vals)) if der_vals else "—"
+            spk = max((c.num_speakers for c in r.clips), default=0) or "—"
+            diar_cells = f" {der_avg} | {spk} |"
         lines.append(
-            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {mer_pct} | {wil_pct} | {rtfx} | {wall_clock} | {vram} | {r.notes} |"
+            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {mer_pct} | {wil_pct} | {rtfx} | {wall_clock} | {vram} |{diar_cells} {r.notes} |"
         )
     lines.append("")
+
+    if any_diar:
+        lines.append("> **Diarization:** speaker labels are pyannote hypotheses. **DER%** is "
+                     "shown only for clips with an `<base>.rttm` ground-truth sidecar (pyannote.metrics "
+                     "defaults). Speakers = detected speaker count.")
+        lines.append("")
 
     # ---- Engines note: explain metric-fidelity differences when NIM is present ----
     if any(r.engine == "nim" for r in results):
@@ -1909,6 +2203,16 @@ def main() -> int:
         "--nim-ssl", action="store_true",
         help="Force SSL for the NIM endpoint without an API key (e.g. self-signed TLS).",
     )
+    ap.add_argument("--whisperx-python", default=None,
+                    help="Path to a 3.12 venv python with whisperx+torch+pyannote "
+                         "(for the subprocess adapter; auto-detects ./.venv-whisperx if omitted).")
+    ap.add_argument("--diarize", action=argparse.BooleanOptionalAction, default=True,
+                    help="Run pyannote speaker diarization for whisperx models (default on). "
+                         "Without an HF token it warns and falls back to alignment-only.")
+    ap.add_argument("--hf-token", default=None,
+                    help="HuggingFace token for pyannote diarization (else HF_TOKEN/HUGGINGFACE_TOKEN env).")
+    ap.add_argument("--min-speakers", type=int, default=None, help="pyannote min speakers hint.")
+    ap.add_argument("--max-speakers", type=int, default=None, help="pyannote max speakers hint.")
     ap.add_argument(
         "--gold",
         action="store_true",
@@ -2006,6 +2310,14 @@ def main() -> int:
                 file=sys.stderr,
             )
 
+    # Pre-flight: warn early if diarization is requested for whisperx models without a token.
+    wants_whisperx = any(resolve_model_entry(m)["engine"] == "whisperx" for m in requested)
+    if wants_whisperx and args.diarize and not (
+            args.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")):
+        print("WARNING: --diarize is on but no HF token found (--hf-token / HF_TOKEN). "
+              "WhisperX will run alignment-only. Get a free token and accept the gated "
+              "pyannote/speaker-diarization-3.1 model to enable diarization.", file=sys.stderr)
+
     pairs = discover_pairs(corpus)
     if args.include:
         include_re = re.compile(args.include, re.IGNORECASE)
@@ -2073,6 +2385,11 @@ def main() -> int:
         nim_language=args.nim_language,
         nim_api_key=args.nim_api_key,
         nim_ssl=args.nim_ssl,
+        whisperx_python=args.whisperx_python,
+        diarize=args.diarize,
+        hf_token=args.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN"),
+        min_speakers=args.min_speakers,
+        max_speakers=args.max_speakers,
     )
 
     results: List[ModelResult] = []
