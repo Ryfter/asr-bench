@@ -1351,6 +1351,13 @@ def _fused_base(audio_path: Path) -> str:
     return stem[: -len("_default")] if stem.endswith("_default") else stem
 
 
+def find_rttm(audio_path: Path) -> Optional[Path]:
+    """Return the <base>.rttm ground-truth sidecar next to the audio, or None.
+    Matches the same base as the VTT writers (strips a trailing _default)."""
+    cand = audio_path.parent / f"{_fused_base(audio_path)}.rttm"
+    return cand if cand.is_file() else None
+
+
 def write_fused_vtt(audio_path: Path, cues: List[Cue]) -> Path:
     """Write a WebVTT from fused cues, named <base>_Captions_Fused.vtt."""
     out = audio_path.parent / f"{_fused_base(audio_path)}_Captions_Fused.vtt"

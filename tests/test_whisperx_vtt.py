@@ -37,3 +37,14 @@ def test_write_words_sidecar(tmp_path):
     assert out.name == "Lec_Words_M.json"
     data = json.loads(out.read_text(encoding="utf-8"))
     assert data[0]["word"] == "hello"
+
+
+def test_find_rttm_present(tmp_path):
+    audio = tmp_path / "Lec_default.mp4"; audio.write_bytes(b"x")
+    rttm = tmp_path / "Lec.rttm"; rttm.write_text("x", encoding="utf-8")
+    assert asr_bench.find_rttm(audio) == rttm
+
+
+def test_find_rttm_absent(tmp_path):
+    audio = tmp_path / "Lec_default.mp4"; audio.write_bytes(b"x")
+    assert asr_bench.find_rttm(audio) is None
