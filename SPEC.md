@@ -62,9 +62,9 @@ Fusion is fully unit-tested via `FakeLLMBackend` but **not yet validated against
 - **DER (Diarization Error Rate)** — gated on a `<base>.rttm` ground-truth sidecar; DER% and Speakers columns appear in the headline table only when RTTM is present. Without RTTM, diarization still runs (speaker labels in VTT) but DER is not computed.
 - Two execution paths auto-selected: in-process when `torch` is importable; subprocess to a Python ≤ 3.13 venv otherwise (torch has no 3.14 wheels)
 - `whisperx_runner.py` — standalone subprocess script; communicates via JSON
-- Auth: free HF token (`--hf-token`/`HF_TOKEN`) + accepting `pyannote/speaker-diarization-3.1`. Missing token warns and falls back to alignment-only; `--no-diarize` skips diarization entirely.
+- Auth: free HF token (`--hf-token`/`HF_TOKEN`) + accepting `pyannote/speaker-diarization-community-1` (pyannote-audio 4.x default; `--diarize-model` overrides). Missing token warns and falls back to alignment-only; `--no-diarize` skips diarization entirely.
 - New flags: `--diarize`/`--no-diarize`, `--hf-token`, `--min-speakers`, `--max-speakers`, `--whisperx-python`
-- 119 tests pass, 2 skipped (pyannote not installed in core 3.14 venv)
+- 121 tests pass, 2 skipped (pyannote not installed in core 3.14 venv); **live-validated 2026-06-05** on RTX 5090: full transcribe→align→diarize→DER (DER 13.8% @ 2-speaker hint over an 82-min 2-speaker recording)
 
 **Not yet merged to main** — pending a live WhisperX + diarization run (no pyannote venv on reference machine yet). Branch is pushed to GitHub.
 

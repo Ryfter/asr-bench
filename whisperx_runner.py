@@ -18,6 +18,13 @@ import os
 import sys
 from typing import List, Optional, Tuple
 
+# pyannote-audio 4.x unified on a single self-contained gated repo,
+# pyannote/speaker-diarization-community-1 (loading the old 3.1 id under 4.x
+# pulls community-1's own assets anyway). It bundles segmentation + embedding,
+# so users accept exactly ONE gated repo. Override with --diarize-model (e.g.
+# pyannote/speaker-diarization-3.1 on a pyannote 3.x install).
+DEFAULT_DIARIZE_MODEL = "pyannote/speaker-diarization-community-1"
+
 
 def build_arg_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="WhisperX transcribe+align+diarize → JSON")
@@ -31,6 +38,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument("--max-speakers", type=int, default=None)
     ap.add_argument("--rttm", default=None)
     ap.add_argument("--batch-size", type=int, default=16)
+    ap.add_argument("--diarize-model", default=DEFAULT_DIARIZE_MODEL,
+                    help="pyannote diarization model repo (default: %(default)s). "
+                         "Use pyannote/speaker-diarization-3.1 on a pyannote 3.x install.")
     return ap
 
 
@@ -68,7 +78,8 @@ def compute_der_from_rttm(hyp_segments: List[Tuple[float, float, str]], rttm_pat
 def run_whisperx(audio: str, model: str, device: str, language: str = "en",
                  diarize: bool = True, hf_token: Optional[str] = None,
                  min_speakers: Optional[int] = None, max_speakers: Optional[int] = None,
-                 rttm: Optional[str] = None, batch_size: int = 16) -> dict:
+                 rttm: Optional[str] = None, batch_size: int = 16,
+                 diarize_model: str = DEFAULT_DIARIZE_MODEL) -> dict:
     """Transcribe → align → (optional) diarize → (optional) DER. Returns a dict
     ready to JSON-serialize. Heavy imports are local."""
     import whisperx
@@ -91,7 +102,14 @@ def run_whisperx(audio: str, model: str, device: str, language: str = "en",
                 from whisperx.diarize import DiarizationPipeline  # newer layout
             except ImportError:
                 from whisperx import DiarizationPipeline           # older layout
-            dia = DiarizationPipeline(use_auth_token=hf_token, device=device)
+            # Pass the model explicitly (default community-1; see
+            # DEFAULT_DIARIZE_MODEL). pyannote-audio 4.x renamed the auth kwarg
+            # use_auth_token -> token: try the new name first, fall back for
+            # older builds.
+            try:
+                dia = DiarizationPipeline(model_name=diarize_model, token=hf_token, device=device)
+            except TypeError:
+                dia = DiarizationPipeline(model_name=diarize_model, use_auth_token=hf_token, device=device)
             kw = {}
             if min_speakers is not None:
                 kw["min_speakers"] = min_speakers
@@ -148,6 +166,7 @@ def main() -> int:
             audio=ns.audio, model=ns.model, device=ns.device, language=ns.language,
             diarize=ns.diarize, hf_token=hf_token, min_speakers=ns.min_speakers,
             max_speakers=ns.max_speakers, rttm=ns.rttm, batch_size=ns.batch_size,
+            diarize_model=ns.diarize_model,
         )
     finally:
         sys.stderr.flush()

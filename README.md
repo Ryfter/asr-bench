@@ -197,12 +197,24 @@ What it adds compared to plain Whisper:
 
 ### Setup
 
-WhisperX requires a Python ≤ 3.13 environment (PyTorch has no 3.14 wheels). Create
-a dedicated venv with Python 3.12:
+WhisperX requires a Python ≤ 3.13 environment (PyTorch has no 3.14 wheels). The
+convenience script sets up the venv asr-bench auto-detects:
+
+```powershell
+./setup_whisperx_venv.ps1            # default CUDA build (cu128, RTX 50xx/Blackwell)
+./setup_whisperx_venv.ps1 -CudaIndex cu124   # older CUDA toolkit
+./setup_whisperx_venv.ps1 -CudaIndex cpu     # CPU-only
+```
+
+Or by hand:
 
 ```bash
 py -3.12 -m venv .venv-whisperx
+# Install the CUDA torch build FIRST — `pip install whisperx` otherwise pulls the
+# CPU-only torch wheel on Windows (torch.cuda.is_available() == False, silent CPU).
+.venv-whisperx\Scripts\pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 .venv-whisperx\Scripts\pip install whisperx
+.venv-whisperx\Scripts\python -c "import torch; print(torch.cuda.is_available())"   # expect True
 ```
 
 asr-bench auto-detects `./.venv-whisperx` and uses it as a subprocess for
@@ -218,13 +230,18 @@ WhisperX in-process automatically — no subprocess overhead.
 
 ### Auth (diarization only)
 
-Speaker diarization uses the gated `pyannote/speaker-diarization-3.1` model from
-HuggingFace. To use it:
+Speaker diarization uses the gated `pyannote/speaker-diarization-community-1`
+model from HuggingFace (pyannote-audio 4.x unified on this single self-contained
+repo — it bundles segmentation + embedding, so you accept just one). To use it:
 
 1. Create a free account at [huggingface.co](https://huggingface.co).
-2. Accept the model terms at [huggingface.co/pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1).
-3. Generate a read token and pass it via `--hf-token` or the `HF_TOKEN` /
+2. Accept the model terms at [huggingface.co/pyannote/speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1).
+3. Generate a **read** token and pass it via `--hf-token` or the `HF_TOKEN` /
    `HUGGINGFACE_TOKEN` environment variable.
+
+> On a pyannote 3.x install, pass `--diarize-model pyannote/speaker-diarization-3.1`
+> (and accept that repo + `pyannote/segmentation-3.0` instead). The runner defaults
+> to community-1 for pyannote 4.x.
 
 ```bash
 python asr_bench.py --models large-v3-turbo+whisperx --diarize --hf-token hf_...
@@ -242,6 +259,11 @@ python asr_bench.py --models large-v3-turbo+whisperx --no-diarize
 Drop a `<base>.rttm` ground-truth annotation file next to the audio file. asr-bench
 picks it up automatically and adds the DER% and Speakers columns to the report.
 Without an RTTM file diarization still runs but DER is not computed.
+
+**Tip — long recordings:** pyannote tends to over-cluster on long, noisy audio
+(e.g. a 2-person call estimated as 12 speakers). If you know the speaker count,
+pass `--min-speakers`/`--max-speakers` — on an 82-min 2-speaker validation clip
+this took the detected count 12 → 2 and DER 27.4% → 13.8%.
 
 ### Speaker count hints
 
