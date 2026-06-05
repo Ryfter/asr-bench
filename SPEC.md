@@ -64,7 +64,7 @@ Fusion is fully unit-tested via `FakeLLMBackend` but **not yet validated against
 - `whisperx_runner.py` — standalone subprocess script; communicates via JSON
 - Auth: free HF token (`--hf-token`/`HF_TOKEN`) + accepting `pyannote/speaker-diarization-community-1` (pyannote-audio 4.x default; `--diarize-model` overrides). Missing token warns and falls back to alignment-only; `--no-diarize` skips diarization entirely.
 - New flags: `--diarize`/`--no-diarize`, `--hf-token`, `--min-speakers`, `--max-speakers`, `--whisperx-python`
-- 121 tests pass, 2 skipped (pyannote not installed in core 3.14 venv); **live-validated 2026-06-05** on RTX 5090: full transcribe→align→diarize→DER (DER 13.8% @ 2-speaker hint over an 82-min 2-speaker recording)
+- 120 tests pass, 2 skipped in the core 3.14 venv (the 2 skips are the DER tests needing pyannote — they pass in the whisperx venv, 122 total); **live-validated 2026-06-05** on RTX 5090: full transcribe→align→diarize→DER (DER 13.8% @ 2-speaker hint over an 82-min 2-speaker recording)
 
 **Not yet merged to main** — pending a live WhisperX + diarization run (no pyannote venv on reference machine yet). Branch is pushed to GitHub.
 
