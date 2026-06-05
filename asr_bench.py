@@ -22,6 +22,7 @@ import sys
 import subprocess
 import threading
 import time
+import importlib.util
 import urllib.request
 
 # Windows console defaults to cp1252 and chokes on most non-ASCII glyphs.
@@ -1194,6 +1195,103 @@ def write_words_sidecar(audio_path: Path, model_label: str, result: "WhisperXRes
     out = audio_path.parent / f"{_fused_base(audio_path)}_Words_{safe_model}.json"
     out.write_text(json.dumps(result.words, ensure_ascii=False, indent=0), encoding="utf-8")
     return out
+
+
+# ---- WhisperX adapter -------------------------------------------------------
+_RUNNER_PATH = str(Path(__file__).resolve().parent / "whisperx_runner.py")
+
+
+class WhisperXAdapter(ABC):
+    """Turns an audio file into a WhisperXResult. Two real impls (in-process /
+    subprocess to a 3.12 venv) + a Fake for tests."""
+    name: str = ""
+
+    @abstractmethod
+    def transcribe(self, audio_path: str, model: str, cfg: "RunConfig",
+                   rttm: Optional[str]) -> "WhisperXResult":
+        ...
+
+
+class FakeWhisperXAdapter(WhisperXAdapter):
+    name = "fake"
+
+    def __init__(self, result: "WhisperXResult"):
+        self._result = result
+
+    def transcribe(self, audio_path, model, cfg, rttm):
+        return self._result
+
+
+def _runner_args(audio_path: str, model: str, cfg: "RunConfig", rttm: Optional[str]) -> List[str]:
+    args = [_RUNNER_PATH, "--audio", audio_path, "--model", model,
+            "--device", cfg.device, "--language", "en"]
+    if cfg.diarize:
+        args.append("--diarize")
+        if cfg.hf_token:
+            args += ["--hf-token", cfg.hf_token]
+        if cfg.min_speakers is not None:
+            args += ["--min-speakers", str(cfg.min_speakers)]
+        if cfg.max_speakers is not None:
+            args += ["--max-speakers", str(cfg.max_speakers)]
+    if rttm:
+        args += ["--rttm", rttm]
+    return args
+
+
+class InProcessWhisperX(WhisperXAdapter):
+    """Calls whisperx_runner.run_whisperx directly (torch importable here)."""
+    name = "in-process"
+
+    def transcribe(self, audio_path, model, cfg, rttm):
+        import whisperx_runner
+        d = whisperx_runner.run_whisperx(
+            audio=audio_path, model=model, device=cfg.device, language="en",
+            diarize=cfg.diarize, hf_token=cfg.hf_token,
+            min_speakers=cfg.min_speakers, max_speakers=cfg.max_speakers, rttm=rttm,
+        )
+        return WhisperXResult.from_dict(d)
+
+
+class SubprocessWhisperX(WhisperXAdapter):
+    """Runs whisperx_runner.py under a configured 3.12 venv python; parses JSON."""
+    name = "subprocess"
+
+    def __init__(self, python: str, timeout: float = 3600.0):
+        self.python = python
+        self.timeout = timeout
+
+    def transcribe(self, audio_path, model, cfg, rttm):
+        exe = shutil.which(self.python) or self.python
+        cmd = [exe, *_runner_args(audio_path, model, cfg, rttm)]
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=self.timeout, check=False)
+        if proc.returncode != 0:
+            raise RuntimeError(f"whisperx_runner failed ({proc.returncode}): {proc.stderr[:800]}")
+        return WhisperXResult.from_dict(json.loads(proc.stdout))
+
+
+def _default_whisperx_python() -> Optional[str]:
+    """Look for a conventional sibling venv (./.venv-whisperx)."""
+    root = Path(__file__).resolve().parent
+    for rel in (".venv-whisperx/Scripts/python.exe", ".venv-whisperx/bin/python"):
+        cand = root / rel
+        if cand.is_file():
+            return str(cand)
+    return None
+
+
+def make_whisperx_adapter(cfg: "RunConfig") -> WhisperXAdapter:
+    """Auto-select: in-process if torch importable; else subprocess to a venv
+    python (cfg.whisperx_python or a default ./.venv-whisperx); else error."""
+    if importlib.util.find_spec("torch") is not None:
+        return InProcessWhisperX()
+    venv_py = cfg.whisperx_python or _default_whisperx_python()
+    if venv_py:
+        return SubprocessWhisperX(venv_py)
+    raise RuntimeError(
+        "WhisperX needs torch (not importable here) or a 3.12 venv. Create one "
+        "(py -3.12 -m venv .venv-whisperx && .venv-whisperx/Scripts/pip install whisperx) "
+        "and pass --whisperx-python, or run asr-bench under a torch-enabled interpreter."
+    )
 
 
 # ---- Fusion -----------------------------------------------------------------
