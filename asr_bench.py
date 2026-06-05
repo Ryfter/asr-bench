@@ -1908,10 +1908,17 @@ def render_markdown(
     lines.append("")
 
     # ---- Headline: one row per model, the key numbers ----
+    any_diar = any(
+        (not math.isnan(c.der)) or c.num_speakers > 0
+        for r in results for c in r.clips
+    )
+
     lines.append("## Headline")
     lines.append("")
-    lines.append("| Model | Params | Disk | Overall WER% | MER% | WIL% | RTFx | Total time | Peak VRAM | Notes |")
-    lines.append("|---|---|---|---|---|---|---|---|---|---|")
+    diar_hdr = " DER% | Speakers |" if any_diar else ""
+    diar_sep = "---|---|" if any_diar else ""
+    lines.append("| Model | Params | Disk | Overall WER% | MER% | WIL% | RTFx | Total time | Peak VRAM |" + diar_hdr + " Notes |")
+    lines.append("|---|---|---|---|---|---|---|---|---|" + diar_sep + "---|")
     for r in results:
         wall_clock = f"{r.total_transcribe_sec:.1f}s"
         wer_pct = _fmt_pct(r.avg_wer) if r.clips else "—"
@@ -1920,10 +1927,22 @@ def render_markdown(
         rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
         vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         disk = _disk_cell(r)
+        diar_cells = ""
+        if any_diar:
+            der_vals = [c.der for c in r.clips if not math.isnan(c.der)]
+            der_avg = _fmt_pct(sum(der_vals) / len(der_vals)) if der_vals else "—"
+            spk = max((c.num_speakers for c in r.clips), default=0) or "—"
+            diar_cells = f" {der_avg} | {spk} |"
         lines.append(
-            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {mer_pct} | {wil_pct} | {rtfx} | {wall_clock} | {vram} | {r.notes} |"
+            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {mer_pct} | {wil_pct} | {rtfx} | {wall_clock} | {vram} |{diar_cells} {r.notes} |"
         )
     lines.append("")
+
+    if any_diar:
+        lines.append("> **Diarization:** speaker labels are pyannote hypotheses. **DER%** is "
+                     "shown only for clips with an `<base>.rttm` ground-truth sidecar (pyannote.metrics "
+                     "defaults). Speakers = detected speaker count.")
+        lines.append("")
 
     # ---- Engines note: explain metric-fidelity differences when NIM is present ----
     if any(r.engine == "nim" for r in results):
