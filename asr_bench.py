@@ -1872,6 +1872,20 @@ def make_llm_backend(spec: str) -> LLMBackend:
     raise ValueError(f"unknown --llm backend '{spec}' (use fake, ollama:<model>, or cli:<command>)")
 
 
+# ---- Results JSON sidecar ---------------------------------------------------
+def _json_sanitize(obj):
+    """Make a value strictly-JSON-safe: NaN/Inf floats -> None, tuples -> lists,
+    recursing through dicts and lists. (json allows NaN by default but emits the
+    literal token `NaN`, which is invalid JSON for strict parsers.)"""
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _json_sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_sanitize(v) for v in obj]
+    return obj
+
+
 # ---- Output -----------------------------------------------------------------
 def render_markdown(
     results: List[ModelResult],
