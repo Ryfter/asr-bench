@@ -1,6 +1,6 @@
 # asr-bench — full roadmap
 
-This is the long-form ambition for asr-bench. README.md covers what ships in v0.2; this document covers everything intended to ship eventually.
+This is the long-form ambition for asr-bench. README.md covers what ships through v0.3; this document covers everything intended to ship eventually.
 
 ## Goals
 
@@ -50,15 +50,32 @@ Extended metrics and a post-benchmark fusion stage. Design doc: `docs/superpower
 
 Fusion is fully unit-tested via `FakeLLMBackend` but **not yet validated against a live Ollama or CLI backend** on real lecture audio. See `memory/fusion-llm-validation.md`.
 
-### Planned for v0.3 — WhisperX + diarization
+### Shipped in v0.3 — WhisperX + diarization (2026-06-04, feat/whisperx-diarization)
 
-[WhisperX](https://github.com/m-bain/whisperX) adds forced alignment (wav2vec2) and speaker diarization (pyannote.audio).
+[WhisperX](https://github.com/m-bain/whisperX) adds forced wav2vec2 alignment and pyannote speaker diarization. Design doc: `docs/superpowers/specs/2026-06-04-whisperx-diarization-design.md`.
 
-Blockers for immediate inclusion:
-- `pyannote.audio` 3.x requires HuggingFace-gated diarization model + auth token (free).
-- New metric **DER (Diarization Error Rate)** needs ground-truth speaker boundaries.
+**Model IDs:** `<size>+whisperx` (e.g. `small+whisperx`, `large-v3-turbo+whisperx`).
 
-Once shipped, the runner pairs each Whisper size with WhisperX as a wrapper (`small+whisperx`, etc.) and emits DER only when diarization ground truth is present.
+**What shipped:**
+- Word-level forced alignment (wav2vec2) — `<base>_Words_<Model>.json` word-timestamp sidecar
+- Speaker-labeled VTT — cues prefixed `SPEAKER_00: text`
+- **DER (Diarization Error Rate)** — gated on a `<base>.rttm` ground-truth sidecar; DER% and Speakers columns appear in the headline table only when RTTM is present. Without RTTM, diarization still runs (speaker labels in VTT) but DER is not computed.
+- Two execution paths auto-selected: in-process when `torch` is importable; subprocess to a Python ≤ 3.13 venv otherwise (torch has no 3.14 wheels)
+- `whisperx_runner.py` — standalone subprocess script; communicates via JSON
+- Auth: free HF token (`--hf-token`/`HF_TOKEN`) + accepting `pyannote/speaker-diarization-3.1`. Missing token warns and falls back to alignment-only; `--no-diarize` skips diarization entirely.
+- New flags: `--diarize`/`--no-diarize`, `--hf-token`, `--min-speakers`, `--max-speakers`, `--whisperx-python`
+- 119 tests pass, 2 skipped (pyannote not installed in core 3.14 venv)
+
+**Not yet merged to main** — pending a live WhisperX + diarization run (no pyannote venv on reference machine yet). Branch is pushed to GitHub.
+
+**Remaining v0.3 items (not yet implemented):**
+- JSON sidecar (`results/<timestamp>.json`) for cross-run aggregation
+- `pip install asr-bench` packaging + `asr-bench` CLI entry point
+- CER (Character Error Rate) for noisy-word-boundary languages
+- Hallucination-rate detection (cross-engine + silence detection)
+- Median per-clip latency metric
+- `asr_bench prepare-gold` hand-correction helper
+- Speaker labels in reference sets for DER ground-truth preparation
 
 ### Planned for v0.4 — NVIDIA NeMo (Canary-Qwen and family)
 
@@ -89,10 +106,11 @@ Stretch. Wav2vec2-large, conformer open models, distil-whisper community fine-tu
 | **WIL%** | **v0.2** | Word Information Lost (Morris, Maier & Green 2004). Bounded [0,1]. |
 | **Per-clip S/D/I** | **v0.2** | Substitutions/deletions/insertions per clip via `jiwer.process_words`. |
 | **Fusion drift** | **v0.2** | Per-window WER(fused vs base) as a hallucination/omission guard. |
-| **DER** | v0.3 | needs WhisperX + ground-truth speaker boundaries. |
-| **CER** | v0.3 | for languages with noisy word boundaries. |
-| **Hallucination rate** | v0.3 | engines invent text on silence/music; detect via cross-engine + silence detection. |
-| **Median per-clip latency** | v0.3 | for batch-processing decisions. |
+| **DER** | **v0.3** | Diarization Error Rate via pyannote.metrics. Gated on `<base>.rttm` sidecar. |
+| **Speakers** | **v0.3** | Detected speaker count from pyannote diarization. |
+| **CER** | v0.3+ | for languages with noisy word boundaries. Not yet implemented. |
+| **Hallucination rate** | v0.3+ | engines invent text on silence/music; detect via cross-engine + silence detection. Not yet implemented. |
+| **Median per-clip latency** | v0.3+ | for batch-processing decisions. Not yet implemented. |
 | **CPU watts/hour** | v0.4 | if power monitor available (Intel RAPL, asitop). |
 
 ## Ground-truth strategy
@@ -109,7 +127,7 @@ Future v0.3+: `asr_bench prepare-gold ./test-corpus` — walks user through hand
 
 - v0.1: markdown table per run + per-clip detail. Stdout + `./results/<timestamp>.md`.
 - v0.2: MER/WIL/S/D/I columns; `_Captions_Fused.vtt` and `_KB_Fused.jsonl`/`.md` from fusion stage.
-- v0.3: JSON sidecar (`results/<timestamp>.json`) for cross-run aggregation.
+- v0.3: Speaker-labeled VTT (`SPEAKER_XX: text` cues) + `_Words_<Model>.json` word-timestamp sidecar from WhisperX runs. JSON sidecar for cross-run aggregation (`results/<timestamp>.json`) — not yet implemented.
 - v0.4: `asr_bench compare` subcommand — delta report between N result files.
 
 ## Corpus structure roadmap
@@ -121,15 +139,16 @@ v0.2 adds:
 - Fused VTT and JSONL/MD outputs sit alongside source audio.
 
 v0.3 adds:
-- Speaker labels in reference (DER scoring).
-- Per-clip metadata (recording conditions, speaker counts, audio quality notes).
-- Test/train splits (`asr_bench eval --split test`).
+- `<base>.rttm` sidecar auto-detection for DER ground truth (shipped).
+- Speaker labels in VTT output (shipped).
+- Per-clip metadata (recording conditions, speaker counts, audio quality notes) — not yet implemented.
+- Test/train splits (`asr_bench eval --split test`) — not yet implemented.
 
 ## Distribution roadmap
 
 - v0.1: public GitHub repo, `python asr_bench.py ...` entry.
 - v0.2: same single-file entry; optional `ollama` dependency for fusion.
-- v0.3: pip-installable (`pip install asr-bench`), `asr-bench` CLI.
+- v0.3: pip-installable (`pip install asr-bench`), `asr-bench` CLI — not yet implemented (deferred to v0.3+).
 - v0.4: prebuilt Windows/macOS binaries via PyInstaller. Audience: faculty IT staff making accessibility purchasing decisions.
 
 ## Anti-goals
@@ -152,3 +171,7 @@ v0.3 adds:
 - **2026-06-01** — Two fusion profiles (verbatim + kb) share one windowed pipeline. Only verbatim is ADA/WCAG caption-eligible; kb rephrases for retrieval quality and is labeled accordingly.
 - **2026-06-01** — LLM backend defaults to local Ollama (`qwen2.5`). The `cli:` backend is the escape hatch for frontier models without requiring an asr-bench-managed API key.
 - **2026-06-01** — `--rescore-against-fused` table is agreement-biased (reference built from the same models being scored) and prominently labeled as such.
+- **2026-06-04** — Added WhisperX as the third engine family. `<size>+whisperx` IDs pair any Whisper size with WhisperX alignment + diarization so users see a direct speed/accuracy/DER comparison in one report. Design doc: `docs/superpowers/specs/2026-06-04-whisperx-diarization-design.md`.
+- **2026-06-04** — In-process vs subprocess auto-detection: when `torch` is importable in the running interpreter (a 3.12 venv that has WhisperX), asr-bench runs WhisperX in-process. Otherwise it spawns `whisperx_runner.py` in a separate venv. Rationale: torch has no Python 3.14 wheels and asr-bench's core runs on 3.14; the subprocess bridge avoids forcing users to install asr-bench itself into a 3.12 venv.
+- **2026-06-04** — DER gated on RTTM sidecar. Ground-truth speaker boundaries are labor-intensive; not every run has them. Diarization still runs (and labels VTT cues) without RTTM — only the DER% and Speakers columns are suppressed. This keeps the default useful without requiring annotation work.
+- **2026-06-04** — `engines/` package split deferred again. `whisperx_runner.py` is the only file broken out (forced by the venv/Python version boundary). Full split waits for NeMo/Canary-Qwen where the weight of three Engine subclasses in `asr_bench.py` becomes unwieldy.
