@@ -51,6 +51,18 @@ Local Whisper variants only:
 - **Drift guard** — per-window WER(fused vs base model) flags potential hallucination or omission
 - **`--rescore-against-fused`** — re-scores every model against the verbatim fused VTT as reference; emits a second table explicitly labeled "fused verbatim consensus (agreement-biased)"
 
+### What's in progress — feat/whisperx-diarization (v0.3 tasks 1–10 complete)
+- **`ClipResult` speaker fields** — `num_speakers: int`, `der: float` (NaN if no RTTM sidecar), `speaker_segments: List[Tuple[float,float,str]]`; `RunConfig` carries `--diarize`, `--hf-token`, `--min/max-speakers`, `--whisperx-python`
+- **`find_rttm`** — locates `<base>.rttm` ground-truth sidecar for DER scoring
+- **Speaker-prefixed WhisperX VTT + word-timestamp sidecar** — `_Captions_<Model>_words.vtt`
+- **`whisperx_runner.py`** — standalone subprocess script: transcribe → align → diarize (pyannote) → DER; runs in the WhisperX-capable venv, accepts JSON args, returns JSON results
+- **`WhisperXAdapter`** — factory that selects fake/in-process/subprocess mode; auto-selects based on available imports
+- **`WhisperXEngine`** — implements the `Engine` ABC; registered in `ENGINES`; dispatches to `WhisperXAdapter`
+- **CLI flags wired** — `--diarize`, `--hf-token`, `--min-speakers`, `--max-speakers`, `--whisperx-python` in `main()`; pre-flight validation warns if diarize requested without token
+- **Report DER%/Speakers columns** — shown in the headline table only when diarization data is present (any_diar guard); accompanied by a pyannote disclaimer note
+
+Branch `feat/whisperx-diarization` is pushed to GitHub. **Not yet merged to main** (live WhisperX run still pending — no pyannote venv on reference machine yet).
+
 See [`SPEC.md`](./SPEC.md) for the v0.3 (WhisperX + diarization), v0.4 (NVIDIA NeMo / Canary-Qwen), v0.5 (community models) roadmap.
 
 ## Reference benchmark — sample lecture corpus
@@ -189,3 +201,4 @@ Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Selec
 - **2026-06-01** — LLM backend is pluggable, **local-first default** (`ollama:qwen2.5` — offline, no API key). The `cli:<command>` backend shells out to an authenticated frontier CLI (e.g. `claude`, `gemini`) and uses an existing subscription rather than requiring an API key — consistent with the local-first ethos (billing stays with the user's existing account, not asr-bench's infrastructure).
 - **2026-06-01** — Only the **verbatim profile is ADA/WCAG caption-eligible**. The kb profile deliberately rephrases and condenses for retrieval quality; it is explicitly NOT compliant captions and is labeled as such in the report.
 - **2026-06-01** — The `--rescore-against-fused` reference is **agreement-biased** and labeled as such. The fused verbatim VTT is built from the same model outputs being scored — it measures consensus, not ground truth. Useful for tracking post-fusion improvement, but the caveat is printed in the report header so it is never mistaken for an independent gold reference.
+- **2026-06-04/05** — WhisperX + diarization engine (v0.3) implemented on `feat/whisperx-diarization` across 10 tasks: `ClipResult` speaker fields, `find_rttm`, speaker-prefixed VTT, `whisperx_runner.py` subprocess script, `WhisperXAdapter` factory, `WhisperXEngine` (Engine ABC), CLI flags wired into `main()`, `RunConfig` fields, pre-flight validation, and report DER%/Speakers columns (conditional on diarization data). All 119 tests pass (2 skipped — pyannote not installed). **Not merged to main** pending a live WhisperX diarization run; branch is pushed to GitHub.
