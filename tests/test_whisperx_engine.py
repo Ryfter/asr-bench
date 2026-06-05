@@ -31,3 +31,22 @@ def test_whisperx_engine_builds_modelresult(tmp_path, monkeypatch):
 
 def test_whisperx_registered():
     assert "whisperx" in asr_bench.ENGINES
+
+
+def test_main_whisperx_end_to_end(tmp_path, monkeypatch):
+    import asr_bench
+    audio = tmp_path / "Lec.mp4"; audio.write_bytes(b"x")
+    ref = tmp_path / "Lec.txt"; ref.write_text("hello world", encoding="utf-8")
+    canned = asr_bench.WhisperXResult.from_dict(
+        {"segments": [{"start": 0, "end": 2, "text": "hello world", "speaker": "SPEAKER_00"}],
+         "speakers": ["SPEAKER_00"], "der": None, "language": "en"})
+    monkeypatch.setattr(asr_bench, "make_whisperx_adapter", lambda cfg: asr_bench.FakeWhisperXAdapter(canned))
+    monkeypatch.setattr(asr_bench, "_audio_duration_sec", lambda p: 2.0)
+    out = tmp_path / "report.md"
+    monkeypatch.setattr("sys.argv", [
+        "asr_bench.py", "--corpus", str(tmp_path), "--models", "small+whisperx",
+        "--device", "cpu", "--no-diarize", "--output", str(out)])
+    rc = asr_bench.main()
+    assert rc == 0
+    assert out.is_file()
+    assert "WhisperX" in out.read_text(encoding="utf-8")

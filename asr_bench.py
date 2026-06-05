@@ -2184,6 +2184,16 @@ def main() -> int:
         "--nim-ssl", action="store_true",
         help="Force SSL for the NIM endpoint without an API key (e.g. self-signed TLS).",
     )
+    ap.add_argument("--whisperx-python", default=None,
+                    help="Path to a 3.12 venv python with whisperx+torch+pyannote "
+                         "(for the subprocess adapter; auto-detects ./.venv-whisperx if omitted).")
+    ap.add_argument("--diarize", action=argparse.BooleanOptionalAction, default=True,
+                    help="Run pyannote speaker diarization for whisperx models (default on). "
+                         "Without an HF token it warns and falls back to alignment-only.")
+    ap.add_argument("--hf-token", default=None,
+                    help="HuggingFace token for pyannote diarization (else HF_TOKEN/HUGGINGFACE_TOKEN env).")
+    ap.add_argument("--min-speakers", type=int, default=None, help="pyannote min speakers hint.")
+    ap.add_argument("--max-speakers", type=int, default=None, help="pyannote max speakers hint.")
     ap.add_argument(
         "--gold",
         action="store_true",
@@ -2281,6 +2291,14 @@ def main() -> int:
                 file=sys.stderr,
             )
 
+    # Pre-flight: warn early if diarization is requested for whisperx models without a token.
+    wants_whisperx = any(resolve_model_entry(m)["engine"] == "whisperx" for m in requested)
+    if wants_whisperx and args.diarize and not (
+            args.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")):
+        print("WARNING: --diarize is on but no HF token found (--hf-token / HF_TOKEN). "
+              "WhisperX will run alignment-only. Get a free token and accept the gated "
+              "pyannote/speaker-diarization-3.1 model to enable diarization.", file=sys.stderr)
+
     pairs = discover_pairs(corpus)
     if args.include:
         include_re = re.compile(args.include, re.IGNORECASE)
@@ -2348,6 +2366,11 @@ def main() -> int:
         nim_language=args.nim_language,
         nim_api_key=args.nim_api_key,
         nim_ssl=args.nim_ssl,
+        whisperx_python=args.whisperx_python,
+        diarize=args.diarize,
+        hf_token=args.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN"),
+        min_speakers=args.min_speakers,
+        max_speakers=args.max_speakers,
     )
 
     results: List[ModelResult] = []
