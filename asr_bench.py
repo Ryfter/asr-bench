@@ -1897,7 +1897,7 @@ def _reproducibility_command(args, corpus_path: Path, results: List["ModelResult
         nim_flag = f" --nim-url {args.nim_url} --nim-language {args.nim_language}"
         if args.nim_model:
             nim_flag += f" --nim-model {args.nim_model}"
-    return (f"python asr_bench.py --corpus '{corpus_path.as_posix()}' --models {','.join(args.models)} "
+    return (f"python asr_bench.py --corpus '{corpus_path}' --models {','.join(args.models)} "
             f"--device {args.device} --compute-type {args.compute_type}"
             f"{batch_flag}{beam_flag}{vad_flag}{nim_flag}")
 

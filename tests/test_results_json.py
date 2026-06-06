@@ -32,8 +32,9 @@ def _cmd_args():
 
 
 def test_reproducibility_command_basic():
-    cmd = asr_bench._reproducibility_command(_cmd_args(), Path("/corpus"), [_whisper_result()])
-    assert cmd.startswith("python asr_bench.py --corpus '/corpus' --models small,large-v3-turbo")
+    corpus = Path("/corpus")
+    cmd = asr_bench._reproducibility_command(_cmd_args(), corpus, [_whisper_result()])
+    assert cmd.startswith(f"python asr_bench.py --corpus '{corpus}' --models small,large-v3-turbo")
     assert "--device cuda" in cmd and "--compute-type float16" in cmd
     assert "--batch-size" not in cmd and "--beam-size" not in cmd and "--no-vad-filter" not in cmd
 
