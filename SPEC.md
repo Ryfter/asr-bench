@@ -69,7 +69,6 @@ Fusion is fully unit-tested via `FakeLLMBackend` but **not yet validated against
 **Not yet merged to main** — pending a live WhisperX + diarization run (no pyannote venv on reference machine yet). Branch is pushed to GitHub.
 
 **Remaining v0.3 items (not yet implemented):**
-- JSON sidecar (`results/<timestamp>.json`) for cross-run aggregation
 - `pip install asr-bench` packaging + `asr-bench` CLI entry point
 - CER (Character Error Rate) for noisy-word-boundary languages
 - Hallucination-rate detection (cross-engine + silence detection)
@@ -127,8 +126,8 @@ Future v0.3+: `asr_bench prepare-gold ./test-corpus` — walks user through hand
 
 - v0.1: markdown table per run + per-clip detail. Stdout + `./results/<timestamp>.md`.
 - v0.2: MER/WIL/S/D/I columns; `_Captions_Fused.vtt` and `_KB_Fused.jsonl`/`.md` from fusion stage.
-- v0.3: Speaker-labeled VTT (`SPEAKER_XX: text` cues) + `_Words_<Model>.json` word-timestamp sidecar from WhisperX runs. JSON sidecar for cross-run aggregation (`results/<timestamp>.json`) — not yet implemented.
-- v0.4: `asr_bench compare` subcommand — delta report between N result files.
+- v0.3: Speaker-labeled VTT (`SPEAKER_XX: text` cues) + `_Words_<Model>.json` word-timestamp sidecar from WhisperX runs. JSON results sidecar (`results/<timestamp>.json`, `schema_version: 1`) for cross-run aggregation — shipped.
+- v0.4: `asr_bench compare` subcommand — delta report between N result JSON files (not yet built; schema is compare-ready).
 
 ## Corpus structure roadmap
 

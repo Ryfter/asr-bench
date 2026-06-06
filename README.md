@@ -274,6 +274,15 @@ python asr_bench.py --models large-v3-turbo+whisperx --diarize \
 
 `--min-speakers` / `--max-speakers` are hints to pyannote, not hard limits.
 
+### JSON results sidecar
+
+Every run also writes a machine-readable `results/<timestamp>.json` (same
+timestamp as the markdown report; sibling `<output>.json` when you pass
+`--output`). It mirrors the full run — run config, per-model and per-clip
+metrics, transcripts, and speaker/DER data — for cross-run aggregation. NaN
+values (e.g. DER on a non-diarized clip) serialize as `null`. Secrets
+(`hf_token`, `nim_api_key`) are never written. Opt out with `--no-json`.
+
 ## What's in the box
 
 ```
