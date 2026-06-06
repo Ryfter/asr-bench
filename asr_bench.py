@@ -1886,6 +1886,22 @@ def _json_sanitize(obj):
     return obj
 
 
+def _reproducibility_command(args, corpus_path: Path, results: List["ModelResult"]) -> str:
+    """The `python asr_bench.py ...` command that reproduces this run (no backticks).
+    Shared by the markdown reproducibility footnote and the JSON sidecar."""
+    batch_flag = f" --batch-size {args.batch_size}" if args.batch_size > 1 else ""
+    beam_flag = f" --beam-size {args.beam_size}" if args.beam_size != 5 else ""
+    vad_flag = "" if args.vad_filter else " --no-vad-filter"
+    nim_flag = ""
+    if any(r.engine == "nim" for r in results):
+        nim_flag = f" --nim-url {args.nim_url} --nim-language {args.nim_language}"
+        if args.nim_model:
+            nim_flag += f" --nim-model {args.nim_model}"
+    return (f"python asr_bench.py --corpus '{corpus_path.as_posix()}' --models {','.join(args.models)} "
+            f"--device {args.device} --compute-type {args.compute_type}"
+            f"{batch_flag}{beam_flag}{vad_flag}{nim_flag}")
+
+
 # ---- Output -----------------------------------------------------------------
 def render_markdown(
     results: List[ModelResult],
@@ -2127,15 +2143,7 @@ def render_markdown(
     # ---- Reproducibility footnote ----
     lines.append("## Reproducibility")
     lines.append("")
-    batch_flag = f" --batch-size {args.batch_size}" if args.batch_size > 1 else ""
-    beam_flag = f" --beam-size {args.beam_size}" if args.beam_size != 5 else ""
-    vad_flag = "" if args.vad_filter else " --no-vad-filter"
-    nim_flag = ""
-    if any(r.engine == "nim" for r in results):
-        nim_flag = f" --nim-url {args.nim_url} --nim-language {args.nim_language}"
-        if args.nim_model:
-            nim_flag += f" --nim-model {args.nim_model}"
-    lines.append(f"- Command: `python asr_bench.py --corpus '{corpus_path}' --models {','.join(args.models)} --device {args.device} --compute-type {args.compute_type}{batch_flag}{beam_flag}{vad_flag}{nim_flag}`")
+    lines.append(f"- Command: `{_reproducibility_command(args, corpus_path, results)}`")
     lines.append(f"- VAD filter: {'on (Silero VAD pre-segments audio — prevents the Whisper-Large 1-second-cue decoder lock)' if args.vad_filter else 'off (--no-vad-filter)'}")
     lines.append(f"- Reference normalization: lowercase, strip punctuation (keep apostrophes), collapse whitespace.")
     lines.append(f"- WER computed via [jiwer](https://github.com/jitsi/jiwer).")
