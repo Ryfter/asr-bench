@@ -1,5 +1,7 @@
+import json
 import types
 from pathlib import Path
+import pytest
 import asr_bench
 from tests.test_render import _whisper_result, _nim_result
 
@@ -159,3 +161,26 @@ def test_build_document_fusion_outputs_listed():
     assert any(o.endswith("Lec_Captions_Fused.vtt") for o in outs)
     assert any(o.endswith("Lec_KB_Fused.jsonl") for o in outs)
     assert any(o.endswith("Lec_KB_Fused.md") for o in outs)
+
+
+def test_write_results_json_roundtrips(tmp_path):
+    doc = {"schema_version": 1, "run": {"device": "cuda"}, "models": []}
+    out = asr_bench.write_results_json(doc, tmp_path / "r.json")
+    assert out == tmp_path / "r.json"
+    loaded = json.loads(out.read_text(encoding="utf-8"))
+    assert loaded["schema_version"] == 1 and loaded["run"]["device"] == "cuda"
+
+
+def test_write_results_json_no_nan_token(tmp_path):
+    # A sanitized document never contains NaN; the written text must be valid JSON.
+    doc = asr_bench._json_sanitize({"der": float("nan"), "wer": 0.1})
+    out = asr_bench.write_results_json(doc, tmp_path / "r.json")
+    text = out.read_text(encoding="utf-8")
+    assert "NaN" not in text
+    assert json.loads(text)["der"] is None
+
+
+def test_write_results_json_raises_on_stray_nan(tmp_path):
+    # Belt-and-suspenders: an unsanitized NaN must fail loudly, not emit invalid JSON.
+    with pytest.raises(ValueError):
+        asr_bench.write_results_json({"der": float("nan")}, tmp_path / "r.json")

@@ -2001,6 +2001,18 @@ def build_results_document(results: List["ModelResult"], *, corpus: Path,
     return _json_sanitize(doc)
 
 
+def write_results_json(document: Dict, json_path: Path) -> Path:
+    """Serialize the results document to json_path. allow_nan=False is a guard:
+    any NaN/Inf that escaped _json_sanitize raises ValueError rather than writing
+    invalid JSON."""
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.write_text(
+        json.dumps(document, indent=2, ensure_ascii=False, allow_nan=False),
+        encoding="utf-8",
+    )
+    return json_path
+
+
 # ---- Output -----------------------------------------------------------------
 def render_markdown(
     results: List[ModelResult],
