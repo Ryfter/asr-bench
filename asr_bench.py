@@ -2356,6 +2356,9 @@ def main() -> int:
         default=None,
         help="Where to save the markdown report. Default: ./report/<timestamp>.md",
     )
+    ap.add_argument("--json", action=argparse.BooleanOptionalAction, default=True,
+                    help="Write a machine-readable results JSON sidecar next to the report "
+                         "(default on). results/<timestamp>.json, or <output>.json with --output.")
     ap.add_argument(
         "--limit",
         type=int,
@@ -2551,7 +2554,8 @@ def main() -> int:
     print()
     print(md)
 
-    # Save
+    # Save markdown report
+    generated_at = datetime.now().astimezone().isoformat(timespec="seconds")
     output_path = Path(args.output) if args.output else None
     if output_path is None:
         report_dir = Path(__file__).resolve().parent / "report"
@@ -2561,6 +2565,20 @@ def main() -> int:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(md, encoding="utf-8")
     print(f"\nSaved report to {output_path}")
+
+    # Save JSON results sidecar (default on; --no-json opts out)
+    if args.json:
+        if args.output:
+            json_path = output_path.with_suffix(".json")
+        else:
+            results_dir = Path(__file__).resolve().parent / "results"
+            results_dir.mkdir(exist_ok=True)
+            json_path = results_dir / f"{output_path.stem}.json"
+        document = build_results_document(
+            results, corpus=corpus, cfg=cfg, args=args, gold_label=gold_label,
+            pairs=pairs, report_path=output_path, generated_at=generated_at)
+        write_results_json(document, json_path)
+        print(f"Saved results JSON to {json_path}")
 
     return 0
 

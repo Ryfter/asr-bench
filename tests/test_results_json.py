@@ -184,3 +184,42 @@ def test_write_results_json_raises_on_stray_nan(tmp_path):
     # Belt-and-suspenders: an unsanitized NaN must fail loudly, not emit invalid JSON.
     with pytest.raises(ValueError):
         asr_bench.write_results_json({"der": float("nan")}, tmp_path / "r.json")
+
+
+def _fake_whisper_run(monkeypatch):
+    """Patch a fake whisperx adapter + known audio duration so main() runs torch-free."""
+    canned = asr_bench.WhisperXResult.from_dict(
+        {"segments": [{"start": 0, "end": 2, "text": "hello world", "speaker": "SPEAKER_00"}],
+         "speakers": ["SPEAKER_00"], "der": None, "language": "en"})
+    monkeypatch.setattr(asr_bench, "make_whisperx_adapter",
+                        lambda cfg: asr_bench.FakeWhisperXAdapter(canned))
+    monkeypatch.setattr(asr_bench, "_audio_duration_sec", lambda p: 2.0)
+
+
+def test_main_writes_json_sidecar_with_output(tmp_path, monkeypatch):
+    _fake_whisper_run(monkeypatch)
+    audio = tmp_path / "Lec.mp4"; audio.write_bytes(b"x")
+    (tmp_path / "Lec.txt").write_text("hello world", encoding="utf-8")
+    md = tmp_path / "out" / "report.md"
+    monkeypatch.setattr("sys.argv", [
+        "asr_bench.py", "--corpus", str(tmp_path), "--models", "small+whisperx",
+        "--device", "cpu", "--no-diarize", "--output", str(md)])
+    assert asr_bench.main() == 0
+    js = tmp_path / "out" / "report.json"
+    assert js.is_file()
+    import json
+    doc = json.loads(js.read_text(encoding="utf-8"))
+    assert doc["schema_version"] == 1
+    assert doc["models"][0]["model_id"] == "small+whisperx"
+
+
+def test_main_no_json_flag_skips_sidecar(tmp_path, monkeypatch):
+    _fake_whisper_run(monkeypatch)
+    audio = tmp_path / "Lec.mp4"; audio.write_bytes(b"x")
+    (tmp_path / "Lec.txt").write_text("hello world", encoding="utf-8")
+    md = tmp_path / "report.md"
+    monkeypatch.setattr("sys.argv", [
+        "asr_bench.py", "--corpus", str(tmp_path), "--models", "small+whisperx",
+        "--device", "cpu", "--no-diarize", "--output", str(md), "--no-json"])
+    assert asr_bench.main() == 0
+    assert not (tmp_path / "report.json").exists()
