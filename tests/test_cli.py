@@ -47,3 +47,10 @@ def test_init_context_writes_and_exits(tmp_path, monkeypatch):
     assert rc == 0
     assert dest.is_file()
     assert "Glossary" in dest.read_text(encoding="utf-8")
+
+
+def test_help_lists_json_flag():
+    out = subprocess.run([sys.executable, "asr_bench.py", "--help"],
+                         capture_output=True, text=True, cwd=str(ROOT))
+    assert out.returncode == 0
+    assert "--no-json" in out.stdout
