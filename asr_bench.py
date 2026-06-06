@@ -1965,7 +1965,7 @@ def _config_to_dict(cfg: "RunConfig") -> Dict:
 
 
 def build_results_document(results: List["ModelResult"], *, corpus: Path,
-                           cfg: "RunConfig", args, gold_label: str,
+                           cfg: "RunConfig", args: argparse.Namespace, gold_label: str,
                            pairs: List["Pair"], report_path: Path,
                            generated_at: str) -> Dict:
     """Build the JSON sidecar document (a plain, strictly-JSON-safe dict) from a
