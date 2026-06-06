@@ -2555,7 +2555,7 @@ def main() -> int:
     print(md)
 
     # Save markdown report
-    generated_at = datetime.now().astimezone().isoformat(timespec="seconds")
+    generated_at = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
     output_path = Path(args.output) if args.output else None
     if output_path is None:
         report_dir = Path(__file__).resolve().parent / "report"

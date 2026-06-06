@@ -50,7 +50,6 @@ def test_init_context_writes_and_exits(tmp_path, monkeypatch):
 
 
 def test_help_lists_json_flag():
-    import subprocess, sys
     out = subprocess.run([sys.executable, "asr_bench.py", "--help"],
                          capture_output=True, text=True, cwd=str(ROOT))
     assert out.returncode == 0

@@ -207,7 +207,6 @@ def test_main_writes_json_sidecar_with_output(tmp_path, monkeypatch):
     assert asr_bench.main() == 0
     js = tmp_path / "out" / "report.json"
     assert js.is_file()
-    import json
     doc = json.loads(js.read_text(encoding="utf-8"))
     assert doc["schema_version"] == 1
     assert doc["models"][0]["model_id"] == "small+whisperx"
