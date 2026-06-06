@@ -1886,7 +1886,7 @@ def _json_sanitize(obj):
     return obj
 
 
-def _reproducibility_command(args, corpus_path: Path, results: List["ModelResult"]) -> str:
+def _reproducibility_command(args: argparse.Namespace, corpus_path: Path, results: List["ModelResult"]) -> str:
     """The `python asr_bench.py ...` command that reproduces this run (no backticks).
     Shared by the markdown reproducibility footnote and the JSON sidecar."""
     batch_flag = f" --batch-size {args.batch_size}" if args.batch_size > 1 else ""

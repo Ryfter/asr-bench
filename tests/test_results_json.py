@@ -46,3 +46,4 @@ def test_reproducibility_command_nondefault_flags_and_nim():
     cmd = asr_bench._reproducibility_command(args, Path("/c"), [_nim_result()])
     assert "--batch-size 8" in cmd and "--beam-size 3" in cmd and "--no-vad-filter" in cmd
     assert "--nim-url localhost:50051" in cmd and "--nim-model canary" in cmd
+    assert "--nim-language en-US" in cmd
