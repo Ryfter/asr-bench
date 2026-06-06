@@ -47,3 +47,115 @@ def test_reproducibility_command_nondefault_flags_and_nim():
     assert "--batch-size 8" in cmd and "--beam-size 3" in cmd and "--no-vad-filter" in cmd
     assert "--nim-url localhost:50051" in cmd and "--nim-model canary" in cmd
     assert "--nim-language en-US" in cmd
+
+
+def _wx_result_with_nan():
+    """A whisperx ModelResult whose clip has der=NaN to exercise sanitization."""
+    clip = asr_bench.ClipResult(
+        audio="lec.mp4", audio_sec=600.0, transcribe_sec=20.0, rtfx=30.0,
+        vram_peak_bytes=None, hypothesis="hello world",
+        reference_normalized="hello world", hypothesis_normalized="hello world",
+        wer=0.10, mer=0.09, wil=0.12, hits=90, substitutions=5, deletions=3,
+        insertions=2, cue_count=40, num_speakers=2, der=float("nan"),
+        speaker_segments=[(0.0, 300.0, "SPEAKER_00"), (300.0, 600.0, "SPEAKER_01")],
+        reference_origin="unknown", reference_label="user-provided reference",
+    )
+    return asr_bench.ModelResult(
+        model_id="large-v3-turbo+whisperx", display="Whisper Large V3 Turbo + WhisperX",
+        fw_name="large-v3-turbo", params="809M", developer="OpenAI", languages="99",
+        notes="x", disk_bytes=None, load_sec=0.0, engine="whisperx",
+        vram_is_total=False, clips=[clip])
+
+
+def _doc_args(**over):
+    base = dict(models=["large-v3-turbo+whisperx"], device="cuda", compute_type="float16",
+                batch_size=1, beam_size=5, vad_filter=True, nim_url="localhost:50051",
+                nim_model="", nim_language="en-US", fuse=False, profile="both")
+    base.update(over)
+    return types.SimpleNamespace(**base)
+
+
+def _doc_cfg():
+    return asr_bench.RunConfig(
+        device="cuda", compute_type="float16", diarize=True,
+        hf_token="hf_SECRET", nim_api_key="nim_SECRET",
+        min_speakers=2, max_speakers=2)
+
+
+def test_build_document_top_level_shape():
+    doc = asr_bench.build_results_document(
+        [_wx_result_with_nan()], corpus=Path("/corpus"), cfg=_doc_cfg(),
+        args=_doc_args(), gold_label="**proxy** (default: pass --gold ...)",
+        pairs=[], report_path=Path("report/20260605-120000.md"),
+        generated_at="2026-06-05T12:00:00-06:00")
+    assert doc["schema_version"] == 1
+    assert doc["generated_at"] == "2026-06-05T12:00:00-06:00"
+    assert doc["report_markdown"].endswith("20260605-120000.md")
+    assert doc["command"].startswith("python asr_bench.py")
+    assert doc["run"]["device"] == "cuda"
+    assert doc["run"]["reference_quality"] == "proxy"
+    assert doc["run"]["clips_count"] == 1
+    assert len(doc["models"]) == 1
+
+
+def test_build_document_redacts_secrets():
+    doc = asr_bench.build_results_document(
+        [_wx_result_with_nan()], corpus=Path("/c"), cfg=_doc_cfg(), args=_doc_args(),
+        gold_label="proxy", pairs=[], report_path=Path("r.md"),
+        generated_at="t")
+    cfg_out = doc["run"]["config"]
+    assert "hf_token" not in cfg_out and "nim_api_key" not in cfg_out
+    assert cfg_out["diarize"] is True and cfg_out["min_speakers"] == 2
+    import json as _json
+    blob = _json.dumps(doc)
+    assert "hf_SECRET" not in blob and "nim_SECRET" not in blob
+
+
+def test_build_document_aggregates_and_clip_fields():
+    m = _wx_result_with_nan()
+    doc = asr_bench.build_results_document(
+        [m], corpus=Path("/c"), cfg=_doc_cfg(), args=_doc_args(),
+        gold_label="gold", pairs=[], report_path=Path("r.md"), generated_at="t")
+    agg = doc["models"][0]["aggregates"]
+    assert abs(agg["avg_wer"] - m.avg_wer) < 1e-9
+    assert abs(agg["aggregate_rtfx"] - m.aggregate_rtfx) < 1e-9
+    assert agg["peak_vram_bytes"] is None
+    clip = doc["models"][0]["clips"][0]
+    assert clip["der"] is None  # NaN -> null
+    assert clip["num_speakers"] == 2
+    assert clip["speaker_segments"][0] == {"start": 0.0, "end": 300.0, "speaker": "SPEAKER_00"}
+    assert clip["hypothesis"] == "hello world"
+
+
+def test_build_document_reference_quality_gold():
+    doc = asr_bench.build_results_document(
+        [_wx_result_with_nan()], corpus=Path("/c"), cfg=_doc_cfg(), args=_doc_args(),
+        gold_label="**gold (hand-corrected, declared via --gold)**", pairs=[],
+        report_path=Path("r.md"), generated_at="t")
+    assert doc["run"]["reference_quality"] == "gold"
+
+
+def test_build_document_fusion_stub_absent_and_present():
+    off = asr_bench.build_results_document(
+        [_wx_result_with_nan()], corpus=Path("/c"), cfg=_doc_cfg(),
+        args=_doc_args(fuse=False), gold_label="proxy", pairs=[],
+        report_path=Path("r.md"), generated_at="t")
+    assert off["fusion"] == {"ran": False}
+    on = asr_bench.build_results_document(
+        [_wx_result_with_nan()], corpus=Path("/c"), cfg=_doc_cfg(),
+        args=_doc_args(fuse=True, profile="verbatim"), pairs=[],
+        gold_label="proxy", report_path=Path("r.md"), generated_at="t")
+    assert on["fusion"]["ran"] is True
+    assert on["fusion"]["profiles"] == ["verbatim"]
+
+
+def test_build_document_fusion_outputs_listed():
+    pair = asr_bench.Pair(audio=Path("/aud/Lec_default.mp4"), reference=Path("/aud/Lec.txt"))
+    doc = asr_bench.build_results_document(
+        [_wx_result_with_nan()], corpus=Path("/c"), cfg=_doc_cfg(),
+        args=_doc_args(fuse=True, profile="both"), gold_label="proxy", pairs=[pair],
+        report_path=Path("r.md"), generated_at="t")
+    outs = doc["fusion"]["outputs"]
+    assert any(o.endswith("Lec_Captions_Fused.vtt") for o in outs)
+    assert any(o.endswith("Lec_KB_Fused.jsonl") for o in outs)
+    assert any(o.endswith("Lec_KB_Fused.md") for o in outs)

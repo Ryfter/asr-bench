@@ -1886,7 +1886,7 @@ def _json_sanitize(obj):
     return obj
 
 
-def _reproducibility_command(args: argparse.Namespace, corpus_path: Path, results: List["ModelResult"]) -> str:
+def _reproducibility_command(args, corpus_path: Path, results: List["ModelResult"]) -> str:
     """The `python asr_bench.py ...` command that reproduces this run (no backticks).
     Shared by the markdown reproducibility footnote and the JSON sidecar."""
     batch_flag = f" --batch-size {args.batch_size}" if args.batch_size > 1 else ""
@@ -1900,6 +1900,105 @@ def _reproducibility_command(args: argparse.Namespace, corpus_path: Path, result
     return (f"python asr_bench.py --corpus '{corpus_path}' --models {','.join(args.models)} "
             f"--device {args.device} --compute-type {args.compute_type}"
             f"{batch_flag}{beam_flag}{vad_flag}{nim_flag}")
+
+
+def _fusion_output_paths(pairs: List["Pair"], profiles: List[str]) -> List[str]:
+    """The fusion output files this run is expected to have written, per profile
+    (verbatim -> <base>_Captions_Fused.vtt; kb -> <base>_KB_Fused.jsonl + .md).
+    Reconstructed from the same `_fused_base` convention the writers use."""
+    out: List[str] = []
+    for p in pairs:
+        base = p.audio.parent / _fused_base(p.audio)
+        if "verbatim" in profiles:
+            out.append(f"{base}_Captions_Fused.vtt")
+        if "kb" in profiles:
+            out.append(f"{base}_KB_Fused.jsonl")
+            out.append(f"{base}_KB_Fused.md")
+    return out
+
+
+def _clip_to_dict(c: "ClipResult") -> Dict:
+    return {
+        "audio": c.audio, "audio_sec": c.audio_sec, "transcribe_sec": c.transcribe_sec,
+        "rtfx": c.rtfx, "vram_peak_bytes": c.vram_peak_bytes,
+        "wer": c.wer, "mer": c.mer, "wil": c.wil,
+        "hits": c.hits, "substitutions": c.substitutions,
+        "deletions": c.deletions, "insertions": c.insertions,
+        "cue_count": c.cue_count, "num_speakers": c.num_speakers, "der": c.der,
+        "speaker_segments": [{"start": s, "end": e, "speaker": spk}
+                             for (s, e, spk) in c.speaker_segments],
+        "vtt_path": c.vtt_path,
+        "reference_origin": c.reference_origin, "reference_label": c.reference_label,
+        "hypothesis": c.hypothesis,
+        "reference_normalized": c.reference_normalized,
+        "hypothesis_normalized": c.hypothesis_normalized,
+    }
+
+
+def _model_to_dict(m: "ModelResult") -> Dict:
+    return {
+        "model_id": m.model_id, "display": m.display, "engine": m.engine,
+        "fw_name": m.fw_name, "params": m.params, "developer": m.developer,
+        "languages": m.languages, "disk_bytes": m.disk_bytes, "load_sec": m.load_sec,
+        "vram_is_total": m.vram_is_total, "notes": m.notes,
+        "aggregates": {
+            "avg_wer": m.avg_wer, "avg_mer": m.avg_mer, "avg_wil": m.avg_wil,
+            "total_audio_sec": m.total_audio_sec,
+            "total_transcribe_sec": m.total_transcribe_sec,
+            "aggregate_rtfx": m.aggregate_rtfx, "peak_vram_bytes": m.peak_vram_bytes,
+        },
+        "clips": [_clip_to_dict(c) for c in m.clips],
+    }
+
+
+def _config_to_dict(cfg: "RunConfig") -> Dict:
+    """RunConfig as a dict, OMITTING secrets (hf_token, nim_api_key)."""
+    return {
+        "device": cfg.device, "compute_type": cfg.compute_type,
+        "batch_size": cfg.batch_size, "beam_size": cfg.beam_size,
+        "vad_filter": cfg.vad_filter,
+        "nim_url": cfg.nim_url, "nim_model": cfg.nim_model,
+        "nim_language": cfg.nim_language, "nim_ssl": cfg.nim_ssl,
+        "whisperx_python": cfg.whisperx_python, "diarize": cfg.diarize,
+        "min_speakers": cfg.min_speakers, "max_speakers": cfg.max_speakers,
+    }
+
+
+def build_results_document(results: List["ModelResult"], *, corpus: Path,
+                           cfg: "RunConfig", args, gold_label: str,
+                           pairs: List["Pair"], report_path: Path,
+                           generated_at: str) -> Dict:
+    """Build the JSON sidecar document (a plain, strictly-JSON-safe dict) from a
+    completed run. Secrets are omitted; NaN/Inf become null."""
+    ref_quality = ("gold" if gold_label.replace("*", "").strip().lower().startswith("gold")
+                   else "proxy")
+    first = results[0] if results else None
+    fusion: Dict = {"ran": bool(getattr(args, "fuse", False))}
+    if fusion["ran"]:
+        fusion["profiles"] = (["verbatim", "kb"] if args.profile == "both"
+                              else [args.profile])
+        fusion["outputs"] = _fusion_output_paths(pairs, fusion["profiles"])
+    doc: Dict = {
+        "schema_version": 1,
+        "generated_at": generated_at,
+        "report_markdown": str(report_path),
+        "command": _reproducibility_command(args, corpus, results),
+        "run": {
+            "corpus": str(corpus),
+            "device": cfg.device,
+            "compute_type": cfg.compute_type,
+            "reference_quality": ref_quality,
+            "reference_quality_label": gold_label,
+            "clips_count": len(first.clips) if first else 0,
+            "total_audio_sec": first.total_audio_sec if first else 0.0,
+            "vram_tracking": any(c.vram_peak_bytes is not None
+                                 for r in results for c in r.clips),
+            "config": _config_to_dict(cfg),
+        },
+        "models": [_model_to_dict(m) for m in results],
+        "fusion": fusion,
+    }
+    return _json_sanitize(doc)
 
 
 # ---- Output -----------------------------------------------------------------
