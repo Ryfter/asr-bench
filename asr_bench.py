@@ -767,6 +767,13 @@ class ModelResult:
         peaks = [c.vram_peak_bytes for c in self.clips if c.vram_peak_bytes is not None]
         return max(peaks) if peaks else None
 
+    @property
+    def hallucination_rate(self) -> float:
+        """Fraction of this model's clips flagged as hallucination-suspect."""
+        if not self.clips:
+            return 0.0
+        return sum(1 for c in self.clips if c.is_hallucination_suspect) / len(self.clips)
+
 
 @dataclass
 class RunConfig:

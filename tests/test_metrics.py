@@ -219,3 +219,24 @@ def test_is_hallucination_suspect_on_compression():
         hypothesis_normalized="h", wer=0.1, repeat_coverage=0.0,
         compression_ratio=3.0)
     assert c.is_hallucination_suspect is True
+
+
+# ---------------------------------------------------------------------------
+# Task 3 — ModelResult.hallucination_rate
+# ---------------------------------------------------------------------------
+
+def test_hallucination_rate_half():
+    clean = asr_bench.ClipResult(
+        audio="a.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1)  # defaults -> not suspect
+    suspect = asr_bench.ClipResult(
+        audio="b.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, repeat_coverage=0.6)
+    m = _model([clean, suspect])
+    assert m.hallucination_rate == 0.5
+
+
+def test_hallucination_rate_empty_model():
+    assert _model([]).hallucination_rate == 0.0
