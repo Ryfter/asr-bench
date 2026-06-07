@@ -2433,11 +2433,105 @@ def render_markdown(
 
 
 # ---- CLI --------------------------------------------------------------------
+# ---- prepare-gold subcommand ------------------------------------------------
+# Files asr-bench itself emits — never treat these as source captions to convert,
+# or a model's own output would become its own "reference" (circular).
+_GENERATED_CAPTION_RE = re.compile(r"_Captions_.*\.vtt$", re.IGNORECASE)
+_CAPTION_SOURCE_EXTS = {".vtt", ".srt"}
+_PROXY_TXT_HEADER = (
+    "[Auto-generated transcript. Converted by asr-bench prepare-gold "
+    "— proxy reference, not verified gold.]"
+)
+
+
+def _is_generated_caption(name: str) -> bool:
+    return bool(_GENERATED_CAPTION_RE.search(name))
+
+
+def find_caption_sources(paths: List[Path]) -> List[Path]:
+    """Expand file/dir args into a sorted list of convertible .vtt/.srt sources,
+    excluding asr-bench's own generated `_Captions_*.vtt` outputs."""
+    out: List[Path] = []
+    for p in paths:
+        if p.is_dir():
+            for f in sorted(p.iterdir()):
+                if (f.is_file() and f.suffix.lower() in _CAPTION_SOURCE_EXTS
+                        and not _is_generated_caption(f.name)):
+                    out.append(f)
+        elif (p.is_file() and p.suffix.lower() in _CAPTION_SOURCE_EXTS
+              and not _is_generated_caption(p.name)):
+            out.append(p)
+    return out
+
+
+def prepare_gold_main(argv: List[str]) -> int:
+    """Convert VTT/SRT caption files into the plain `.txt` reference files
+    asr-bench scores against (timing stripped, cues joined). Proxy/ASR-generated
+    sources keep an auto-gen marker so they stay detectable as non-gold."""
+    ap = argparse.ArgumentParser(
+        prog="asr_bench.py prepare-gold",
+        description="Convert VTT/SRT captions into plain-text .txt references. "
+                    "Proxy/ASR-generated sources stay labeled proxy.",
+    )
+    ap.add_argument("paths", nargs="*",
+                    help="Caption files or directories. Defaults to --corpus.")
+    ap.add_argument("--corpus", default="test-corpus",
+                    help="Directory of captions, used when no paths are given.")
+    ap.add_argument("--overwrite", action="store_true",
+                    help="Replace existing .txt references.")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="Show what would happen; write nothing.")
+    ns = ap.parse_args(argv)
+
+    inputs = [Path(p) for p in ns.paths] or [Path(ns.corpus)]
+    sources = find_caption_sources(inputs)
+    if not sources:
+        print("No .vtt/.srt caption files found to convert "
+              "(asr-bench's own _Captions_*.vtt outputs are skipped).",
+              file=sys.stderr)
+        return 1
+
+    converted = skipped = proxy_count = 0
+    for src in sources:
+        dst = src.with_suffix(".txt")
+        origin, label = detect_reference_origin(src)
+        is_proxy = origin != "unknown"
+        if is_proxy:
+            proxy_count += 1
+        tag = f"PROXY ({label})" if is_proxy else "gold-eligible (proofread to confirm)"
+        if dst.exists() and not ns.overwrite:
+            print(f"skip   {src.name} -> {dst.name} (exists; --overwrite to replace) [{tag}]")
+            skipped += 1
+            continue
+        text = load_reference_text(src)
+        word_n = len(text.split())
+        if ns.dry_run:
+            print(f"dry    {src.name} -> {dst.name} [{tag}] ({word_n} words)")
+            converted += 1
+            continue
+        # Preserve the proxy signal: the bracketed header is stripped at scoring
+        # time by load_reference_text, but detect_reference_origin still sees it.
+        body = (f"{_PROXY_TXT_HEADER}\n{text}" if is_proxy else text)
+        dst.write_text(body + "\n", encoding="utf-8")
+        print(f"write  {src.name} -> {dst.name} [{tag}] ({word_n} words)")
+        converted += 1
+
+    verb = "would convert" if ns.dry_run else "converted"
+    print(f"\n{verb} {converted} file(s), skipped {skipped}.")
+    if proxy_count:
+        print(f"Note: {proxy_count} PROXY source(s) produced proxy .txt references "
+              "(auto-gen header preserved). Proofread and delete that header line "
+              "to promote a file to gold.")
+    return 0
+
+
 def main() -> int:
     argv = sys.argv[1:]
     if argv and argv[0] == "compare":
         from asr_compare import compare_main
         return compare_main(argv[1:])
+    if argv and argv[0] == "prepare-gold":
+        return prepare_gold_main(argv[1:])
     ap = argparse.ArgumentParser(
         description="Benchmark local Whisper variants on your own audio.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
