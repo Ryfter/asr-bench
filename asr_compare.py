@@ -84,7 +84,9 @@ def _clip_value(clip: dict, metric: str) -> Optional[float]:
 
 def _build_clip_table(per_run_clips: List[Dict[str, dict]], *, mode: str) -> dict:
     """per_run_clips[i] maps clip-basename -> clip dict for run i. Returns
-    {clip_order: [...], clips: {name: {present_in, values, deltas?}}}."""
+    {clip_order: [...], clips: {name: {present_in, values, deltas?}}}.
+    In delta mode, deltas are candidate-minus-baseline over per_run_clips[1] and
+    [0]; the caller (compare_runs) guarantees exactly 2 runs in delta mode."""
     order: List[str] = []
     seen = set()
     for idx in per_run_clips:
@@ -155,12 +157,17 @@ def compare_runs(docs: List[dict], *, mode: str, per_clip: bool = False) -> dict
             entry["deltas"] = deltas
         if per_clip:
             per_run_clips: List[Dict[str, dict]] = []
-            for idx in per_run:
+            for ri, idx in enumerate(per_run):
                 cm = idx.get(mid)
                 cmap: Dict[str, dict] = {}
                 if cm is not None:
                     for c in cm.get("clips", []):
-                        cmap[Path(c.get("audio", "")).name] = c
+                        name = Path(c.get("audio", "")).name
+                        if name in cmap:
+                            print(f"warning: duplicate clip basename {name!r} in "
+                                  f"run {runs[ri]['label']!r}; per-clip view keeps "
+                                  f"the last.", file=sys.stderr)
+                        cmap[name] = c
                 per_run_clips.append(cmap)
             entry.update(_build_clip_table(per_run_clips, mode=mode))
         models.append(entry)

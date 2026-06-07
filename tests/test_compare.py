@@ -242,3 +242,13 @@ def test_per_clip_default_off():
     rep = asr_compare.compare_runs([a, b], mode="delta")
     assert rep["per_clip"] is False
     assert "clips" not in rep["models"][0]
+
+
+def test_per_clip_duplicate_basename_warns(capsys):
+    clips = [{"audio": "a/wk1.mp4", "wer": 0.10, "der": None, "num_speakers": None},
+             {"audio": "b/wk1.mp4", "wer": 0.20, "der": None, "num_speakers": None}]
+    a = _doc("a", models=[_model("m", "M", clips=clips)])
+    b = _doc("b", models=[_model("m", "M", clips=[{"audio": "wk1.mp4", "wer": 0.08,
+                                                  "der": None, "num_speakers": None}])])
+    asr_compare.compare_runs([a, b], mode="delta", per_clip=True)
+    assert "duplicate clip basename" in capsys.readouterr().err
