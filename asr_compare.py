@@ -74,7 +74,43 @@ def _mismatch_warnings(docs: List[dict]) -> List[str]:
     return out
 
 
-def compare_runs(docs: List[dict], *, mode: str) -> dict:
+# per-clip comparison covers these (per-clip der/wer are stored on each clip)
+_CLIP_METRICS = ["wer", "der"]
+
+
+def _clip_value(clip: dict, metric: str) -> Optional[float]:
+    return clip.get(metric)
+
+
+def _build_clip_table(per_run_clips: List[Dict[str, dict]], *, mode: str) -> dict:
+    """per_run_clips[i] maps clip-basename -> clip dict for run i. Returns
+    {clip_order: [...], clips: {name: {present_in, values, deltas?}}}."""
+    order: List[str] = []
+    seen = set()
+    for idx in per_run_clips:
+        for name in idx:
+            if name not in seen:
+                seen.add(name)
+                order.append(name)
+    clips: Dict[str, dict] = {}
+    for name in order:
+        present_in = [i for i, idx in enumerate(per_run_clips) if name in idx]
+        values: Dict[str, List[Optional[float]]] = {k: [] for k in _CLIP_METRICS}
+        for idx in per_run_clips:
+            c = idx.get(name)
+            for k in _CLIP_METRICS:
+                values[k].append(_clip_value(c, k) if c is not None else None)
+        cell: dict = {"present_in": present_in, "values": values}
+        if mode == "delta":
+            cell["deltas"] = {
+                k: ((values[k][1] - values[k][0])
+                    if values[k][0] is not None and values[k][1] is not None else None)
+                for k in _CLIP_METRICS}
+        clips[name] = cell
+    return {"clip_order": order, "clips": clips}
+
+
+def compare_runs(docs: List[dict], *, mode: str, per_clip: bool = False) -> dict:
     """Pure builder. Joins per-model headline metrics on model_id across `docs`
     (input order; docs[0] is the baseline in delta mode). Returns a report dict."""
     if mode == "delta" and len(docs) != 2:
@@ -117,10 +153,21 @@ def compare_runs(docs: List[dict], *, mode: str) -> dict:
                 deltas[k] = ((cand_v - base_v)
                              if base_v is not None and cand_v is not None else None)
             entry["deltas"] = deltas
+        if per_clip:
+            per_run_clips: List[Dict[str, dict]] = []
+            for idx in per_run:
+                cm = idx.get(mid)
+                cmap: Dict[str, dict] = {}
+                if cm is not None:
+                    for c in cm.get("clips", []):
+                        cmap[Path(c.get("audio", "")).name] = c
+                per_run_clips.append(cmap)
+            entry.update(_build_clip_table(per_run_clips, mode=mode))
         models.append(entry)
 
     report: dict = {"mode": mode, "runs": runs, "metrics": metrics,
-                    "models": models, "warnings": _mismatch_warnings(docs)}
+                    "models": models, "warnings": _mismatch_warnings(docs),
+                    "per_clip": per_clip}
     return report
 
 
@@ -183,6 +230,47 @@ def _render_matrix(report: dict) -> List[str]:
     return rows
 
 
+def _render_per_clip(report: dict) -> List[str]:
+    runs = report["runs"]
+    out: List[str] = []
+    for m in report["models"]:
+        if not m.get("clip_order"):
+            continue
+        out += ["", f"### Per-clip: {m['display']}", ""]
+        if report["mode"] == "delta":
+            head = ("| Clip | " + " | ".join(METRIC_META[k]["label"]
+                                            for k in _CLIP_METRICS) + " |")
+            sep = "|" + "---|" * (1 + len(_CLIP_METRICS))
+            out += [head, sep]
+            for name in m["clip_order"]:
+                cell = m["clips"][name]
+                cells = [name]
+                for k in _CLIP_METRICS:
+                    base_v, cand_v = cell["values"][k][0], cell["values"][k][1]
+                    if base_v is None and cand_v is None:
+                        cells.append("—")
+                        continue
+                    txt = f"{_fmt(k, base_v)} → {_fmt(k, cand_v)}"
+                    d = cell.get("deltas", {}).get(k)
+                    if d is not None:
+                        mark = _delta_mark(k, d)
+                        txt += f" ({_fmt_delta(k, d)}{(' ' + mark) if mark else ''})"
+                    cells.append(txt)
+                out.append("| " + " | ".join(cells) + " |")
+        else:
+            head = ("| Clip | Metric | " + " | ".join(f"`{r['label']}`"
+                                                      for r in runs) + " |")
+            sep = "|" + "---|" * (2 + len(runs))
+            out += [head, sep]
+            for name in m["clip_order"]:
+                cell = m["clips"][name]
+                for k in _CLIP_METRICS:
+                    row = [name, METRIC_META[k]["label"]]
+                    row += [_fmt(k, cell["values"][k][i]) for i in range(len(runs))]
+                    out.append("| " + " | ".join(row) + " |")
+    return out
+
+
 def render_comparison_markdown(report: dict) -> str:
     now = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
     lines: List[str] = ["# ASR Run Comparison", "", f"_Generated {now}_", "",
@@ -197,6 +285,8 @@ def render_comparison_markdown(report: dict) -> str:
         lines.append("")
     lines += (_render_delta(report) if report["mode"] == "delta"
               else _render_matrix(report))
+    if report.get("per_clip"):
+        lines += _render_per_clip(report)
     lines.append("")
     return "\n".join(lines)
 

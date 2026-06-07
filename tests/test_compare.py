@@ -209,3 +209,36 @@ def test_render_added_removed_show_dash():
         asr_compare.compare_runs([a, b], mode="delta"))
     assert "removed" in md and "added" in md
     assert "—" in md
+
+
+def test_per_clip_joins_by_audio_basename():
+    ca = [{"audio": "wk1.mp4", "wer": 0.10, "der": None, "num_speakers": None}]
+    cb = [{"audio": "wk1.mp4", "wer": 0.08, "der": None, "num_speakers": None}]
+    a = _doc("a", models=[_model("m", "M", clips=ca)])
+    b = _doc("b", models=[_model("m", "M", clips=cb)])
+    rep = asr_compare.compare_runs([a, b], mode="delta", per_clip=True)
+    assert rep["per_clip"] is True
+    mrow = rep["models"][0]
+    assert mrow["clip_order"] == ["wk1.mp4"]
+    clip = mrow["clips"]["wk1.mp4"]
+    assert clip["values"]["wer"] == [0.10, 0.08]
+    assert round(clip["deltas"]["wer"], 4) == -0.02
+
+
+def test_per_clip_render_has_clip_section():
+    ca = [{"audio": "wk1.mp4", "wer": 0.10, "der": None, "num_speakers": None}]
+    cb = [{"audio": "wk1.mp4", "wer": 0.08, "der": None, "num_speakers": None}]
+    a = _doc("a", models=[_model("m", "Model M", clips=ca)])
+    b = _doc("b", models=[_model("m", "Model M", clips=cb)])
+    rep = asr_compare.compare_runs([a, b], mode="delta", per_clip=True)
+    md = asr_compare.render_comparison_markdown(rep)
+    assert "Per-clip: Model M" in md
+    assert "wk1.mp4" in md
+
+
+def test_per_clip_default_off():
+    a = _doc("a", models=[_model("m")])
+    b = _doc("b", models=[_model("m")])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    assert rep["per_clip"] is False
+    assert "clips" not in rep["models"][0]
