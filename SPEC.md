@@ -127,7 +127,7 @@ Future v0.3+: `asr_bench prepare-gold ./test-corpus` — walks user through hand
 - v0.1: markdown table per run + per-clip detail. Stdout + `./results/<timestamp>.md`.
 - v0.2: MER/WIL/S/D/I columns; `_Captions_Fused.vtt` and `_KB_Fused.jsonl`/`.md` from fusion stage.
 - v0.3: Speaker-labeled VTT (`SPEAKER_XX: text` cues) + `_Words_<Model>.json` word-timestamp sidecar from WhisperX runs. JSON results sidecar (`results/<timestamp>.json`, `schema_version: 1`) for cross-run aggregation — shipped.
-- v0.4: `asr_bench compare` subcommand — delta report between N result JSON files (not yet built; schema is compare-ready).
+- v0.3 (shipped): `asr_bench compare` subcommand — delta (2 files) or matrix (3+) markdown report across N result JSON files. Joins per-model aggregates on `model_id`; warns on corpus/config drift. `--last N`, `--per-clip`, `--delta`/`--matrix`, `--output`. Implemented as `asr_compare.py` with first-positional `compare` keyword pre-dispatch in `asr_bench.py`.
 
 ## Corpus structure roadmap
 
@@ -174,3 +174,8 @@ v0.3 adds:
 - **2026-06-04** — In-process vs subprocess auto-detection: when `torch` is importable in the running interpreter (a 3.12 venv that has WhisperX), asr-bench runs WhisperX in-process. Otherwise it spawns `whisperx_runner.py` in a separate venv. Rationale: torch has no Python 3.14 wheels and asr-bench's core runs on 3.14; the subprocess bridge avoids forcing users to install asr-bench itself into a 3.12 venv.
 - **2026-06-04** — DER gated on RTTM sidecar. Ground-truth speaker boundaries are labor-intensive; not every run has them. Diarization still runs (and labels VTT cues) without RTTM — only the DER% and Speakers columns are suppressed. This keeps the default useful without requiring annotation work.
 - **2026-06-04** — `engines/` package split deferred again. `whisperx_runner.py` is the only file broken out (forced by the venv/Python version boundary). Full split waits for NeMo/Canary-Qwen where the weight of three Engine subclasses in `asr_bench.py` becomes unwieldy.
+- **2026-06-06** — `compare` subcommand shipped: reads 2+ JSON sidecars, delta
+  (2) / matrix (3+) markdown, joins per-model aggregates on model_id, warns on
+  corpus/config drift. Implemented as a first-positional `compare` keyword
+  pre-dispatch into a standalone, pure `asr_compare.py` — the existing bench CLI
+  is byte-for-byte unchanged. Per-model DER averaged from per-clip `der`.

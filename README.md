@@ -283,6 +283,30 @@ metrics, transcripts, and speaker/DER data — for cross-run aggregation. NaN
 values (e.g. DER on a non-diarized clip) serialize as `null`. Secrets
 (`hf_token`, `nim_api_key`) are never written. Opt out with `--no-json`.
 
+### Comparing runs
+
+Every run writes a `results/<timestamp>.json` sidecar. `compare` reads 2+ of them
+and prints a markdown comparison:
+
+```powershell
+# 2 files -> delta view (baseline -> candidate, signed Δ with ✓/✗)
+python asr_bench.py compare results/20260605-190913.json results/20260606-101500.json
+
+# 3+ files -> matrix (one column per run)
+python asr_bench.py compare results/a.json results/b.json results/c.json
+
+# the two most recent runs, with per-clip detail
+python asr_bench.py compare --last 2 --per-clip
+
+# write to a file instead of stdout
+python asr_bench.py compare results/a.json results/b.json --output report/compare.md
+```
+
+Force a layout with `--delta` (exactly 2 files) or `--matrix`. WER/MER/WIL/DER are
+lower-is-better (improvement marked ✓); RTFx is higher-is-better. Differing corpus
+or key config between runs is flagged as a ⚠️ warning (comparing WER across
+different corpora is not meaningful).
+
 ## What's in the box
 
 ```
