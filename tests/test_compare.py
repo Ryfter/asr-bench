@@ -252,3 +252,80 @@ def test_per_clip_duplicate_basename_warns(capsys):
                                                   "der": None, "num_speakers": None}])])
     asr_compare.compare_runs([a, b], mode="delta", per_clip=True)
     assert "duplicate clip basename" in capsys.readouterr().err
+
+
+def _write(tmp_path, name, doc):
+    p = tmp_path / name
+    p.write_text(json.dumps(doc), encoding="utf-8")
+    return p
+
+
+def test_compare_main_two_files_prints_table(tmp_path, capsys):
+    a = _write(tmp_path, "a.json", _doc("a", models=[_model("m", "M", wer=0.10)]))
+    b = _write(tmp_path, "b.json", _doc("b", models=[_model("m", "M", wer=0.08)]))
+    rc = asr_compare.compare_main([str(a), str(b)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "ASR Run Comparison" in out and "M" in out
+
+
+def test_compare_main_one_file_errors(tmp_path, capsys):
+    a = _write(tmp_path, "a.json", _doc("a", models=[_model("m")]))
+    rc = asr_compare.compare_main([str(a)])
+    assert rc != 0
+    assert "at least 2" in capsys.readouterr().err
+
+
+def test_compare_main_output_writes_file(tmp_path):
+    a = _write(tmp_path, "a.json", _doc("a", models=[_model("m", "M")]))
+    b = _write(tmp_path, "b.json", _doc("b", models=[_model("m", "M")]))
+    out = tmp_path / "cmp.md"
+    rc = asr_compare.compare_main([str(a), str(b), "--output", str(out)])
+    assert rc == 0
+    assert "ASR Run Comparison" in out.read_text(encoding="utf-8")
+
+
+def test_compare_main_delta_force_with_three_files_errors(tmp_path, capsys):
+    files = [str(_write(tmp_path, f"{n}.json", _doc(n, models=[_model("m")])))
+             for n in ("a", "b", "c")]
+    rc = asr_compare.compare_main(files + ["--delta"])
+    assert rc != 0
+    assert "--delta requires exactly 2" in capsys.readouterr().err
+
+
+def test_compare_main_three_files_default_matrix(tmp_path, capsys):
+    files = [str(_write(tmp_path, f"{n}.json",
+                        _doc(n, models=[_model("m", "M", wer=0.10)])))
+             for n in ("a", "b", "c")]
+    asr_compare.compare_main(files)
+    out = capsys.readouterr().out
+    assert "| Model | Metric |" in out
+
+
+def test_compare_main_matrix_force_with_two_files(tmp_path, capsys):
+    a = _write(tmp_path, "a.json", _doc("a", models=[_model("m", "M")]))
+    b = _write(tmp_path, "b.json", _doc("b", models=[_model("m", "M")]))
+    asr_compare.compare_main([str(a), str(b), "--matrix"])
+    assert "| Model | Metric |" in capsys.readouterr().out
+
+
+def test_compare_main_last_n_selects_recent(tmp_path, capsys):
+    rdir = tmp_path / "results"
+    rdir.mkdir()
+    for n in ("20260601-000000", "20260602-000000", "20260603-000000"):
+        _write(rdir, f"{n}.json", _doc(n, models=[_model("m", "M")]))
+    rc = asr_compare.compare_main(["--last", "2", "--results-dir", str(rdir)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "20260602-000000" in out and "20260603-000000" in out
+    assert "20260601-000000" not in out
+
+
+def test_compare_main_directory_arg_globs_json(tmp_path, capsys):
+    d = tmp_path / "runs"
+    d.mkdir()
+    _write(d, "a.json", _doc("a", models=[_model("m", "M")]))
+    _write(d, "b.json", _doc("b", models=[_model("m", "M")]))
+    rc = asr_compare.compare_main([str(d)])
+    assert rc == 0
+    assert "ASR Run Comparison" in capsys.readouterr().out

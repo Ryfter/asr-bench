@@ -298,6 +298,75 @@ def render_comparison_markdown(report: dict) -> str:
     return "\n".join(lines)
 
 
+def _resolve_files(files: List[str], last: Optional[int],
+                   results_dir: Path) -> List[Path]:
+    """Build the ordered file list: directory args expand to their sorted *.json;
+    --last prepends the N most-recent results_dir/*.json (ascending, so the older
+    of the pair is the delta baseline), de-duplicated against explicit paths."""
+    paths: List[Path] = []
+    for f in files:
+        p = Path(f)
+        if p.is_dir():
+            paths.extend(sorted(p.glob("*.json")))
+        else:
+            paths.append(p)
+    if last is not None and last > 0:
+        recent = sorted(results_dir.glob("*.json"))[-last:] if results_dir.is_dir() else []
+        existing = set(paths)
+        paths = [r for r in recent if r not in existing] + paths
+    return paths
+
+
+def compare_main(argv: List[str]) -> int:
+    ap = argparse.ArgumentParser(
+        prog="asr_bench.py compare",
+        description="Compare 2+ asr-bench results JSON sidecars (schema_version 1).",
+    )
+    ap.add_argument("files", nargs="*",
+                    help="Results JSON files, or a directory of them.")
+    ap.add_argument("--last", type=int, default=None,
+                    help="Use the N most-recent results/*.json (by filename).")
+    ap.add_argument("--results-dir", default="results",
+                    help="Directory that --last reads from.")
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument("--delta", action="store_true",
+                   help="Force delta view (requires exactly 2 files).")
+    g.add_argument("--matrix", action="store_true", help="Force matrix view.")
+    ap.add_argument("--per-clip", action="store_true",
+                    help="Include per-clip detail.")
+    ap.add_argument("--output", default=None,
+                    help="Write markdown to this path instead of stdout.")
+    ns = ap.parse_args(argv)
+
+    paths = _resolve_files(ns.files, ns.last, Path(ns.results_dir))
+    docs = [d for d in (load_results_json(p) for p in paths) if d is not None]
+    if len(docs) < 2:
+        print(f"error: need at least 2 valid result files to compare "
+              f"(got {len(docs)}).", file=sys.stderr)
+        return 2
+    if ns.delta and len(docs) != 2:
+        print("error: --delta requires exactly 2 files.", file=sys.stderr)
+        return 2
+
+    if ns.matrix:
+        mode = "matrix"
+    elif ns.delta:
+        mode = "delta"
+    else:
+        mode = "delta" if len(docs) == 2 else "matrix"
+
+    report = compare_runs(docs, mode=mode, per_clip=ns.per_clip)
+    md = render_comparison_markdown(report)
+    if ns.output:
+        out = Path(ns.output)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(md, encoding="utf-8")
+        print(f"Wrote comparison to {out}")
+    else:
+        print(md)
+    return 0
+
+
 def load_results_json(path) -> Optional[dict]:
     """Read a results sidecar; return the dict if schema_version == 1, else None.
     Tags the dict with `_source_label` (the file stem) for display. Unreadable
