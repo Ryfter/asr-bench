@@ -26,10 +26,14 @@ test-corpus/*
 Thumbs.db
 desktop.ini
 
-# Editors
+# Editors / agent tooling
 .vscode/
 .idea/
 *.swp
+.claude/
+
+# Reference papers — kept locally for research, not redistributed (copyright)
+*.pdf
 
 # HuggingFace token for WhisperX diarization (never commit)
 .hf_token
