@@ -29,6 +29,9 @@ METRIC_META = {
 _AGG_KEYS = {"wer": "avg_wer", "mer": "avg_mer", "wil": "avg_wil",
              "rtfx": "aggregate_rtfx"}
 
+# config fields whose mismatch makes a cross-run comparison suspect
+_CONFIG_KEYS = ["device", "compute_type", "beam_size", "vad_filter", "batch_size"]
+
 
 def _model_der(model_doc: dict) -> Optional[float]:
     """Per-model DER = mean of non-null clip `der` values (DER is per-clip, not in
@@ -48,6 +51,27 @@ def _has_any_der(docs: List[dict]) -> bool:
     return any(c.get("der") is not None
                for d in docs for m in d.get("models", [])
                for c in m.get("clips", []))
+
+
+def _mismatch_warnings(docs: List[dict]) -> List[str]:
+    """Warn when later runs differ from docs[0] in corpus or key config."""
+    out: List[str] = []
+    base = docs[0].get("run", {})
+    base_corpus = base.get("corpus")
+    base_cfg = base.get("config", {})
+    base_label = docs[0].get("_source_label", "run[0]")
+    for i in range(1, len(docs)):
+        run = docs[i].get("run", {})
+        label = docs[i].get("_source_label", f"run[{i}]")
+        if run.get("corpus") != base_corpus:
+            out.append(f"corpus differs: {label} used {run.get('corpus')!r} "
+                       f"(baseline {base_label} used {base_corpus!r})")
+        cfg = run.get("config", {})
+        for key in _CONFIG_KEYS:
+            if cfg.get(key) != base_cfg.get(key):
+                out.append(f"{key} differs: {label}={cfg.get(key)!r} "
+                           f"vs baseline {base_label}={base_cfg.get(key)!r}")
+    return out
 
 
 def compare_runs(docs: List[dict], *, mode: str) -> dict:
@@ -85,9 +109,16 @@ def compare_runs(docs: List[dict], *, mode: str) -> dict:
         if mode == "delta":
             entry["status"] = ("both" if set(present_in) >= {0, 1}
                                else "removed" if 0 in present_in else "added")
+            deltas: Dict[str, Optional[float]] = {}
+            for k in metrics:
+                base_v, cand_v = values[k][0], values[k][1]
+                deltas[k] = ((cand_v - base_v)
+                             if base_v is not None and cand_v is not None else None)
+            entry["deltas"] = deltas
         models.append(entry)
 
-    report: dict = {"mode": mode, "runs": runs, "metrics": metrics, "models": models}
+    report: dict = {"mode": mode, "runs": runs, "metrics": metrics,
+                    "models": models, "warnings": _mismatch_warnings(docs)}
     return report
 
 

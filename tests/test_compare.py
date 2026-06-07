@@ -106,3 +106,45 @@ def test_model_union_preserves_first_seen_order():
     b = _doc("b", models=[_model("a"), _model("q")])
     rep = asr_compare.compare_runs([a, b], mode="matrix")
     assert [m["model_id"] for m in rep["models"]] == ["z", "a", "q"]
+
+
+def test_deltas_candidate_minus_baseline():
+    a = _doc("a", models=[_model("m", wer=0.10, rtfx=60.0)])
+    b = _doc("b", models=[_model("m", wer=0.08, rtfx=70.0)])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    d = rep["models"][0]["deltas"]
+    assert round(d["wer"], 4) == -0.02
+    assert round(d["rtfx"], 4) == 10.0
+
+
+def test_delta_none_when_value_missing():
+    a = _doc("a", models=[_model("m", wer=0.10)])
+    b = _doc("b", models=[_model("other", wer=0.08)])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    m = [x for x in rep["models"] if x["model_id"] == "m"][0]
+    assert m["deltas"]["wer"] is None
+
+
+def test_warning_on_corpus_mismatch():
+    a = _doc("a", corpus="corpus-A", models=[_model("m")])
+    b = _doc("b", corpus="corpus-B", models=[_model("m")])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    assert any("corpus differs" in w for w in rep["warnings"])
+
+
+def test_warning_on_beam_size_mismatch():
+    a = _doc("a", models=[_model("m")],
+             config={"device": "cuda", "compute_type": "float16",
+                     "beam_size": 5, "vad_filter": True, "batch_size": 1})
+    b = _doc("b", models=[_model("m")],
+             config={"device": "cuda", "compute_type": "float16",
+                     "beam_size": 1, "vad_filter": True, "batch_size": 1})
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    assert any("beam_size differs" in w for w in rep["warnings"])
+
+
+def test_no_warnings_when_runs_match():
+    a = _doc("a", models=[_model("m")])
+    b = _doc("b", models=[_model("m")])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    assert rep["warnings"] == []
