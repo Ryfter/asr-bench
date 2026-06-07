@@ -335,16 +335,18 @@ def normalize_for_wer(text: str) -> str:
 # ---- Word metrics -----------------------------------------------------------
 @dataclass
 class WordMetrics:
-    """All word-level scores from a single jiwer alignment.
+    """All alignment scores from a single jiwer alignment (word-level + CER).
 
     WER  = (S+D+I)/N1                      (edit cost; can exceed 1.0)
     MER  = (S+D+I)/(H+S+D+I)               (Morris et al.; bounded [0,1])
     WIL  = 1 - H*H/(N1*N2)                 (Morris et al.; bounded [0,1])
+    CER  = char edit distance / len(reference)  (character-level WER; bounded [0,inf])
     where N1 = ref words = H+S+D, N2 = hyp words = H+S+I.
     """
     wer: float
     mer: float
     wil: float
+    cer: float
     hits: int
     substitutions: int
     deletions: int
@@ -359,21 +361,22 @@ def compute_word_metrics(reference: str, hypothesis: str) -> WordMetrics:
     """
     nan = float("nan")
     if not reference.strip():
-        return WordMetrics(nan, nan, nan, 0, 0, 0, 0)
-    from jiwer import process_words
+        return WordMetrics(nan, nan, nan, nan, 0, 0, 0, 0)
+    from jiwer import process_words, cer as jiwer_cer
     try:
         out = process_words(reference, hypothesis)
         return WordMetrics(
             wer=float(out.wer),
             mer=float(out.mer),
             wil=float(out.wil),
+            cer=float(jiwer_cer(reference, hypothesis)),
             hits=int(out.hits),
             substitutions=int(out.substitutions),
             deletions=int(out.deletions),
             insertions=int(out.insertions),
         )
     except Exception:
-        return WordMetrics(nan, nan, nan, 0, 0, 0, 0)
+        return WordMetrics(nan, nan, nan, nan, 0, 0, 0, 0)
 
 
 # ---- Pair discovery ---------------------------------------------------------

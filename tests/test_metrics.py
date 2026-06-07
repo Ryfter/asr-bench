@@ -53,6 +53,22 @@ def test_clipresult_has_metric_fields_with_defaults():
     assert hasattr(c, "wil") and hasattr(c, "substitutions")
 
 
+def test_compute_word_metrics_has_cer():
+    m = asr_bench.compute_word_metrics("the cat", "the bat")
+    # one character substitution ('c'->'b') over 7 reference chars
+    assert abs(m.cer - 1.0 / 7.0) < 1e-6
+
+
+def test_compute_word_metrics_empty_ref_cer_is_nan():
+    m = asr_bench.compute_word_metrics("", "anything")
+    assert math.isnan(m.cer)
+
+
+def test_compute_word_metrics_perfect_match_cer_zero():
+    m = asr_bench.compute_word_metrics("hello world", "hello world")
+    assert m.cer == 0.0
+
+
 def test_modelresult_avg_mer_wil():
     c1 = asr_bench.ClipResult(
         audio="a", audio_sec=1, transcribe_sec=1, rtfx=1, vram_peak_bytes=None,
