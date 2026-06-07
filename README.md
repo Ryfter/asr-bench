@@ -285,6 +285,26 @@ metrics, transcripts, and speaker/DER data — for cross-run aggregation. NaN
 values (e.g. DER on a non-diarized clip) serialize as `null`. Secrets
 (`hf_token`, `nim_api_key`) are never written. Opt out with `--no-json`.
 
+### Hallucination signals
+
+Every run checks each clip for looping or fabricated output using two
+reference-free heuristics and adds a **"⚠️ Hallucination signals"** section to
+the report when any clip is flagged:
+
+- **`repeat_coverage`** — fraction of words that appear inside a repeated 4-gram.
+  Normal prose is near 0; looped Whisper output is typically > 0.30.
+- **`compression_ratio`** — gzip ratio of the hypothesis text. This is the same
+  signal Whisper uses internally to detect hallucination (normal prose ≈ 1.5–2.2;
+  repetitive/looped output compresses more, typically > 2.4).
+
+A clip is flagged when `repeat_coverage > 0.30` OR `compression_ratio > 2.4`.
+The report lists every flagged (model, clip) pair with both signal values and an
+insertion-rate annotation ("insertion burst") when a reference is available.
+Per-model `hallucination_rate` (fraction of clips flagged) and the per-clip
+signals (`repeat_coverage`, `compression_ratio`, `hallucination_suspect`) are
+written to the JSON sidecar. Works without a reference and in single-model runs,
+unlike cue-density anomaly detection (which is cross-model and structural).
+
 ### Comparing runs
 
 Every run writes a `results/<timestamp>.json` sidecar. `compare` reads 2+ of them

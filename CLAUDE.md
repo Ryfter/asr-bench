@@ -69,6 +69,12 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
   (a robust counterpart to the totals-based aggregate RTFx) shown as "RTFx (med)",
   plus `median_sec_per_audio_min` in the sidecar. JSON sidecar fields are additive
   — `schema_version` stays 1.
+- **Hallucination-rate detection** — reference-free per-clip signals
+  (`repeat_coverage` = repeated-4-gram fraction; `compression_ratio` = gzip ratio,
+  Whisper's own signal) flag looping/fabricated output in a dedicated "⚠️
+  Hallucination signals" report section (works without a reference and in
+  single-model runs, unlike cue-density); per-model `hallucination_rate`; additive
+  sidecar fields (`schema_version` stays 1).
 
 Branch `feat/whisperx-diarization` is pushed to GitHub. **Not yet merged to main** (live WhisperX + diarization run pending — no pyannote venv set up on reference machine yet).
 
