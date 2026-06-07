@@ -188,3 +188,17 @@ v0.3 adds:
   flag = coverage>0.30 OR compression>2.4, per-model hallucination_rate, dedicated
   report section + additive sidecar fields (schema_version stays 1). Detection
   only; compare integration deferred.
+- **2026-06-07** — NIM transport policy made explicit (no code change — confirming
+  intent): the NIM engine supports **two transports, local self-hosted preferred
+  (default) and remote hosted NVCF a flag-gated fallback**. Local
+  (`--nim-url localhost:<port>`) stays within "local engines only" (local inference
+  behind a gRPC port); remote (`--nim-url <host>:443 --nim-api-key <key> --nim-ssl`)
+  exists only for users without a local runtime and is never the default. Both
+  implemented since 2026-05-31; neither live-validated (pending,
+  `memory/validate-live-nim.md`), local-first when Docker Desktop + NGC are ready.
+- **2026-06-07** — `AGENTS.md` (Codex handoff) is kept as a **faithful mirror of
+  `CLAUDE.md`** — same body, differing only in the tool-name intro + a sync note.
+  Rationale: a stale handoff (AGENTS.md had drifted to v0.1) is worse than none;
+  mirroring guarantees Codex/Gemini/Claude start from identical project state.
+  Substantive changes to one must be propagated to the other. Reference PDFs and
+  the local `.claude/` tooling dir are gitignored (copyright / local-only).
