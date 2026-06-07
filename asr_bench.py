@@ -354,6 +354,52 @@ class WordMetrics:
     insertions: int
 
 
+# ---- Hallucination signals (reference-free) ---------------------------------
+HALLUCINATION_NGRAM = 4
+HALLUCINATION_MIN_WORDS = 8          # below this, repeat_coverage is unreliable -> 0.0
+HALLUCINATION_MIN_CHARS = 200        # below this, compression_ratio is meaningless -> 1.0
+HALLUCINATION_REPEAT_COVERAGE = 0.30  # flag threshold
+HALLUCINATION_COMPRESSION_RATIO = 2.4  # flag threshold (Whisper's own default)
+HALLUCINATION_INSERTION_RATE = 0.5   # report annotation threshold (reference-based)
+
+
+def _repeat_coverage(normalized_hypothesis: str, n: int = HALLUCINATION_NGRAM) -> float:
+    """Fraction of word positions covered by an n-gram that occurs >= 2 times.
+    0.0 when there are fewer than HALLUCINATION_MIN_WORDS words."""
+    words = normalized_hypothesis.split()
+    if len(words) < HALLUCINATION_MIN_WORDS:
+        return 0.0
+    ngrams = [tuple(words[i:i + n]) for i in range(len(words) - n + 1)]
+    if not ngrams:
+        return 0.0
+    counts: Dict[tuple, int] = {}
+    for g in ngrams:
+        counts[g] = counts.get(g, 0) + 1
+    covered = [False] * len(words)
+    for i, g in enumerate(ngrams):
+        if counts[g] >= 2:
+            for j in range(i, i + n):
+                covered[j] = True
+    return sum(covered) / len(words)
+
+
+def _compression_ratio(text: str) -> float:
+    """len(utf8 bytes) / len(gzip(bytes)). ~1.5-2.2 normal prose, >2.4 repetitive.
+    Returns 1.0 for text shorter than HALLUCINATION_MIN_CHARS (gzip overhead makes
+    tiny inputs meaningless)."""
+    raw = text.encode("utf-8")
+    if len(raw) < HALLUCINATION_MIN_CHARS:
+        return 1.0
+    import gzip
+    compressed = gzip.compress(raw)
+    return len(raw) / len(compressed) if compressed else 1.0
+
+
+def compute_hallucination_signals(hypothesis: str, hypothesis_normalized: str) -> Tuple[float, float]:
+    """(repeat_coverage, compression_ratio) for a clip. Reference-free."""
+    return _repeat_coverage(hypothesis_normalized), _compression_ratio(hypothesis)
+
+
 def compute_word_metrics(reference: str, hypothesis: str) -> WordMetrics:
     """One jiwer.process_words call -> WER, MER, WIL, and H/S/D/I counts.
 

@@ -152,3 +152,38 @@ def test_median_properties_empty_model():
     assert m.avg_cer == 0.0
     assert m.median_rtfx == 0.0
     assert m.median_sec_per_audio_min == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Task 1 — reference-free hallucination signals
+# ---------------------------------------------------------------------------
+
+def test_repeat_coverage_high_on_loop():
+    text = "thank you so much " * 6  # 24 words, heavy 4-gram repetition
+    cov = asr_bench._repeat_coverage(text.strip())
+    assert cov > 0.30
+
+
+def test_repeat_coverage_zero_on_clean_prose():
+    text = "the quick brown fox jumps over the lazy dog near twelve silent owls"
+    assert asr_bench._repeat_coverage(text) == 0.0
+
+
+def test_repeat_coverage_short_text_guard():
+    assert asr_bench._repeat_coverage("one two three") == 0.0  # < 8 words
+
+
+def test_compression_ratio_high_on_repetition():
+    text = "thank you so much for watching this video. " * 20  # > 200 chars, repetitive
+    assert asr_bench._compression_ratio(text) > 2.4
+
+
+def test_compression_ratio_short_text_guard():
+    assert asr_bench._compression_ratio("short text") == 1.0  # < 200 chars
+
+
+def test_compute_hallucination_signals_returns_pair():
+    loop = "thank you so much " * 20
+    cov, ratio = asr_bench.compute_hallucination_signals(loop, loop.strip())
+    assert cov > 0.30
+    assert ratio > 2.4
