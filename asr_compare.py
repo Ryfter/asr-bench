@@ -23,12 +23,14 @@ METRIC_META = {
     "wil":  {"label": "WIL%", "pct": True,  "lower_better": True},
     "cer":  {"label": "CER%", "pct": True,  "lower_better": True},
     "rtfx": {"label": "RTFx", "pct": False, "lower_better": False},
+    "hall": {"label": "Halluc%", "pct": True, "lower_better": True},
     "der":  {"label": "DER%", "pct": True,  "lower_better": True},
 }
 
 # non-der metric key -> the aggregates field it comes from
 _AGG_KEYS = {"wer": "avg_wer", "mer": "avg_mer", "wil": "avg_wil",
-             "cer": "avg_cer", "rtfx": "aggregate_rtfx"}
+             "cer": "avg_cer", "rtfx": "aggregate_rtfx",
+             "hall": "hallucination_rate"}
 
 # config fields whose mismatch makes a cross-run comparison suspect
 _CONFIG_KEYS = ["device", "compute_type", "beam_size", "vad_filter", "batch_size"]
@@ -52,6 +54,14 @@ def _has_any_der(docs: List[dict]) -> bool:
     return any(c.get("der") is not None
                for d in docs for m in d.get("models", [])
                for c in m.get("clips", []))
+
+
+def _has_any_hall(docs: List[dict]) -> bool:
+    """hallucination_rate is additive (schema_version 1) — only present on
+    post-hallucination sidecars. Gate the column like DER so older runs don't
+    grow an all-'—' column."""
+    return any(m.get("aggregates", {}).get("hallucination_rate") is not None
+               for d in docs for m in d.get("models", []))
 
 
 def _mismatch_warnings(docs: List[dict]) -> List[str]:
@@ -121,7 +131,9 @@ def compare_runs(docs: List[dict], *, mode: str, per_clip: bool = False) -> dict
     runs = [{"label": d.get("_source_label", "?"),
              "corpus": d.get("run", {}).get("corpus"),
              "config": d.get("run", {}).get("config", {})} for d in docs]
-    metrics = ["wer", "mer", "wil", "cer", "rtfx"] + (["der"] if _has_any_der(docs) else [])
+    metrics = (["wer", "mer", "wil", "cer", "rtfx"]
+               + (["hall"] if _has_any_hall(docs) else [])
+               + (["der"] if _has_any_der(docs) else []))
 
     # union of model_ids in first-seen order; remember display + per-run lookup
     order: List[str] = []

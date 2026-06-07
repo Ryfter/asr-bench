@@ -14,7 +14,7 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
 - **Owner:** Ryfter (Kevin Rank)
 - **License:** MIT
 
-## Status — v0.3 + extensions shipped to main
+## Status — v0.3.5 shipped to main
 
 | Model ID | Params | Disk | Run via |
 |---|---|---|---|
@@ -78,6 +78,13 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
 
 All v0.3 work is **merged to main and pushed**. WhisperX + diarization was live-validated on the RTX 5090 (2026-06-05, DER 13.8% @ 2-speaker hint) before merge. Post-v0.3 extensions also on main: the `compare` subcommand, CER% + median latency metrics, and reference-free hallucination-rate detection (see decision log).
 
+### What's new in v0.3.5 (all merged to main — 229 tests pass, 2 skipped)
+- **`pip install` packaging** — `pyproject.toml` (setuptools) makes asr-bench installable with an **`asr-bench` console command** (`asr-bench`, `asr-bench compare`, `asr-bench prepare-gold`). Flat `py-modules` layout, so `python asr_bench.py` and `import asr_bench` are byte-for-byte unchanged. Core deps stay minimal + torch-free (`faster-whisper`, `jiwer`); GPU and NIM deps are opt-in extras (`pip install asr-bench[gpu]`, `[nim]`). WhisperX is deliberately **not** an extra (no Py 3.14 wheels — separate venv). `__version__` + `--version`.
+- **`prepare-gold` subcommand** — `asr-bench prepare-gold [paths] [--corpus DIR] [--overwrite] [--dry-run]` converts VTT/SRT caption files into the plain `.txt` references the scorer reads (timing stripped, cues joined). Reuses `load_reference_text` + `detect_reference_origin`. Excludes asr-bench's own `_Captions_*.vtt` outputs (no circular references). **Proxy preservation:** because `load_reference_text` strips the `[Auto-generated transcript]` header, proxy sources get that marker re-prepended to the `.txt` so they stay detectable as non-gold (scoring still strips it).
+- **`compare` surfaces `hallucination_rate`** — new **`Halluc%`** metric (lower-is-better) in the delta/matrix views, gated on presence like DER (pre-hallucination sidecars don't grow an all-`—` column). Additive; `schema_version` stays 1.
+- **Median compute-latency column** — the headline table now shows **`s/aud-min (med)`** (median processing seconds per minute of audio) next to `RTFx (med)` — the human-intuitive complement that already lived in the sidecar (`median_sec_per_audio_min`) but had no report consumer.
+- **Markdown pipe-escaping** — `_md_escape` escapes `|` (and flattens newlines) in free-text table cells (model display, notes, clip filenames) so a literal `|` no longer splits a row into phantom columns.
+
 See [`SPEC.md`](./SPEC.md) for the v0.4 (NVIDIA NeMo / Canary-Qwen) and v0.5 (community models) roadmap.
 
 ## Reference benchmark — sample lecture corpus
@@ -120,6 +127,17 @@ These need to be true on any machine that runs asr-bench against GPU. Document e
 - **Live validation (2026-06-05)** — full path exercised on RTX 5090 (torch 2.8.0+cu128, whisperx 3.8.6, pyannote-audio 4.0.4): transcribe+align (82 min → 763 segs / 11,274 words), diarization (community-1), DER end-to-end (13.8% @ 2-speaker hint). Runner fixes the live run required: pure-JSON stdout (lib chatter → stderr), `use_auth_token`→`token` kwarg, community-1 default + `--diarize-model`.
 
 ## Common workflows
+
+### Install as a package (optional — `asr-bench` console command)
+```powershell
+cd D:\dev\asr-bench
+pip install -e .              # editable; core (CPU) deps only
+pip install -e ".[gpu]"       # + NVML VRAM tracking + CUDA wheels
+pip install -e ".[nim]"       # + nvidia-riva-client for NIM runs
+asr-bench --version
+asr-bench --models small --include "Week 16"   # same as `python asr_bench.py ...`
+```
+The flat `py-modules` layout means `python asr_bench.py` keeps working identically — packaging is additive. WhisperX is **not** a pip extra (no Py 3.14 wheels — use `.venv-whisperx`).
 
 ### Run the full benchmark (default models, current defaults)
 ```powershell
@@ -230,7 +248,15 @@ python asr_bench.py compare results/<old>.json results/<new>.json          # del
 python asr_bench.py compare --last 3                                        # 3 newest (matrix if ≥3 exist)
 python asr_bench.py compare results/a.json results/b.json --per-clip        # + per-clip
 ```
-Reads `schema_version 1` sidecars. 2 files → delta view; 3+ → matrix; `--delta`/`--matrix` force.
+Reads `schema_version 1` sidecars. 2 files → delta view; 3+ → matrix; `--delta`/`--matrix` force. When any run has `hallucination_rate` in its sidecar, a `Halluc%` column appears (lower is better).
+
+### Convert captions into `.txt` references (prepare-gold)
+```powershell
+python asr_bench.py prepare-gold --corpus ./test-corpus    # *.vtt/*.srt -> *.txt
+python asr_bench.py prepare-gold lecture.vtt --overwrite    # one file, replace existing
+python asr_bench.py prepare-gold ./corpus --dry-run         # preview, write nothing
+```
+Strips timing/cue numbers and joins cues into the plain `.txt` the scorer reads. Skips asr-bench's own `_Captions_*.vtt` outputs. Proxy/ASR-generated sources keep an auto-gen marker so they stay flagged as non-gold — proofread and delete that header line to promote a file to gold.
 
 ## Development workflow
 
@@ -238,7 +264,7 @@ Reads `schema_version 1` sidecars. 2 files → delta view; 3+ → matrix; `--del
 - **Add a new engine family**: implement the `Engine` ABC (`run(entry, pairs, cfg) -> ModelResult`), register the class in `ENGINES`, and give its models `"engine": "<name>"` in `MODELS`. `FasterWhisperEngine`, `NimEngine`, and `WhisperXEngine` are the three reference implementations. Share the metrics infrastructure (`ClipResult`, `ModelResult`, `render_markdown`).
 - **Add a new Whisper variant**: extend the `MODELS` dict (`"engine": "faster-whisper"`) + add an entry to `_MODEL_VRAM_COST` for batch sizing.
 - **Add a new WhisperX variant**: extend `MODELS` with `"engine": "whisperx"` and ensure the base model name (before `+whisperx`) maps to a valid faster-whisper model key.
-- **Tests**: pytest suite under `tests/`. Run `python -m pytest`. 119 pass, 2 skipped (pyannote not installed in core venv — WhisperX diarization tests are subprocess-gated).
+- **Tests**: pytest suite under `tests/`. Run `python -m pytest`. 229 pass, 2 skipped (pyannote not installed in core venv — WhisperX diarization tests are subprocess-gated).
 - **Linting**: none yet — follow the style already in `asr_bench.py`
 
 ## Hard rules
@@ -278,3 +304,4 @@ Reads `schema_version 1` sidecars. 2 files → delta view; 3+ → matrix; `--del
 - **2026-06-06** — Shipped CER (char-level, via jiwer on the same normalized text as WER, added to WordMetrics so all three engines get it from one call) and a robust median speed pair (`median_rtfx`, `median_sec_per_audio_min`) beside the totals-based `aggregate_rtfx`. Sidecar fields additive within schema_version 1; CER also surfaced in `compare`. Report columns: "CER%" (per-clip and per-model tables), "RTFx (med)" (headline table).
 - **2026-06-07** — NIM transport policy made explicit (no code change — confirming intent): the NIM engine supports **two transports, with local self-hosted as the preferred default and remote hosted NVCF as a flag-gated fallback**. Local (`--nim-url localhost:<port>`) keeps within the "local engines only" rule (local inference behind a gRPC port); remote (`--nim-url <host>:443 --nim-api-key <NGC key> --nim-ssl`) exists only for users without a local container runtime and is never the default. Both have been implemented since 2026-05-31 but neither is live-validated; validation stays pending (`memory/validate-live-nim.md`), local-first when a Docker Desktop + NGC setup is ready.
 - **2026-06-07** — `AGENTS.md` (Codex handoff) is kept as a **faithful mirror of this file** — same body, differing only in the tool-name intro + a cross-agent sync note. Rationale: a stale handoff (AGENTS.md had drifted to v0.1) is worse than none; mirroring guarantees Codex/Gemini/Claude all start from identical project state. **Any substantive change here (status, decisions, workflows) must be propagated to `AGENTS.md`, and vice-versa.** Reference PDFs and the local `.claude/` tooling dir are gitignored (copyright / local-only).
+- **2026-06-07 (v0.3.5)** — Shipped a polish batch on `feat/v0.3.5` (merged to main). Five items: **(C2)** headline `s/aud-min (med)` column — the sidecar already computed `median_sec_per_audio_min` but no report consumed it; it's the human-intuitive complement to RTFx for faculty ("0.9s to process a minute of audio" vs "64× realtime"). **(C3)** `_md_escape` for free-text table cells — a literal `|` in a filename/model name silently split rows into phantom columns; pipes are escaped and newlines flattened. **(C1)** `Halluc%` in `compare` — gated on presence like DER so old sidecars don't grow an all-`—` column; additive, `schema_version` stays 1. **(B1)** `pyproject.toml` packaging with an `asr-bench` console entry point — chose a **flat `py-modules` layout** (not a package dir) so `python asr_bench.py` and `import asr_bench` are unchanged and the existing test suite/tooling keeps working; core deps stay torch-free with GPU/NIM as opt-in extras, WhisperX excluded (no 3.14 wheels). **(B2)** `prepare-gold` subcommand converts VTT/SRT → plain `.txt` references (user-chosen shape: a format converter, not a model-bootstrapped draft). Key correctness call: since `load_reference_text` strips the `[Auto-generated transcript]` header, a naive convert would **launder a proxy caption into apparent gold** — so proxy sources keep that marker re-prepended (still strips at scoring, still flags as proxy). Excludes asr-bench's own `_Captions_*.vtt` outputs to prevent circular references. 229 tests pass.

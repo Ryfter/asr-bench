@@ -68,9 +68,12 @@ Fusion is fully unit-tested via `FakeLLMBackend` but **not yet validated against
 
 **Not yet merged to main** — pending a live WhisperX + diarization run (no pyannote venv on reference machine yet). Branch is pushed to GitHub.
 
-**Remaining v0.3 items (not yet implemented):**
-- `pip install asr-bench` packaging + `asr-bench` CLI entry point
-- `asr_bench prepare-gold` hand-correction helper
+**v0.3.5 items (shipped 2026-06-07):**
+- ✅ `pip install asr-bench` packaging + `asr-bench` CLI entry point (`pyproject.toml`, flat `py-modules`, GPU/NIM extras)
+- ✅ `asr-bench prepare-gold` helper — converts VTT/SRT captions → plain `.txt` references (timing stripped); proxy sources stay flagged
+- ✅ `compare` surfaces `Halluc%`; headline gains `s/aud-min (med)`; markdown pipe-escaping in table cells
+
+**Remaining v0.3-era item (not yet implemented):**
 - Speaker labels in reference sets for DER ground-truth preparation
 
 ### Planned for v0.4 — NVIDIA NeMo (Canary-Qwen and family)
@@ -202,3 +205,18 @@ v0.3 adds:
   mirroring guarantees Codex/Gemini/Claude start from identical project state.
   Substantive changes to one must be propagated to the other. Reference PDFs and
   the local `.claude/` tooling dir are gitignored (copyright / local-only).
+- **2026-06-07 (v0.3.5)** — Shipped a polish batch (branch `feat/v0.3.5`, merged
+  to main). **(B1)** packaging via `pyproject.toml` with an `asr-bench` console
+  entry point — chose a **flat `py-modules` layout** over a package dir so
+  `python asr_bench.py` and `import asr_bench` stay byte-for-byte unchanged; core
+  deps torch-free (`faster-whisper`, `jiwer`), GPU/NIM as opt-in extras, WhisperX
+  excluded (no 3.14 wheels). **(B2)** `prepare-gold` converts VTT/SRT → plain
+  `.txt` references (user chose the format-converter shape over a model-bootstrapped
+  draft). Correctness call: `load_reference_text` strips the `[Auto-generated
+  transcript]` header, so a naive convert would launder a proxy into apparent
+  gold — proxy sources keep that marker re-prepended (stripped at scoring, still
+  flagged proxy); asr-bench's own `_Captions_*.vtt` outputs are excluded to avoid
+  circular references. **(C1)** `Halluc%` in `compare`, gated on presence like DER.
+  **(C2)** `s/aud-min (med)` headline column (the sidecar's `median_sec_per_audio_min`
+  finally has a report consumer). **(C3)** `_md_escape` for pipe/newline-safe table
+  cells. All additive; `schema_version` stays 1. 229 tests pass.

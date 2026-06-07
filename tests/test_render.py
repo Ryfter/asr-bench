@@ -197,6 +197,39 @@ def test_per_model_breakdown_has_cer_column():
     assert any("| Clip | Audio | WER% | MER% | WIL% | CER% |" in l for l in md.splitlines())
 
 
+# C2 — median_sec_per_audio_min surfaced in the headline table
+def test_headline_has_median_sec_per_audio_min_column():
+    r = _whisper_result()
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    header = [l for l in md.splitlines() if l.startswith("| Model | Params")][0]
+    assert "s/aud-min (med)" in header
+
+
+def test_headline_renders_median_sec_per_audio_min_value():
+    r = _whisper_result()
+    # clip audio_sec=600, transcribe_sec=10 → 10*60/600 = 1.00 s per audio-min
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    assert "1.00s" in md
+
+
+# C3 — pipe / newline escaping in free-text table cells
+def test_headline_escapes_pipe_in_model_display():
+    r = _whisper_result()
+    r.display = "Weird|Model"
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    headline = [l for l in md.splitlines() if l.startswith("|") and "Weird" in l][0]
+    assert "Weird\\|Model" in headline      # pipe escaped
+    assert "Weird|Model" not in headline    # no raw pipe that would split the row
+
+
+def test_per_model_breakdown_escapes_pipe_in_clip_name():
+    r = _whisper_result()
+    r.clips[0].audio = "lec|ture.mp4"
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    clip_row = [l for l in md.splitlines() if l.startswith("| lec")][0]
+    assert "lec\\|ture.mp4" in clip_row
+
+
 def test_cer_nan_renders_as_dash_not_nan():
     r = _whisper_result()
     r.clips[0].cer = float("nan")

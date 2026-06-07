@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """
-asr-bench v0.1 — benchmark local Whisper variants on your own audio.
+asr-bench — benchmark local Whisper variants on your own audio.
 
 Usage:
   python asr_bench.py --corpus ./test-corpus
   python asr_bench.py --corpus ./test-corpus --models small,medium
   python asr_bench.py --corpus ./test-corpus --device cpu
 
+Installed (pip install .): the `asr-bench` console command is equivalent.
+
 See README.md for corpus layout. See SPEC.md for the v0.2/v0.3 roadmap.
 """
 from __future__ import annotations
+
+__version__ = "0.3.5"
 
 import argparse
 import copy
@@ -657,6 +661,15 @@ def _vram_cell(value: Optional[int], is_total: bool) -> str:
 
 def _disk_cell(result: "ModelResult") -> str:
     return "n/a" if result.disk_bytes is None else fmt_bytes(result.disk_bytes)
+
+
+def _md_escape(text: object) -> str:
+    """Escape characters that would break a Markdown table cell.
+
+    A literal `|` in a filename or model name would otherwise split the row into
+    extra columns; newlines would terminate it. Escape the pipe and flatten any
+    newlines so free text (clip names, model display, notes) is row-safe."""
+    return str(text).replace("|", "\\|").replace("\r", " ").replace("\n", " ")
 
 
 # ---- Per-model run ----------------------------------------------------------
@@ -2160,8 +2173,8 @@ def render_markdown(
     lines.append("")
     diar_hdr = " DER% | Speakers |" if any_diar else ""
     diar_sep = "---|---|" if any_diar else ""
-    lines.append("| Model | Params | Disk | Overall WER% | MER% | WIL% | CER% | RTFx | RTFx (med) | Total time | Peak VRAM |" + diar_hdr + " Notes |")
-    lines.append("|---|---|---|---|---|---|---|---|---|---|---|" + diar_sep + "---|")
+    lines.append("| Model | Params | Disk | Overall WER% | MER% | WIL% | CER% | RTFx | RTFx (med) | s/aud-min (med) | Total time | Peak VRAM |" + diar_hdr + " Notes |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|" + diar_sep + "---|")
     for r in results:
         wall_clock = f"{r.total_transcribe_sec:.1f}s"
         wer_pct = _fmt_pct(r.avg_wer) if r.clips else "—"
@@ -2170,6 +2183,7 @@ def render_markdown(
         cer_pct = _fmt_pct(r.avg_cer) if r.clips else "—"
         rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
         rtfx_med = f"{r.median_rtfx:.2f}x" if r.clips else "—"
+        spm = f"{r.median_sec_per_audio_min:.2f}s" if r.clips else "—"
         vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         disk = _disk_cell(r)
         diar_cells = ""
@@ -2179,7 +2193,7 @@ def render_markdown(
             spk = max((c.num_speakers for c in r.clips), default=0) or "—"
             diar_cells = f" {der_avg} | {spk} |"
         lines.append(
-            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {rtfx} | {rtfx_med} | {wall_clock} | {vram} |{diar_cells} {r.notes} |"
+            f"| {_md_escape(r.display)} | {r.params} | {disk} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {rtfx} | {rtfx_med} | {spm} | {wall_clock} | {vram} |{diar_cells} {_md_escape(r.notes)} |"
         )
     lines.append("")
 
@@ -2232,7 +2246,7 @@ def render_markdown(
                     cer_pct = _fmt_pct(c.cer)
                     vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
                     lines.append(
-                        f"| {r.display} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {c.substitutions} | {c.deletions} | {c.insertions} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
+                        f"| {_md_escape(r.display)} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {c.substitutions} | {c.deletions} | {c.insertions} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
                     )
             lines.append("")
 
@@ -2254,7 +2268,7 @@ def render_markdown(
             vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
             audio_label = f"{c.audio_sec / 60:.1f} min"
             lines.append(
-                f"| {c.audio} | {audio_label} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
+                f"| {_md_escape(c.audio)} | {audio_label} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
             )
         overall_audio = f"{r.total_audio_sec / 60:.1f} min"
         overall_wer = _fmt_pct(r.avg_wer) if r.clips else "—"
@@ -2419,15 +2433,110 @@ def render_markdown(
 
 
 # ---- CLI --------------------------------------------------------------------
+# ---- prepare-gold subcommand ------------------------------------------------
+# Files asr-bench itself emits — never treat these as source captions to convert,
+# or a model's own output would become its own "reference" (circular).
+_GENERATED_CAPTION_RE = re.compile(r"_Captions_.*\.vtt$", re.IGNORECASE)
+_CAPTION_SOURCE_EXTS = {".vtt", ".srt"}
+_PROXY_TXT_HEADER = (
+    "[Auto-generated transcript. Converted by asr-bench prepare-gold "
+    "— proxy reference, not verified gold.]"
+)
+
+
+def _is_generated_caption(name: str) -> bool:
+    return bool(_GENERATED_CAPTION_RE.search(name))
+
+
+def find_caption_sources(paths: List[Path]) -> List[Path]:
+    """Expand file/dir args into a sorted list of convertible .vtt/.srt sources,
+    excluding asr-bench's own generated `_Captions_*.vtt` outputs."""
+    out: List[Path] = []
+    for p in paths:
+        if p.is_dir():
+            for f in sorted(p.iterdir()):
+                if (f.is_file() and f.suffix.lower() in _CAPTION_SOURCE_EXTS
+                        and not _is_generated_caption(f.name)):
+                    out.append(f)
+        elif (p.is_file() and p.suffix.lower() in _CAPTION_SOURCE_EXTS
+              and not _is_generated_caption(p.name)):
+            out.append(p)
+    return out
+
+
+def prepare_gold_main(argv: List[str]) -> int:
+    """Convert VTT/SRT caption files into the plain `.txt` reference files
+    asr-bench scores against (timing stripped, cues joined). Proxy/ASR-generated
+    sources keep an auto-gen marker so they stay detectable as non-gold."""
+    ap = argparse.ArgumentParser(
+        prog="asr_bench.py prepare-gold",
+        description="Convert VTT/SRT captions into plain-text .txt references. "
+                    "Proxy/ASR-generated sources stay labeled proxy.",
+    )
+    ap.add_argument("paths", nargs="*",
+                    help="Caption files or directories. Defaults to --corpus.")
+    ap.add_argument("--corpus", default="test-corpus",
+                    help="Directory of captions, used when no paths are given.")
+    ap.add_argument("--overwrite", action="store_true",
+                    help="Replace existing .txt references.")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="Show what would happen; write nothing.")
+    ns = ap.parse_args(argv)
+
+    inputs = [Path(p) for p in ns.paths] or [Path(ns.corpus)]
+    sources = find_caption_sources(inputs)
+    if not sources:
+        print("No .vtt/.srt caption files found to convert "
+              "(asr-bench's own _Captions_*.vtt outputs are skipped).",
+              file=sys.stderr)
+        return 1
+
+    converted = skipped = proxy_count = 0
+    for src in sources:
+        dst = src.with_suffix(".txt")
+        origin, label = detect_reference_origin(src)
+        is_proxy = origin != "unknown"
+        if is_proxy:
+            proxy_count += 1
+        tag = f"PROXY ({label})" if is_proxy else "gold-eligible (proofread to confirm)"
+        if dst.exists() and not ns.overwrite:
+            print(f"skip   {src.name} -> {dst.name} (exists; --overwrite to replace) [{tag}]")
+            skipped += 1
+            continue
+        text = load_reference_text(src)
+        word_n = len(text.split())
+        if ns.dry_run:
+            print(f"dry    {src.name} -> {dst.name} [{tag}] ({word_n} words)")
+            converted += 1
+            continue
+        # Preserve the proxy signal: the bracketed header is stripped at scoring
+        # time by load_reference_text, but detect_reference_origin still sees it.
+        body = (f"{_PROXY_TXT_HEADER}\n{text}" if is_proxy else text)
+        dst.write_text(body + "\n", encoding="utf-8")
+        print(f"write  {src.name} -> {dst.name} [{tag}] ({word_n} words)")
+        converted += 1
+
+    verb = "would convert" if ns.dry_run else "converted"
+    print(f"\n{verb} {converted} file(s), skipped {skipped}.")
+    if proxy_count:
+        print(f"Note: {proxy_count} PROXY source(s) produced proxy .txt references "
+              "(auto-gen header preserved). Proofread and delete that header line "
+              "to promote a file to gold.")
+    return 0
+
+
 def main() -> int:
     argv = sys.argv[1:]
     if argv and argv[0] == "compare":
         from asr_compare import compare_main
         return compare_main(argv[1:])
+    if argv and argv[0] == "prepare-gold":
+        return prepare_gold_main(argv[1:])
     ap = argparse.ArgumentParser(
         description="Benchmark local Whisper variants on your own audio.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    ap.add_argument("--version", action="version", version=f"asr-bench {__version__}")
     ap.add_argument(
         "--corpus",
         default=str(Path(__file__).resolve().parent / "test-corpus"),

@@ -25,13 +25,15 @@ def _doc(stem="run", *, models=None, corpus="test-corpus", config=None,
 
 
 def _model(model_id="m", display=None, *, wer=0.10, mer=0.09, wil=0.12,
-           cer=0.05, rtfx=60.0, clips=None):
+           cer=0.05, rtfx=60.0, hall=None, clips=None):
+    agg = {"avg_wer": wer, "avg_mer": mer, "avg_wil": wil,
+           "avg_cer": cer, "aggregate_rtfx": rtfx, "peak_vram_bytes": None}
+    if hall is not None:  # additive field — only present on post-hallucination sidecars
+        agg["hallucination_rate"] = hall
     return {
         "model_id": model_id,
         "display": display or model_id,
-        "aggregates": {"avg_wer": wer, "avg_mer": mer, "avg_wil": wil,
-                       "avg_cer": cer, "aggregate_rtfx": rtfx,
-                       "peak_vram_bytes": None},
+        "aggregates": agg,
         "clips": clips if clips is not None else [],
     }
 
@@ -62,6 +64,37 @@ def test_load_non_dict_json_returns_none(tmp_path, capsys):
     p.write_text("[]", encoding="utf-8")   # valid JSON, but not a dict
     assert asr_compare.load_results_json(p) is None
     assert "skipping" in capsys.readouterr().err
+
+
+# C1 — hallucination_rate surfaced in compare (gated on presence, like DER)
+def test_delta_includes_hallucination_when_present():
+    a = _doc("a", models=[_model("big", "Big", hall=0.20)])
+    b = _doc("b", models=[_model("big", "Big", hall=0.05)])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    assert "hall" in rep["metrics"]
+    row = [m for m in rep["models"] if m["model_id"] == "big"][0]
+    assert row["values"]["hall"] == [0.20, 0.05]
+    md = asr_compare.render_comparison_markdown(rep)
+    assert "Halluc%" in md
+    assert "20.0 → 5.0" in md           # rendered x100
+    assert "✓" in md                    # 0.20→0.05 is an improvement (lower better)
+
+
+def test_matrix_includes_hallucination_when_present():
+    a = _doc("a", models=[_model("big", "Big", hall=0.20)])
+    b = _doc("b", models=[_model("big", "Big", hall=0.10)])
+    c = _doc("c", models=[_model("big", "Big", hall=0.30)])
+    rep = asr_compare.compare_runs([a, b, c], mode="matrix")
+    assert "hall" in rep["metrics"]
+    assert "Halluc%" in asr_compare.render_comparison_markdown(rep)
+
+
+def test_hallucination_absent_when_no_sidecar_has_it():
+    a = _doc("a", models=[_model("big", "Big")])
+    b = _doc("b", models=[_model("big", "Big")])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    assert "hall" not in rep["metrics"]
+    assert "Halluc%" not in asr_compare.render_comparison_markdown(rep)
 
 
 def test_join_shared_model_collects_both_values():
