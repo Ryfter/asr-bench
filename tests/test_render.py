@@ -166,3 +166,39 @@ def test_whisperx_disk_and_vram_render_na():
     md = asr_bench.render_markdown([mr], Path("."), _args(), "proxy")
     row = [l for l in md.splitlines() if l.startswith("| Whisper Small + WhisperX")][0]
     assert "n/a" in row   # disk n/a; vram n/a
+
+
+def test_headline_has_cer_and_median_rtfx_columns():
+    r = _whisper_result()
+    r.clips[0].cer = 0.05
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    header = [l for l in md.splitlines() if l.startswith("| Model | Params")][0]
+    assert "CER%" in header
+    assert "RTFx (med)" in header
+
+
+def test_headline_renders_median_rtfx_value():
+    r = _whisper_result()
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    assert "60.00x" in md   # _whisper_result clip rtfx=60.0 → median 60.00x
+
+
+def test_per_clip_view_has_cer_column():
+    r = _whisper_result()
+    r.clips[0].cer = 0.05
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    assert any("| Model | WER% | MER% | WIL% | CER% |" in l for l in md.splitlines())
+
+
+def test_per_model_breakdown_has_cer_column():
+    r = _whisper_result()
+    r.clips[0].cer = 0.05
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    assert any("| Clip | Audio | WER% | MER% | WIL% | CER% |" in l for l in md.splitlines())
+
+
+def test_cer_nan_renders_as_dash_not_nan():
+    r = _whisper_result()
+    r.clips[0].cer = float("nan")
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    assert "nan" not in md.lower().split("reproducibility")[0]

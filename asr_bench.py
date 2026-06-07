@@ -2085,14 +2085,16 @@ def render_markdown(
     lines.append("")
     diar_hdr = " DER% | Speakers |" if any_diar else ""
     diar_sep = "---|---|" if any_diar else ""
-    lines.append("| Model | Params | Disk | Overall WER% | MER% | WIL% | RTFx | Total time | Peak VRAM |" + diar_hdr + " Notes |")
-    lines.append("|---|---|---|---|---|---|---|---|---|" + diar_sep + "---|")
+    lines.append("| Model | Params | Disk | Overall WER% | MER% | WIL% | CER% | RTFx | RTFx (med) | Total time | Peak VRAM |" + diar_hdr + " Notes |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|---|" + diar_sep + "---|")
     for r in results:
         wall_clock = f"{r.total_transcribe_sec:.1f}s"
         wer_pct = _fmt_pct(r.avg_wer) if r.clips else "—"
         mer_pct = _fmt_pct(r.avg_mer) if r.clips else "—"
         wil_pct = _fmt_pct(r.avg_wil) if r.clips else "—"
+        cer_pct = _fmt_pct(r.avg_cer) if r.clips else "—"
         rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
+        rtfx_med = f"{r.median_rtfx:.2f}x" if r.clips else "—"
         vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         disk = _disk_cell(r)
         diar_cells = ""
@@ -2102,7 +2104,7 @@ def render_markdown(
             spk = max((c.num_speakers for c in r.clips), default=0) or "—"
             diar_cells = f" {der_avg} | {spk} |"
         lines.append(
-            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {mer_pct} | {wil_pct} | {rtfx} | {wall_clock} | {vram} |{diar_cells} {r.notes} |"
+            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {rtfx} | {rtfx_med} | {wall_clock} | {vram} |{diar_cells} {r.notes} |"
         )
     lines.append("")
 
@@ -2144,17 +2146,18 @@ def render_markdown(
             audio_min = sample.audio_sec / 60.0
             lines.append(f"### {sample.audio} — {audio_min:.1f} min")
             lines.append("")
-            lines.append("| Model | WER% | MER% | WIL% | S | D | I | RTFx | Transcribe time | VRAM peak |")
-            lines.append("|---|---|---|---|---|---|---|---|---|---|")
+            lines.append("| Model | WER% | MER% | WIL% | CER% | S | D | I | RTFx | Transcribe time | VRAM peak |")
+            lines.append("|---|---|---|---|---|---|---|---|---|---|---|")
             for r in results:
                 if i < len(r.clips):
                     c = r.clips[i]
                     wer_pct = _fmt_pct(c.wer)
                     mer_pct = _fmt_pct(c.mer)
                     wil_pct = _fmt_pct(c.wil)
+                    cer_pct = _fmt_pct(c.cer)
                     vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
                     lines.append(
-                        f"| {r.display} | {wer_pct} | {mer_pct} | {wil_pct} | {c.substitutions} | {c.deletions} | {c.insertions} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
+                        f"| {r.display} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {c.substitutions} | {c.deletions} | {c.insertions} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
                     )
             lines.append("")
 
@@ -2166,25 +2169,27 @@ def render_markdown(
     for r in results:
         lines.append(f"### {r.display}")
         lines.append("")
-        lines.append("| Clip | Audio | WER% | MER% | WIL% | RTFx | Transcribe time | VRAM peak |")
-        lines.append("|---|---|---|---|---|---|---|---|")
+        lines.append("| Clip | Audio | WER% | MER% | WIL% | CER% | RTFx | Transcribe time | VRAM peak |")
+        lines.append("|---|---|---|---|---|---|---|---|---|")
         for c in r.clips:
             wer_pct = _fmt_pct(c.wer)
             mer_pct = _fmt_pct(c.mer)
             wil_pct = _fmt_pct(c.wil)
+            cer_pct = _fmt_pct(c.cer)
             vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
             audio_label = f"{c.audio_sec / 60:.1f} min"
             lines.append(
-                f"| {c.audio} | {audio_label} | {wer_pct} | {mer_pct} | {wil_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
+                f"| {c.audio} | {audio_label} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
             )
         overall_audio = f"{r.total_audio_sec / 60:.1f} min"
         overall_wer = _fmt_pct(r.avg_wer) if r.clips else "—"
         overall_mer = _fmt_pct(r.avg_mer) if r.clips else "—"
         overall_wil = _fmt_pct(r.avg_wil) if r.clips else "—"
+        overall_cer = _fmt_pct(r.avg_cer) if r.clips else "—"
         overall_rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
         overall_vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         lines.append(
-            f"| **OVERALL** | **{overall_audio}** | **{overall_wer}** | **{overall_mer}** | **{overall_wil}** | **{overall_rtfx}** | **{r.total_transcribe_sec:.1f}s** | **{overall_vram}** |"
+            f"| **OVERALL** | **{overall_audio}** | **{overall_wer}** | **{overall_mer}** | **{overall_wil}** | **{overall_cer}** | **{overall_rtfx}** | **{r.total_transcribe_sec:.1f}s** | **{overall_vram}** |"
         )
         lines.append("")
 
