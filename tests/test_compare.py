@@ -329,3 +329,27 @@ def test_compare_main_directory_arg_globs_json(tmp_path, capsys):
     rc = asr_compare.compare_main([str(d)])
     assert rc == 0
     assert "ASR Run Comparison" in capsys.readouterr().out
+
+
+def test_compare_main_last_zero_errors(tmp_path, capsys):
+    rc = asr_compare.compare_main(["--last", "0", "--results-dir", str(tmp_path)])
+    assert rc != 0
+    assert "--last" in capsys.readouterr().err
+
+
+def test_compare_main_last_missing_dir_warns(tmp_path, capsys):
+    rc = asr_compare.compare_main(["--last", "2",
+                                   "--results-dir", str(tmp_path / "nope")])
+    err = capsys.readouterr().err
+    assert rc != 0
+    assert "not found" in err  # warns the dir is missing before the <2 error
+
+
+def test_compare_main_output_message_on_stderr(tmp_path, capsys):
+    a = _write(tmp_path, "a.json", _doc("a", models=[_model("m", "M")]))
+    b = _write(tmp_path, "b.json", _doc("b", models=[_model("m", "M")]))
+    out = tmp_path / "cmp.md"
+    asr_compare.compare_main([str(a), str(b), "--output", str(out)])
+    cap = capsys.readouterr()
+    assert "Wrote comparison" in cap.err
+    assert "Wrote comparison" not in cap.out

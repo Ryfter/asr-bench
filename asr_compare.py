@@ -311,7 +311,12 @@ def _resolve_files(files: List[str], last: Optional[int],
         else:
             paths.append(p)
     if last is not None and last > 0:
-        recent = sorted(results_dir.glob("*.json"))[-last:] if results_dir.is_dir() else []
+        if not results_dir.is_dir():
+            print(f"warning: --results-dir {str(results_dir)!r} not found; "
+                  f"--last ignored.", file=sys.stderr)
+            recent: List[Path] = []
+        else:
+            recent = sorted(results_dir.glob("*.json"))[-last:]
         existing = set(paths)
         paths = [r for r in recent if r not in existing] + paths
     return paths
@@ -338,6 +343,10 @@ def compare_main(argv: List[str]) -> int:
                     help="Write markdown to this path instead of stdout.")
     ns = ap.parse_args(argv)
 
+    if ns.last is not None and ns.last < 1:
+        print("error: --last must be a positive integer.", file=sys.stderr)
+        return 2
+
     paths = _resolve_files(ns.files, ns.last, Path(ns.results_dir))
     docs = [d for d in (load_results_json(p) for p in paths) if d is not None]
     if len(docs) < 2:
@@ -361,7 +370,7 @@ def compare_main(argv: List[str]) -> int:
         out = Path(ns.output)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(md, encoding="utf-8")
-        print(f"Wrote comparison to {out}")
+        print(f"Wrote comparison to {out}", file=sys.stderr)
     else:
         print(md)
     return 0
