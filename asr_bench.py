@@ -674,6 +674,8 @@ class ClipResult:
     mer: float = float("nan")
     wil: float = float("nan")
     cer: float = float("nan")
+    repeat_coverage: float = 0.0
+    compression_ratio: float = 1.0
     hits: int = 0
     substitutions: int = 0
     deletions: int = 0
@@ -685,6 +687,11 @@ class ClipResult:
     vtt_path: Optional[str] = None
     reference_origin: str = "unknown"
     reference_label: str = ""
+
+    @property
+    def is_hallucination_suspect(self) -> bool:
+        return (self.repeat_coverage > HALLUCINATION_REPEAT_COVERAGE
+                or self.compression_ratio > HALLUCINATION_COMPRESSION_RATIO)
 
 
 @dataclass
@@ -1048,6 +1055,7 @@ class FasterWhisperEngine(Engine):
                 flush=True,
             )
 
+            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
             result.clips.append(
                 ClipResult(
                     audio=pair.audio.name,
@@ -1062,6 +1070,7 @@ class FasterWhisperEngine(Engine):
                     mer=metrics.mer,
                     wil=metrics.wil,
                     cer=metrics.cer,
+                    repeat_coverage=rep_cov, compression_ratio=comp_ratio,
                     hits=metrics.hits,
                     substitutions=metrics.substitutions,
                     deletions=metrics.deletions,
@@ -1184,6 +1193,7 @@ class NimEngine(Engine):
                 flush=True,
             )
 
+            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
             result.clips.append(
                 ClipResult(
                     audio=pair.audio.name, audio_sec=audio_sec,
@@ -1191,6 +1201,7 @@ class NimEngine(Engine):
                     vram_peak_bytes=vram_peak, hypothesis=hypothesis,
                     reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
                     wer=wer_val, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer,
+                    repeat_coverage=rep_cov, compression_ratio=comp_ratio,
                     hits=metrics.hits, substitutions=metrics.substitutions,
                     deletions=metrics.deletions, insertions=metrics.insertions,
                     cue_count=len(cue_tuples), vtt_path=str(vtt_path),
@@ -1427,11 +1438,14 @@ class WhisperXEngine(Engine):
                   f"(RTFx {rtfx:.2f}, WER {metrics.wer*100:.1f}%, "
                   f"{len(wx.speakers)} speaker(s))", flush=True)
 
+            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
             result_model.clips.append(ClipResult(
                 audio=pair.audio.name, audio_sec=audio_sec, transcribe_sec=transcribe_sec,
                 rtfx=rtfx, vram_peak_bytes=None, hypothesis=hypothesis,
                 reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
-                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer, hits=metrics.hits,
+                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer,
+                repeat_coverage=rep_cov, compression_ratio=comp_ratio,
+                hits=metrics.hits,
                 substitutions=metrics.substitutions, deletions=metrics.deletions,
                 insertions=metrics.insertions, cue_count=len(wx.segments),
                 vtt_path=str(vtt_path), reference_origin=ref_origin, reference_label=ref_label,

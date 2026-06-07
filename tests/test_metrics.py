@@ -187,3 +187,35 @@ def test_compute_hallucination_signals_returns_pair():
     cov, ratio = asr_bench.compute_hallucination_signals(loop, loop.strip())
     assert cov > 0.30
     assert ratio > 2.4
+
+
+# ---------------------------------------------------------------------------
+# Task 2 — ClipResult hallucination fields + is_hallucination_suspect
+# ---------------------------------------------------------------------------
+
+def test_clipresult_hallucination_fields_default():
+    c = asr_bench.ClipResult(
+        audio="x.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1)
+    assert c.repeat_coverage == 0.0
+    assert c.compression_ratio == 1.0
+    assert c.is_hallucination_suspect is False
+
+
+def test_is_hallucination_suspect_on_repeat_coverage():
+    c = asr_bench.ClipResult(
+        audio="x.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, repeat_coverage=0.5,
+        compression_ratio=1.5)
+    assert c.is_hallucination_suspect is True
+
+
+def test_is_hallucination_suspect_on_compression():
+    c = asr_bench.ClipResult(
+        audio="x.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, repeat_coverage=0.0,
+        compression_ratio=3.0)
+    assert c.is_hallucination_suspect is True
