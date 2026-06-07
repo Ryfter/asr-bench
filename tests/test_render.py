@@ -202,3 +202,28 @@ def test_cer_nan_renders_as_dash_not_nan():
     r.clips[0].cer = float("nan")
     md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
     assert "nan" not in md.lower().split("reproducibility")[0]
+
+
+def test_hallucination_section_appears_when_flagged():
+    r = _whisper_result()
+    r.clips[0].repeat_coverage = 0.6   # trips the flag
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    assert "Hallucination signals" in md
+    assert r.clips[0].audio in md
+    assert "1/1 clip" in md or "1/1 clips" in md  # per-model summary
+
+
+def test_no_hallucination_section_when_clean():
+    r = _whisper_result()  # defaults -> not suspect
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    assert "Hallucination signals" not in md
+
+
+def test_hallucination_insertion_burst_note():
+    r = _whisper_result()
+    c = r.clips[0]
+    c.compression_ratio = 3.0           # trips the flag (compression)
+    c.hits, c.substitutions, c.deletions, c.insertions = 10, 0, 0, 20  # insertion rate 2.0
+    md = asr_bench.render_markdown([r], Path("."), _args(), "proxy")
+    assert "Hallucination signals" in md
+    assert "insertion burst" in md.lower()

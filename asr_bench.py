@@ -354,6 +354,52 @@ class WordMetrics:
     insertions: int
 
 
+# ---- Hallucination signals (reference-free) ---------------------------------
+HALLUCINATION_NGRAM = 4
+HALLUCINATION_MIN_WORDS = 8          # below this, repeat_coverage is unreliable -> 0.0
+HALLUCINATION_MIN_CHARS = 200        # below this, compression_ratio is meaningless -> 1.0
+HALLUCINATION_REPEAT_COVERAGE = 0.30  # flag threshold
+HALLUCINATION_COMPRESSION_RATIO = 2.4  # flag threshold (Whisper's own default)
+HALLUCINATION_INSERTION_RATE = 0.5   # report annotation threshold (reference-based)
+
+
+def _repeat_coverage(normalized_hypothesis: str, n: int = HALLUCINATION_NGRAM) -> float:
+    """Fraction of word positions covered by an n-gram that occurs >= 2 times.
+    0.0 when there are fewer than HALLUCINATION_MIN_WORDS words."""
+    words = normalized_hypothesis.split()
+    if len(words) < HALLUCINATION_MIN_WORDS:
+        return 0.0
+    ngrams = [tuple(words[i:i + n]) for i in range(len(words) - n + 1)]
+    if not ngrams:
+        return 0.0
+    counts: Dict[tuple, int] = {}
+    for g in ngrams:
+        counts[g] = counts.get(g, 0) + 1
+    covered = [False] * len(words)
+    for i, g in enumerate(ngrams):
+        if counts[g] >= 2:
+            for j in range(i, i + n):
+                covered[j] = True
+    return sum(covered) / len(words)
+
+
+def _compression_ratio(text: str) -> float:
+    """len(utf8 bytes) / len(gzip(bytes)). ~1.5-2.2 normal prose, >2.4 repetitive.
+    Returns 1.0 for text shorter than HALLUCINATION_MIN_CHARS (gzip overhead makes
+    tiny inputs meaningless)."""
+    raw = text.encode("utf-8")
+    if len(raw) < HALLUCINATION_MIN_CHARS:
+        return 1.0
+    import gzip
+    compressed = gzip.compress(raw)
+    return len(raw) / len(compressed) if compressed else 1.0
+
+
+def compute_hallucination_signals(hypothesis: str, hypothesis_normalized: str) -> Tuple[float, float]:
+    """(repeat_coverage, compression_ratio) for a clip. Reference-free."""
+    return _repeat_coverage(hypothesis_normalized), _compression_ratio(hypothesis)
+
+
 def compute_word_metrics(reference: str, hypothesis: str) -> WordMetrics:
     """One jiwer.process_words call -> WER, MER, WIL, and H/S/D/I counts.
 
@@ -628,6 +674,8 @@ class ClipResult:
     mer: float = float("nan")
     wil: float = float("nan")
     cer: float = float("nan")
+    repeat_coverage: float = 0.0
+    compression_ratio: float = 1.0
     hits: int = 0
     substitutions: int = 0
     deletions: int = 0
@@ -639,6 +687,11 @@ class ClipResult:
     vtt_path: Optional[str] = None
     reference_origin: str = "unknown"
     reference_label: str = ""
+
+    @property
+    def is_hallucination_suspect(self) -> bool:
+        return (self.repeat_coverage > HALLUCINATION_REPEAT_COVERAGE
+                or self.compression_ratio > HALLUCINATION_COMPRESSION_RATIO)
 
 
 @dataclass
@@ -713,6 +766,13 @@ class ModelResult:
     def peak_vram_bytes(self) -> Optional[int]:
         peaks = [c.vram_peak_bytes for c in self.clips if c.vram_peak_bytes is not None]
         return max(peaks) if peaks else None
+
+    @property
+    def hallucination_rate(self) -> float:
+        """Fraction of this model's clips flagged as hallucination-suspect."""
+        if not self.clips:
+            return 0.0
+        return sum(1 for c in self.clips if c.is_hallucination_suspect) / len(self.clips)
 
 
 @dataclass
@@ -1002,6 +1062,7 @@ class FasterWhisperEngine(Engine):
                 flush=True,
             )
 
+            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
             result.clips.append(
                 ClipResult(
                     audio=pair.audio.name,
@@ -1016,6 +1077,7 @@ class FasterWhisperEngine(Engine):
                     mer=metrics.mer,
                     wil=metrics.wil,
                     cer=metrics.cer,
+                    repeat_coverage=rep_cov, compression_ratio=comp_ratio,
                     hits=metrics.hits,
                     substitutions=metrics.substitutions,
                     deletions=metrics.deletions,
@@ -1138,6 +1200,7 @@ class NimEngine(Engine):
                 flush=True,
             )
 
+            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
             result.clips.append(
                 ClipResult(
                     audio=pair.audio.name, audio_sec=audio_sec,
@@ -1145,6 +1208,7 @@ class NimEngine(Engine):
                     vram_peak_bytes=vram_peak, hypothesis=hypothesis,
                     reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
                     wer=wer_val, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer,
+                    repeat_coverage=rep_cov, compression_ratio=comp_ratio,
                     hits=metrics.hits, substitutions=metrics.substitutions,
                     deletions=metrics.deletions, insertions=metrics.insertions,
                     cue_count=len(cue_tuples), vtt_path=str(vtt_path),
@@ -1381,11 +1445,14 @@ class WhisperXEngine(Engine):
                   f"(RTFx {rtfx:.2f}, WER {metrics.wer*100:.1f}%, "
                   f"{len(wx.speakers)} speaker(s))", flush=True)
 
+            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
             result_model.clips.append(ClipResult(
                 audio=pair.audio.name, audio_sec=audio_sec, transcribe_sec=transcribe_sec,
                 rtfx=rtfx, vram_peak_bytes=None, hypothesis=hypothesis,
                 reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
-                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer, hits=metrics.hits,
+                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer,
+                repeat_coverage=rep_cov, compression_ratio=comp_ratio,
+                hits=metrics.hits,
                 substitutions=metrics.substitutions, deletions=metrics.deletions,
                 insertions=metrics.insertions, cue_count=len(wx.segments),
                 vtt_path=str(vtt_path), reference_origin=ref_origin, reference_label=ref_label,
@@ -1959,6 +2026,9 @@ def _clip_to_dict(c: "ClipResult") -> Dict:
         "hypothesis": c.hypothesis,
         "reference_normalized": c.reference_normalized,
         "hypothesis_normalized": c.hypothesis_normalized,
+        "repeat_coverage": c.repeat_coverage,
+        "compression_ratio": c.compression_ratio,
+        "hallucination_suspect": c.is_hallucination_suspect,
     }
 
 
@@ -1977,6 +2047,7 @@ def _model_to_dict(m: "ModelResult") -> Dict:
             "median_rtfx": m.median_rtfx,
             "median_sec_per_audio_min": m.median_sec_per_audio_min,
             "peak_vram_bytes": m.peak_vram_bytes,
+            "hallucination_rate": m.hallucination_rate,
         },
         "clips": [_clip_to_dict(c) for c in m.clips],
     }
@@ -2239,6 +2310,48 @@ def render_markdown(
             for model_display, clip_name, n, ratio in anomalies:
                 lines.append(f"| {model_display} | {clip_name} | {n} | {ratio:.2f}× |")
             lines.append("")
+
+    # ---- Hallucination signals (reference-free, per clip) ----
+    flagged: List[Tuple[str, ClipResult]] = [
+        (r.display, c) for r in results for c in r.clips if c.is_hallucination_suspect
+    ]
+    if flagged:
+        lines.append("## ⚠️ Hallucination signals")
+        lines.append("")
+        lines.append(
+            "Reference-free heuristics that flag a clip for **manual inspection** "
+            "(not a definitive error): **repeat coverage** = fraction of the "
+            "transcript made of repeated 4-grams; **compression** = gzip ratio of "
+            "the text (Whisper's own internal hallucination signal — normal prose "
+            "is ~1.5–2.2, looped output is higher). A clip is flagged when repeat "
+            f"coverage > {HALLUCINATION_REPEAT_COVERAGE:.0%} or compression > "
+            f"{HALLUCINATION_COMPRESSION_RATIO:.1f}."
+        )
+        lines.append("")
+        for r in results:
+            n_flag = sum(1 for c in r.clips if c.is_hallucination_suspect)
+            if n_flag:
+                lines.append(f"- **{r.display}:** {n_flag}/{len(r.clips)} clips flagged")
+        lines.append("")
+        lines.append("| Model | Clip | Repeat cov % | Compression | Insertion rate | Note |")
+        lines.append("|---|---|---|---|---|---|")
+        for model_display, c in flagged:
+            ref_words = c.hits + c.substitutions + c.deletions
+            ins_rate = (c.insertions / ref_words) if ref_words > 0 else None
+            ins_cell = f"{ins_rate * 100:.0f}%" if ins_rate is not None else "—"
+            reasons: List[str] = []
+            if c.repeat_coverage > HALLUCINATION_REPEAT_COVERAGE:
+                reasons.append("repetition")
+            if c.compression_ratio > HALLUCINATION_COMPRESSION_RATIO:
+                reasons.append("high compression")
+            if ins_rate is not None and ins_rate > HALLUCINATION_INSERTION_RATE:
+                reasons.append("insertion burst")
+            note = ", ".join(reasons)
+            lines.append(
+                f"| {model_display} | {c.audio} | {c.repeat_coverage * 100:.1f} | "
+                f"{c.compression_ratio:.2f} | {ins_cell} | {note} |"
+            )
+        lines.append("")
 
     # ---- Generated VTT files ----
     if results and any(c.vtt_path for c in results[0].clips):

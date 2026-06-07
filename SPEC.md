@@ -70,7 +70,6 @@ Fusion is fully unit-tested via `FakeLLMBackend` but **not yet validated against
 
 **Remaining v0.3 items (not yet implemented):**
 - `pip install asr-bench` packaging + `asr-bench` CLI entry point
-- Hallucination-rate detection (cross-engine + silence detection)
 - `asr_bench prepare-gold` hand-correction helper
 - Speaker labels in reference sets for DER ground-truth preparation
 
@@ -107,7 +106,7 @@ Stretch. Wav2vec2-large, conformer open models, distil-whisper community fine-tu
 | **Speakers** | **v0.3** | Detected speaker count from pyannote diarization. |
 | **CER%** | **v0.3** | Character Error Rate (jiwer, same normalized text as WER). Per-clip in all report tables and in `compare`. Additive sidecar field `cer` (per-clip) + `avg_cer` (aggregate); schema_version stays 1. |
 | **RTFx (med)** | **v0.3** | Median per-clip RTFx — robust to a single slow/locked clip that skews the totals-based aggregate. Sidecar fields `median_rtfx` + `median_sec_per_audio_min`. |
-| **Hallucination rate** | v0.3+ | engines invent text on silence/music; detect via cross-engine + silence detection. Not yet implemented. |
+| **Hallucination rate** | **v0.3** | Reference-free: `repeat_coverage` (repeated-4-gram fraction) + `compression_ratio` (gzip ratio — Whisper's own signal). Flag = coverage > 0.30 OR compression > 2.4. Per-model `hallucination_rate`; per-clip fields in JSON sidecar; dedicated "⚠️ Hallucination signals" report section. Works without a reference and in single-model runs. |
 | **CPU watts/hour** | v0.4 | if power monitor available (Intel RAPL, asitop). |
 
 ## Ground-truth strategy
@@ -127,6 +126,7 @@ Future v0.3+: `asr_bench prepare-gold ./test-corpus` — walks user through hand
 - v0.3: Speaker-labeled VTT (`SPEAKER_XX: text` cues) + `_Words_<Model>.json` word-timestamp sidecar from WhisperX runs. JSON results sidecar (`results/<timestamp>.json`, `schema_version: 1`) for cross-run aggregation — shipped.
 - v0.3 (shipped): `asr_bench compare` subcommand — delta (2 files) or matrix (3+) markdown report across N result JSON files. Joins per-model aggregates on `model_id`; warns on corpus/config drift. `--last N`, `--per-clip`, `--delta`/`--matrix`, `--output`. Implemented as `asr_compare.py` with first-positional `compare` keyword pre-dispatch in `asr_bench.py`.
 - v0.3 (shipped): **CER% + median latency** — per-clip `CER%` (Character Error Rate, jiwer) in all report tables and `compare`; per-model `RTFx (med)` (median per-clip RTFx) in the headline as an outlier-robust counterpart to the totals-based aggregate. JSON sidecar gains `clips[].cer`, `aggregates.avg_cer`, `aggregates.median_rtfx`, `aggregates.median_sec_per_audio_min`; additive within `schema_version 1`.
+- v0.3 (shipped): **Hallucination signals** — "⚠️ Hallucination signals" report section lists flagged (model, clip) pairs with `repeat_coverage`, `compression_ratio`, and an insertion-rate annotation when a reference is available. Per-model `hallucination_rate` line per model. JSON sidecar gains `clips[].repeat_coverage`, `clips[].compression_ratio`, `clips[].hallucination_suspect`, `aggregates.hallucination_rate`; additive within `schema_version 1`.
 
 ## Corpus structure roadmap
 
@@ -183,3 +183,8 @@ v0.3 adds:
   robust median speed pair (`median_rtfx`, `median_sec_per_audio_min`) beside the
   totals-based `aggregate_rtfx`. Sidecar fields additive within schema_version 1;
   CER also surfaced in `compare`.
+- **2026-06-07** — Shipped hallucination detection: reference-free repeat-coverage
+  (repeated 4-grams) + gzip compression ratio (Whisper's own internal signal),
+  flag = coverage>0.30 OR compression>2.4, per-model hallucination_rate, dedicated
+  report section + additive sidecar fields (schema_version stays 1). Detection
+  only; compare integration deferred.

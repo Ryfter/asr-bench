@@ -152,3 +152,91 @@ def test_median_properties_empty_model():
     assert m.avg_cer == 0.0
     assert m.median_rtfx == 0.0
     assert m.median_sec_per_audio_min == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Task 1 — reference-free hallucination signals
+# ---------------------------------------------------------------------------
+
+def test_repeat_coverage_high_on_loop():
+    text = "thank you so much " * 6  # 24 words, heavy 4-gram repetition
+    cov = asr_bench._repeat_coverage(text.strip())
+    assert cov > 0.30
+
+
+def test_repeat_coverage_zero_on_clean_prose():
+    text = "the quick brown fox jumps over the lazy dog near twelve silent owls"
+    assert asr_bench._repeat_coverage(text) == 0.0
+
+
+def test_repeat_coverage_short_text_guard():
+    assert asr_bench._repeat_coverage("one two three") == 0.0  # < 8 words
+
+
+def test_compression_ratio_high_on_repetition():
+    text = "thank you so much for watching this video. " * 20  # > 200 chars, repetitive
+    assert asr_bench._compression_ratio(text) > 2.4
+
+
+def test_compression_ratio_short_text_guard():
+    assert asr_bench._compression_ratio("short text") == 1.0  # < 200 chars
+
+
+def test_compute_hallucination_signals_returns_pair():
+    loop = "thank you so much " * 20
+    cov, ratio = asr_bench.compute_hallucination_signals(loop, loop.strip())
+    assert cov > 0.30
+    assert ratio > 2.4
+
+
+# ---------------------------------------------------------------------------
+# Task 2 — ClipResult hallucination fields + is_hallucination_suspect
+# ---------------------------------------------------------------------------
+
+def test_clipresult_hallucination_fields_default():
+    c = asr_bench.ClipResult(
+        audio="x.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1)
+    assert c.repeat_coverage == 0.0
+    assert c.compression_ratio == 1.0
+    assert c.is_hallucination_suspect is False
+
+
+def test_is_hallucination_suspect_on_repeat_coverage():
+    c = asr_bench.ClipResult(
+        audio="x.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, repeat_coverage=0.5,
+        compression_ratio=1.5)
+    assert c.is_hallucination_suspect is True
+
+
+def test_is_hallucination_suspect_on_compression():
+    c = asr_bench.ClipResult(
+        audio="x.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, repeat_coverage=0.0,
+        compression_ratio=3.0)
+    assert c.is_hallucination_suspect is True
+
+
+# ---------------------------------------------------------------------------
+# Task 3 — ModelResult.hallucination_rate
+# ---------------------------------------------------------------------------
+
+def test_hallucination_rate_half():
+    clean = asr_bench.ClipResult(
+        audio="a.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1)  # defaults -> not suspect
+    suspect = asr_bench.ClipResult(
+        audio="b.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, repeat_coverage=0.6)
+    m = _model([clean, suspect])
+    assert m.hallucination_rate == 0.5
+
+
+def test_hallucination_rate_empty_model():
+    assert _model([]).hallucination_rate == 0.0
