@@ -1948,7 +1948,7 @@ def _clip_to_dict(c: "ClipResult") -> Dict:
     return {
         "audio": c.audio, "audio_sec": c.audio_sec, "transcribe_sec": c.transcribe_sec,
         "rtfx": c.rtfx, "vram_peak_bytes": c.vram_peak_bytes,
-        "wer": c.wer, "mer": c.mer, "wil": c.wil,
+        "wer": c.wer, "mer": c.mer, "wil": c.wil, "cer": c.cer,
         "hits": c.hits, "substitutions": c.substitutions,
         "deletions": c.deletions, "insertions": c.insertions,
         "cue_count": c.cue_count, "num_speakers": c.num_speakers, "der": c.der,
@@ -1970,9 +1970,13 @@ def _model_to_dict(m: "ModelResult") -> Dict:
         "vram_is_total": m.vram_is_total, "notes": m.notes,
         "aggregates": {
             "avg_wer": m.avg_wer, "avg_mer": m.avg_mer, "avg_wil": m.avg_wil,
+            "avg_cer": m.avg_cer,
             "total_audio_sec": m.total_audio_sec,
             "total_transcribe_sec": m.total_transcribe_sec,
-            "aggregate_rtfx": m.aggregate_rtfx, "peak_vram_bytes": m.peak_vram_bytes,
+            "aggregate_rtfx": m.aggregate_rtfx,
+            "median_rtfx": m.median_rtfx,
+            "median_sec_per_audio_min": m.median_sec_per_audio_min,
+            "peak_vram_bytes": m.peak_vram_bytes,
         },
         "clips": [_clip_to_dict(c) for c in m.clips],
     }
