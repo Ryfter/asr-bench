@@ -101,3 +101,54 @@ def test_clipresult_has_cer_field_default_nan():
         hypothesis_normalized="h", wer=0.1, cer=0.05,
     )
     assert c2.cer == 0.05
+
+
+# ---------------------------------------------------------------------------
+# Task 3 helpers — avg_cer, median_rtfx, median_sec_per_audio_min
+# ---------------------------------------------------------------------------
+
+def _clip(rtfx=10.0, audio_sec=600.0, transcribe_sec=60.0, cer=0.10):
+    return asr_bench.ClipResult(
+        audio="c.mp4", audio_sec=audio_sec, transcribe_sec=transcribe_sec,
+        rtfx=rtfx, vram_peak_bytes=None, hypothesis="h",
+        reference_normalized="h", hypothesis_normalized="h", wer=0.1, cer=cer,
+    )
+
+
+def _model(clips):
+    return asr_bench.ModelResult(
+        model_id="m", display="M", fw_name="m", params="1", developer="x",
+        languages="en", notes="", disk_bytes=None, load_sec=0.0, clips=clips,
+    )
+
+
+def test_avg_cer():
+    m = _model([_clip(cer=0.10), _clip(cer=0.20)])
+    assert abs(m.avg_cer - 0.15) < 1e-9
+
+
+def test_median_rtfx_resists_outlier():
+    clips = [_clip(rtfx=60.0, audio_sec=600.0, transcribe_sec=10.0),
+             _clip(rtfx=62.0, audio_sec=600.0, transcribe_sec=9.7),
+             _clip(rtfx=3.0, audio_sec=600.0, transcribe_sec=200.0)]
+    m = _model(clips)
+    assert m.median_rtfx == 60.0
+    assert m.median_rtfx > m.aggregate_rtfx  # outlier resistance
+
+
+def test_median_sec_per_audio_min():
+    m = _model([_clip(audio_sec=600.0, transcribe_sec=10.0)])
+    assert abs(m.median_sec_per_audio_min - 1.0) < 1e-9
+
+
+def test_median_sec_per_audio_min_skips_zero_audio():
+    m = _model([_clip(audio_sec=0.0, transcribe_sec=5.0),
+                _clip(audio_sec=600.0, transcribe_sec=10.0)])
+    assert abs(m.median_sec_per_audio_min - 1.0) < 1e-9
+
+
+def test_median_properties_empty_model():
+    m = _model([])
+    assert m.avg_cer == 0.0
+    assert m.median_rtfx == 0.0
+    assert m.median_sec_per_audio_min == 0.0

@@ -18,6 +18,7 @@ import math
 import os
 import re
 import shutil
+import statistics
 import sys
 import subprocess
 import threading
@@ -674,6 +675,12 @@ class ModelResult:
         return sum(c.wil for c in self.clips) / len(self.clips)
 
     @property
+    def avg_cer(self) -> float:
+        if not self.clips:
+            return 0.0
+        return sum(c.cer for c in self.clips) / len(self.clips)
+
+    @property
     def total_audio_sec(self) -> float:
         return sum(c.audio_sec for c in self.clips)
 
@@ -686,6 +693,21 @@ class ModelResult:
         if self.total_transcribe_sec == 0:
             return 0.0
         return self.total_audio_sec / self.total_transcribe_sec
+
+    @property
+    def median_rtfx(self) -> float:
+        """Median per-clip RTFx — robust to a single decoder-lockup outlier that
+        would drag down the totals-based aggregate_rtfx."""
+        if not self.clips:
+            return 0.0
+        return statistics.median(c.rtfx for c in self.clips)
+
+    @property
+    def median_sec_per_audio_min(self) -> float:
+        """Median per-clip compute-seconds per minute of audio (lower = faster)."""
+        vals = [c.transcribe_sec * 60.0 / c.audio_sec
+                for c in self.clips if c.audio_sec > 0]
+        return statistics.median(vals) if vals else 0.0
 
     @property
     def peak_vram_bytes(self) -> Optional[int]:
