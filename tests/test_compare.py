@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import pytest
 import asr_compare
 
 
@@ -148,3 +149,9 @@ def test_no_warnings_when_runs_match():
     b = _doc("b", models=[_model("m")])
     rep = asr_compare.compare_runs([a, b], mode="delta")
     assert rep["warnings"] == []
+
+
+def test_compare_runs_delta_requires_two_docs():
+    a = _doc("a", models=[_model("m")])
+    with pytest.raises(ValueError):
+        asr_compare.compare_runs([a], mode="delta")

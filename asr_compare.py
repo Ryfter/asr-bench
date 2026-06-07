@@ -77,6 +77,8 @@ def _mismatch_warnings(docs: List[dict]) -> List[str]:
 def compare_runs(docs: List[dict], *, mode: str) -> dict:
     """Pure builder. Joins per-model headline metrics on model_id across `docs`
     (input order; docs[0] is the baseline in delta mode). Returns a report dict."""
+    if mode == "delta" and len(docs) != 2:
+        raise ValueError(f"delta mode requires exactly 2 docs, got {len(docs)}")
     runs = [{"label": d.get("_source_label", "?"),
              "corpus": d.get("run", {}).get("corpus"),
              "config": d.get("run", {}).get("config", {})} for d in docs]
