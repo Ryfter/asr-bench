@@ -86,3 +86,18 @@ def test_modelresult_avg_mer_wil():
     )
     assert abs(mr.avg_mer - 0.2) < 1e-9
     assert abs(mr.avg_wil - 0.4) < 1e-9
+
+
+def test_clipresult_has_cer_field_default_nan():
+    c = asr_bench.ClipResult(
+        audio="x.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1,
+    )
+    assert math.isnan(c.cer)  # default
+    c2 = asr_bench.ClipResult(
+        audio="x.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, cer=0.05,
+    )
+    assert c2.cer == 0.05

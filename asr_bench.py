@@ -626,6 +626,7 @@ class ClipResult:
     wer: float
     mer: float = float("nan")
     wil: float = float("nan")
+    cer: float = float("nan")
     hits: int = 0
     substitutions: int = 0
     deletions: int = 0
@@ -992,6 +993,7 @@ class FasterWhisperEngine(Engine):
                     wer=wer_val,
                     mer=metrics.mer,
                     wil=metrics.wil,
+                    cer=metrics.cer,
                     hits=metrics.hits,
                     substitutions=metrics.substitutions,
                     deletions=metrics.deletions,
@@ -1120,7 +1122,7 @@ class NimEngine(Engine):
                     transcribe_sec=transcribe_sec, rtfx=rtfx,
                     vram_peak_bytes=vram_peak, hypothesis=hypothesis,
                     reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
-                    wer=wer_val, mer=metrics.mer, wil=metrics.wil,
+                    wer=wer_val, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer,
                     hits=metrics.hits, substitutions=metrics.substitutions,
                     deletions=metrics.deletions, insertions=metrics.insertions,
                     cue_count=len(cue_tuples), vtt_path=str(vtt_path),
@@ -1361,7 +1363,7 @@ class WhisperXEngine(Engine):
                 audio=pair.audio.name, audio_sec=audio_sec, transcribe_sec=transcribe_sec,
                 rtfx=rtfx, vram_peak_bytes=None, hypothesis=hypothesis,
                 reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
-                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, hits=metrics.hits,
+                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer, hits=metrics.hits,
                 substitutions=metrics.substitutions, deletions=metrics.deletions,
                 insertions=metrics.insertions, cue_count=len(wx.segments),
                 vtt_path=str(vtt_path), reference_origin=ref_origin, reference_label=ref_label,
