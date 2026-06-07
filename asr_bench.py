@@ -2307,6 +2307,48 @@ def render_markdown(
                 lines.append(f"| {model_display} | {clip_name} | {n} | {ratio:.2f}× |")
             lines.append("")
 
+    # ---- Hallucination signals (reference-free, per clip) ----
+    flagged: List[Tuple[str, ClipResult]] = [
+        (r.display, c) for r in results for c in r.clips if c.is_hallucination_suspect
+    ]
+    if flagged:
+        lines.append("## ⚠️ Hallucination signals")
+        lines.append("")
+        lines.append(
+            "Reference-free heuristics that flag a clip for **manual inspection** "
+            "(not a definitive error): **repeat coverage** = fraction of the "
+            "transcript made of repeated 4-grams; **compression** = gzip ratio of "
+            "the text (Whisper's own internal hallucination signal — normal prose "
+            "is ~1.5–2.2, looped output is higher). A clip is flagged when repeat "
+            f"coverage > {HALLUCINATION_REPEAT_COVERAGE:.0%} or compression > "
+            f"{HALLUCINATION_COMPRESSION_RATIO:.1f}."
+        )
+        lines.append("")
+        for r in results:
+            n_flag = sum(1 for c in r.clips if c.is_hallucination_suspect)
+            if n_flag:
+                lines.append(f"- **{r.display}:** {n_flag}/{len(r.clips)} clips flagged")
+        lines.append("")
+        lines.append("| Model | Clip | Repeat cov % | Compression | Insertion rate | Note |")
+        lines.append("|---|---|---|---|---|---|")
+        for model_display, c in flagged:
+            ref_words = c.hits + c.substitutions + c.deletions
+            ins_rate = (c.insertions / ref_words) if ref_words > 0 else None
+            ins_cell = f"{ins_rate * 100:.0f}%" if ins_rate is not None else "—"
+            reasons: List[str] = []
+            if c.repeat_coverage > HALLUCINATION_REPEAT_COVERAGE:
+                reasons.append("repetition")
+            if c.compression_ratio > HALLUCINATION_COMPRESSION_RATIO:
+                reasons.append("high compression")
+            if ins_rate is not None and ins_rate > HALLUCINATION_INSERTION_RATE:
+                reasons.append("insertion burst")
+            note = ", ".join(reasons)
+            lines.append(
+                f"| {model_display} | {c.audio} | {c.repeat_coverage * 100:.1f} | "
+                f"{c.compression_ratio:.2f} | {ins_cell} | {note} |"
+            )
+        lines.append("")
+
     # ---- Generated VTT files ----
     if results and any(c.vtt_path for c in results[0].clips):
         lines.append("## Generated VTT outputs")
