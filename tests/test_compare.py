@@ -50,3 +50,59 @@ def test_load_wrong_schema_version_returns_none(tmp_path, capsys):
 def test_load_missing_file_returns_none(tmp_path, capsys):
     assert asr_compare.load_results_json(tmp_path / "nope.json") is None
     assert "skipping" in capsys.readouterr().err
+
+
+def test_join_shared_model_collects_both_values():
+    a = _doc("a", models=[_model("big", "Big", wer=0.10, rtfx=60.0)])
+    b = _doc("b", models=[_model("big", "Big", wer=0.08, rtfx=70.0)])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    row = [m for m in rep["models"] if m["model_id"] == "big"][0]
+    assert row["values"]["wer"] == [0.10, 0.08]
+    assert row["values"]["rtfx"] == [60.0, 70.0]
+    assert row["present_in"] == [0, 1]
+    assert row["status"] == "both"
+
+
+def test_model_only_in_baseline_is_removed():
+    a = _doc("a", models=[_model("old", "Old"), _model("keep", "Keep")])
+    b = _doc("b", models=[_model("keep", "Keep")])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    old = [m for m in rep["models"] if m["model_id"] == "old"][0]
+    assert old["status"] == "removed"
+    assert old["values"]["wer"] == [0.10, None]
+
+
+def test_model_only_in_candidate_is_added():
+    a = _doc("a", models=[_model("keep", "Keep")])
+    b = _doc("b", models=[_model("keep", "Keep"), _model("new", "New")])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    new = [m for m in rep["models"] if m["model_id"] == "new"][0]
+    assert new["status"] == "added"
+    assert new["values"]["wer"] == [None, 0.10]
+
+
+def test_der_metric_absent_when_no_clip_der():
+    a = _doc("a", models=[_model("m")])
+    b = _doc("b", models=[_model("m")])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    assert "der" not in rep["metrics"]
+
+
+def test_der_metric_present_and_averaged_from_clips():
+    clips = [{"audio": "x.mp4", "der": 0.10, "num_speakers": 2},
+             {"audio": "y.mp4", "der": 0.20, "num_speakers": 2}]
+    a = _doc("a", models=[_model("m", clips=clips)])
+    b = _doc("b", models=[_model("m", clips=[{"audio": "x.mp4", "der": None,
+                                              "num_speakers": None}])])
+    rep = asr_compare.compare_runs([a, b], mode="matrix")
+    assert "der" in rep["metrics"]
+    row = rep["models"][0]
+    assert row["values"]["der"][0] == 0.15      # (0.10 + 0.20) / 2
+    assert row["values"]["der"][1] is None      # all-null clips -> None
+
+
+def test_model_union_preserves_first_seen_order():
+    a = _doc("a", models=[_model("z"), _model("a")])
+    b = _doc("b", models=[_model("a"), _model("q")])
+    rep = asr_compare.compare_runs([a, b], mode="matrix")
+    assert [m["model_id"] for m in rep["models"]] == ["z", "a", "q"]
