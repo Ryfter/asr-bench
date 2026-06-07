@@ -70,9 +70,7 @@ Fusion is fully unit-tested via `FakeLLMBackend` but **not yet validated against
 
 **Remaining v0.3 items (not yet implemented):**
 - `pip install asr-bench` packaging + `asr-bench` CLI entry point
-- CER (Character Error Rate) for noisy-word-boundary languages
 - Hallucination-rate detection (cross-engine + silence detection)
-- Median per-clip latency metric
 - `asr_bench prepare-gold` hand-correction helper
 - Speaker labels in reference sets for DER ground-truth preparation
 
@@ -107,9 +105,9 @@ Stretch. Wav2vec2-large, conformer open models, distil-whisper community fine-tu
 | **Fusion drift** | **v0.2** | Per-window WER(fused vs base) as a hallucination/omission guard. |
 | **DER** | **v0.3** | Diarization Error Rate via pyannote.metrics. Gated on `<base>.rttm` sidecar. |
 | **Speakers** | **v0.3** | Detected speaker count from pyannote diarization. |
-| **CER** | v0.3+ | for languages with noisy word boundaries. Not yet implemented. |
+| **CER%** | **v0.3** | Character Error Rate (jiwer, same normalized text as WER). Per-clip in all report tables and in `compare`. Additive sidecar field `cer` (per-clip) + `avg_cer` (aggregate); schema_version stays 1. |
+| **RTFx (med)** | **v0.3** | Median per-clip RTFx — robust to a single slow/locked clip that skews the totals-based aggregate. Sidecar fields `median_rtfx` + `median_sec_per_audio_min`. |
 | **Hallucination rate** | v0.3+ | engines invent text on silence/music; detect via cross-engine + silence detection. Not yet implemented. |
-| **Median per-clip latency** | v0.3+ | for batch-processing decisions. Not yet implemented. |
 | **CPU watts/hour** | v0.4 | if power monitor available (Intel RAPL, asitop). |
 
 ## Ground-truth strategy
@@ -128,6 +126,7 @@ Future v0.3+: `asr_bench prepare-gold ./test-corpus` — walks user through hand
 - v0.2: MER/WIL/S/D/I columns; `_Captions_Fused.vtt` and `_KB_Fused.jsonl`/`.md` from fusion stage.
 - v0.3: Speaker-labeled VTT (`SPEAKER_XX: text` cues) + `_Words_<Model>.json` word-timestamp sidecar from WhisperX runs. JSON results sidecar (`results/<timestamp>.json`, `schema_version: 1`) for cross-run aggregation — shipped.
 - v0.3 (shipped): `asr_bench compare` subcommand — delta (2 files) or matrix (3+) markdown report across N result JSON files. Joins per-model aggregates on `model_id`; warns on corpus/config drift. `--last N`, `--per-clip`, `--delta`/`--matrix`, `--output`. Implemented as `asr_compare.py` with first-positional `compare` keyword pre-dispatch in `asr_bench.py`.
+- v0.3 (shipped): **CER% + median latency** — per-clip `CER%` (Character Error Rate, jiwer) in all report tables and `compare`; per-model `RTFx (med)` (median per-clip RTFx) in the headline as an outlier-robust counterpart to the totals-based aggregate. JSON sidecar gains `clips[].cer`, `aggregates.avg_cer`, `aggregates.median_rtfx`, `aggregates.median_sec_per_audio_min`; additive within `schema_version 1`.
 
 ## Corpus structure roadmap
 
@@ -179,3 +178,8 @@ v0.3 adds:
   corpus/config drift. Implemented as a first-positional `compare` keyword
   pre-dispatch into a standalone, pure `asr_compare.py` — the existing bench CLI
   is byte-for-byte unchanged. Per-model DER averaged from per-clip `der`.
+- **2026-06-06** — Shipped CER (char-level, via jiwer on the same normalized text
+  as WER, added to WordMetrics so all three engines get it from one call) and a
+  robust median speed pair (`median_rtfx`, `median_sec_per_audio_min`) beside the
+  totals-based `aggregate_rtfx`. Sidecar fields additive within schema_version 1;
+  CER also surfaced in `compare`.
