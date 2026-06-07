@@ -2271,6 +2271,10 @@ def render_markdown(
 
 # ---- CLI --------------------------------------------------------------------
 def main() -> int:
+    argv = sys.argv[1:]
+    if argv and argv[0] == "compare":
+        from asr_compare import compare_main
+        return compare_main(argv[1:])
     ap = argparse.ArgumentParser(
         description="Benchmark local Whisper variants on your own audio.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

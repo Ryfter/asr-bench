@@ -1,8 +1,11 @@
 import json
+import sys
 from pathlib import Path
 
 import pytest
+import asr_bench
 import asr_compare
+import asr_compare as _ac
 
 
 def _doc(stem="run", *, models=None, corpus="test-corpus", config=None,
@@ -353,3 +356,17 @@ def test_compare_main_output_message_on_stderr(tmp_path, capsys):
     cap = capsys.readouterr()
     assert "Wrote comparison" in cap.err
     assert "Wrote comparison" not in cap.out
+
+
+def test_dispatch_routes_compare_to_compare_main(monkeypatch):
+    captured = {}
+
+    def fake_compare_main(argv):
+        captured["argv"] = argv
+        return 0
+
+    monkeypatch.setattr(_ac, "compare_main", fake_compare_main)
+    monkeypatch.setattr(sys, "argv", ["asr_bench.py", "compare", "x.json", "y.json"])
+    rc = asr_bench.main()
+    assert rc == 0
+    assert captured["argv"] == ["x.json", "y.json"]
