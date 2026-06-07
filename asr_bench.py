@@ -18,6 +18,7 @@ import math
 import os
 import re
 import shutil
+import statistics
 import sys
 import subprocess
 import threading
@@ -335,16 +336,18 @@ def normalize_for_wer(text: str) -> str:
 # ---- Word metrics -----------------------------------------------------------
 @dataclass
 class WordMetrics:
-    """All word-level scores from a single jiwer alignment.
+    """All alignment scores from a single jiwer alignment (word-level + CER).
 
     WER  = (S+D+I)/N1                      (edit cost; can exceed 1.0)
     MER  = (S+D+I)/(H+S+D+I)               (Morris et al.; bounded [0,1])
     WIL  = 1 - H*H/(N1*N2)                 (Morris et al.; bounded [0,1])
+    CER  = char edit distance / len(reference)  (character-level WER; bounded [0,inf])
     where N1 = ref words = H+S+D, N2 = hyp words = H+S+I.
     """
     wer: float
     mer: float
     wil: float
+    cer: float
     hits: int
     substitutions: int
     deletions: int
@@ -359,21 +362,22 @@ def compute_word_metrics(reference: str, hypothesis: str) -> WordMetrics:
     """
     nan = float("nan")
     if not reference.strip():
-        return WordMetrics(nan, nan, nan, 0, 0, 0, 0)
-    from jiwer import process_words
+        return WordMetrics(nan, nan, nan, nan, 0, 0, 0, 0)
+    from jiwer import process_words, cer as jiwer_cer
     try:
         out = process_words(reference, hypothesis)
         return WordMetrics(
             wer=float(out.wer),
             mer=float(out.mer),
             wil=float(out.wil),
+            cer=float(jiwer_cer(reference, hypothesis)),
             hits=int(out.hits),
             substitutions=int(out.substitutions),
             deletions=int(out.deletions),
             insertions=int(out.insertions),
         )
     except Exception:
-        return WordMetrics(nan, nan, nan, 0, 0, 0, 0)
+        return WordMetrics(nan, nan, nan, nan, 0, 0, 0, 0)
 
 
 # ---- Pair discovery ---------------------------------------------------------
@@ -623,6 +627,7 @@ class ClipResult:
     wer: float
     mer: float = float("nan")
     wil: float = float("nan")
+    cer: float = float("nan")
     hits: int = 0
     substitutions: int = 0
     deletions: int = 0
@@ -670,6 +675,12 @@ class ModelResult:
         return sum(c.wil for c in self.clips) / len(self.clips)
 
     @property
+    def avg_cer(self) -> float:
+        if not self.clips:
+            return 0.0
+        return sum(c.cer for c in self.clips) / len(self.clips)
+
+    @property
     def total_audio_sec(self) -> float:
         return sum(c.audio_sec for c in self.clips)
 
@@ -682,6 +693,21 @@ class ModelResult:
         if self.total_transcribe_sec == 0:
             return 0.0
         return self.total_audio_sec / self.total_transcribe_sec
+
+    @property
+    def median_rtfx(self) -> float:
+        """Median per-clip RTFx — robust to a single decoder-lockup outlier that
+        would drag down the totals-based aggregate_rtfx."""
+        if not self.clips:
+            return 0.0
+        return statistics.median(c.rtfx for c in self.clips)
+
+    @property
+    def median_sec_per_audio_min(self) -> float:
+        """Median per-clip compute-seconds per minute of audio (lower = faster)."""
+        vals = [c.transcribe_sec * 60.0 / c.audio_sec
+                for c in self.clips if c.audio_sec > 0]
+        return statistics.median(vals) if vals else 0.0
 
     @property
     def peak_vram_bytes(self) -> Optional[int]:
@@ -989,6 +1015,7 @@ class FasterWhisperEngine(Engine):
                     wer=wer_val,
                     mer=metrics.mer,
                     wil=metrics.wil,
+                    cer=metrics.cer,
                     hits=metrics.hits,
                     substitutions=metrics.substitutions,
                     deletions=metrics.deletions,
@@ -1117,7 +1144,7 @@ class NimEngine(Engine):
                     transcribe_sec=transcribe_sec, rtfx=rtfx,
                     vram_peak_bytes=vram_peak, hypothesis=hypothesis,
                     reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
-                    wer=wer_val, mer=metrics.mer, wil=metrics.wil,
+                    wer=wer_val, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer,
                     hits=metrics.hits, substitutions=metrics.substitutions,
                     deletions=metrics.deletions, insertions=metrics.insertions,
                     cue_count=len(cue_tuples), vtt_path=str(vtt_path),
@@ -1358,7 +1385,7 @@ class WhisperXEngine(Engine):
                 audio=pair.audio.name, audio_sec=audio_sec, transcribe_sec=transcribe_sec,
                 rtfx=rtfx, vram_peak_bytes=None, hypothesis=hypothesis,
                 reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
-                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, hits=metrics.hits,
+                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer, hits=metrics.hits,
                 substitutions=metrics.substitutions, deletions=metrics.deletions,
                 insertions=metrics.insertions, cue_count=len(wx.segments),
                 vtt_path=str(vtt_path), reference_origin=ref_origin, reference_label=ref_label,
@@ -1921,7 +1948,7 @@ def _clip_to_dict(c: "ClipResult") -> Dict:
     return {
         "audio": c.audio, "audio_sec": c.audio_sec, "transcribe_sec": c.transcribe_sec,
         "rtfx": c.rtfx, "vram_peak_bytes": c.vram_peak_bytes,
-        "wer": c.wer, "mer": c.mer, "wil": c.wil,
+        "wer": c.wer, "mer": c.mer, "wil": c.wil, "cer": c.cer,
         "hits": c.hits, "substitutions": c.substitutions,
         "deletions": c.deletions, "insertions": c.insertions,
         "cue_count": c.cue_count, "num_speakers": c.num_speakers, "der": c.der,
@@ -1943,9 +1970,13 @@ def _model_to_dict(m: "ModelResult") -> Dict:
         "vram_is_total": m.vram_is_total, "notes": m.notes,
         "aggregates": {
             "avg_wer": m.avg_wer, "avg_mer": m.avg_mer, "avg_wil": m.avg_wil,
+            "avg_cer": m.avg_cer,
             "total_audio_sec": m.total_audio_sec,
             "total_transcribe_sec": m.total_transcribe_sec,
-            "aggregate_rtfx": m.aggregate_rtfx, "peak_vram_bytes": m.peak_vram_bytes,
+            "aggregate_rtfx": m.aggregate_rtfx,
+            "median_rtfx": m.median_rtfx,
+            "median_sec_per_audio_min": m.median_sec_per_audio_min,
+            "peak_vram_bytes": m.peak_vram_bytes,
         },
         "clips": [_clip_to_dict(c) for c in m.clips],
     }
@@ -2058,14 +2089,16 @@ def render_markdown(
     lines.append("")
     diar_hdr = " DER% | Speakers |" if any_diar else ""
     diar_sep = "---|---|" if any_diar else ""
-    lines.append("| Model | Params | Disk | Overall WER% | MER% | WIL% | RTFx | Total time | Peak VRAM |" + diar_hdr + " Notes |")
-    lines.append("|---|---|---|---|---|---|---|---|---|" + diar_sep + "---|")
+    lines.append("| Model | Params | Disk | Overall WER% | MER% | WIL% | CER% | RTFx | RTFx (med) | Total time | Peak VRAM |" + diar_hdr + " Notes |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|---|" + diar_sep + "---|")
     for r in results:
         wall_clock = f"{r.total_transcribe_sec:.1f}s"
         wer_pct = _fmt_pct(r.avg_wer) if r.clips else "—"
         mer_pct = _fmt_pct(r.avg_mer) if r.clips else "—"
         wil_pct = _fmt_pct(r.avg_wil) if r.clips else "—"
+        cer_pct = _fmt_pct(r.avg_cer) if r.clips else "—"
         rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
+        rtfx_med = f"{r.median_rtfx:.2f}x" if r.clips else "—"
         vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         disk = _disk_cell(r)
         diar_cells = ""
@@ -2075,7 +2108,7 @@ def render_markdown(
             spk = max((c.num_speakers for c in r.clips), default=0) or "—"
             diar_cells = f" {der_avg} | {spk} |"
         lines.append(
-            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {mer_pct} | {wil_pct} | {rtfx} | {wall_clock} | {vram} |{diar_cells} {r.notes} |"
+            f"| {r.display} | {r.params} | {disk} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {rtfx} | {rtfx_med} | {wall_clock} | {vram} |{diar_cells} {r.notes} |"
         )
     lines.append("")
 
@@ -2117,17 +2150,18 @@ def render_markdown(
             audio_min = sample.audio_sec / 60.0
             lines.append(f"### {sample.audio} — {audio_min:.1f} min")
             lines.append("")
-            lines.append("| Model | WER% | MER% | WIL% | S | D | I | RTFx | Transcribe time | VRAM peak |")
-            lines.append("|---|---|---|---|---|---|---|---|---|---|")
+            lines.append("| Model | WER% | MER% | WIL% | CER% | S | D | I | RTFx | Transcribe time | VRAM peak |")
+            lines.append("|---|---|---|---|---|---|---|---|---|---|---|")
             for r in results:
                 if i < len(r.clips):
                     c = r.clips[i]
                     wer_pct = _fmt_pct(c.wer)
                     mer_pct = _fmt_pct(c.mer)
                     wil_pct = _fmt_pct(c.wil)
+                    cer_pct = _fmt_pct(c.cer)
                     vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
                     lines.append(
-                        f"| {r.display} | {wer_pct} | {mer_pct} | {wil_pct} | {c.substitutions} | {c.deletions} | {c.insertions} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
+                        f"| {r.display} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {c.substitutions} | {c.deletions} | {c.insertions} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
                     )
             lines.append("")
 
@@ -2139,25 +2173,27 @@ def render_markdown(
     for r in results:
         lines.append(f"### {r.display}")
         lines.append("")
-        lines.append("| Clip | Audio | WER% | MER% | WIL% | RTFx | Transcribe time | VRAM peak |")
-        lines.append("|---|---|---|---|---|---|---|---|")
+        lines.append("| Clip | Audio | WER% | MER% | WIL% | CER% | RTFx | Transcribe time | VRAM peak |")
+        lines.append("|---|---|---|---|---|---|---|---|---|")
         for c in r.clips:
             wer_pct = _fmt_pct(c.wer)
             mer_pct = _fmt_pct(c.mer)
             wil_pct = _fmt_pct(c.wil)
+            cer_pct = _fmt_pct(c.cer)
             vram = _vram_cell(c.vram_peak_bytes, r.vram_is_total)
             audio_label = f"{c.audio_sec / 60:.1f} min"
             lines.append(
-                f"| {c.audio} | {audio_label} | {wer_pct} | {mer_pct} | {wil_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
+                f"| {c.audio} | {audio_label} | {wer_pct} | {mer_pct} | {wil_pct} | {cer_pct} | {c.rtfx:.2f}x | {c.transcribe_sec:.1f}s | {vram} |"
             )
         overall_audio = f"{r.total_audio_sec / 60:.1f} min"
         overall_wer = _fmt_pct(r.avg_wer) if r.clips else "—"
         overall_mer = _fmt_pct(r.avg_mer) if r.clips else "—"
         overall_wil = _fmt_pct(r.avg_wil) if r.clips else "—"
+        overall_cer = _fmt_pct(r.avg_cer) if r.clips else "—"
         overall_rtfx = f"{r.aggregate_rtfx:.2f}x" if r.clips else "—"
         overall_vram = _vram_cell(r.peak_vram_bytes, r.vram_is_total)
         lines.append(
-            f"| **OVERALL** | **{overall_audio}** | **{overall_wer}** | **{overall_mer}** | **{overall_wil}** | **{overall_rtfx}** | **{r.total_transcribe_sec:.1f}s** | **{overall_vram}** |"
+            f"| **OVERALL** | **{overall_audio}** | **{overall_wer}** | **{overall_mer}** | **{overall_wil}** | **{overall_cer}** | **{overall_rtfx}** | **{r.total_transcribe_sec:.1f}s** | **{overall_vram}** |"
         )
         lines.append("")
 

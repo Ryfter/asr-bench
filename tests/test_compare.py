@@ -25,12 +25,13 @@ def _doc(stem="run", *, models=None, corpus="test-corpus", config=None,
 
 
 def _model(model_id="m", display=None, *, wer=0.10, mer=0.09, wil=0.12,
-           rtfx=60.0, clips=None):
+           cer=0.05, rtfx=60.0, clips=None):
     return {
         "model_id": model_id,
         "display": display or model_id,
         "aggregates": {"avg_wer": wer, "avg_mer": mer, "avg_wil": wil,
-                       "aggregate_rtfx": rtfx, "peak_vram_bytes": None},
+                       "avg_cer": cer, "aggregate_rtfx": rtfx,
+                       "peak_vram_bytes": None},
         "clips": clips if clips is not None else [],
     }
 
@@ -377,3 +378,24 @@ def test_dispatch_routes_compare_to_compare_main(monkeypatch):
     rc = asr_bench.main()
     assert rc == 0
     assert captured["argv"] == ["x.json", "y.json"]
+
+
+def test_compare_surfaces_cer_metric():
+    a = _doc("a", models=[_model("m", "M", wer=0.10, cer=0.05)])
+    b = _doc("b", models=[_model("m", "M", wer=0.08, cer=0.04)])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    assert "cer" in rep["metrics"]
+    md = asr_compare.render_comparison_markdown(rep)
+    assert "CER%" in md
+
+
+def test_compare_cer_absent_renders_dash_for_old_sidecar():
+    old_model = {"model_id": "m", "display": "M",
+                 "aggregates": {"avg_wer": 0.10, "avg_mer": 0.09, "avg_wil": 0.12,
+                                "aggregate_rtfx": 60.0, "peak_vram_bytes": None},
+                 "clips": []}
+    a = _doc("a", models=[old_model])
+    b = _doc("b", models=[old_model])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    row = rep["models"][0]
+    assert row["values"]["cer"] == [None, None]

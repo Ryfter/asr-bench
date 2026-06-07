@@ -180,6 +180,31 @@ def test_write_results_json_no_nan_token(tmp_path):
     assert json.loads(text)["der"] is None
 
 
+def test_sidecar_clip_has_cer():
+    import asr_bench
+    clip = asr_bench.ClipResult(
+        audio="c.mp4", audio_sec=600.0, transcribe_sec=10.0, rtfx=60.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, cer=0.05)
+    d = asr_bench._clip_to_dict(clip)
+    assert d["cer"] == 0.05
+
+
+def test_sidecar_model_aggregates_have_new_speed_and_cer():
+    import asr_bench
+    clip = asr_bench.ClipResult(
+        audio="c.mp4", audio_sec=600.0, transcribe_sec=10.0, rtfx=60.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, cer=0.05)
+    m = asr_bench.ModelResult(
+        model_id="m", display="M", fw_name="m", params="1", developer="x",
+        languages="en", notes="", disk_bytes=None, load_sec=0.0, clips=[clip])
+    agg = asr_bench._model_to_dict(m)["aggregates"]
+    assert agg["avg_cer"] == 0.05
+    assert agg["median_rtfx"] == 60.0
+    assert abs(agg["median_sec_per_audio_min"] - 1.0) < 1e-9
+
+
 def test_write_results_json_raises_on_stray_nan(tmp_path):
     # Belt-and-suspenders: an unsanitized NaN must fail loudly, not emit invalid JSON.
     with pytest.raises(ValueError):

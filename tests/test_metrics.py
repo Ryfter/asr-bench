@@ -53,6 +53,22 @@ def test_clipresult_has_metric_fields_with_defaults():
     assert hasattr(c, "wil") and hasattr(c, "substitutions")
 
 
+def test_compute_word_metrics_has_cer():
+    m = asr_bench.compute_word_metrics("the cat", "the bat")
+    # one character substitution ('c'->'b') over 7 reference chars
+    assert abs(m.cer - 1.0 / 7.0) < 1e-6
+
+
+def test_compute_word_metrics_empty_ref_cer_is_nan():
+    m = asr_bench.compute_word_metrics("", "anything")
+    assert math.isnan(m.cer)
+
+
+def test_compute_word_metrics_perfect_match_cer_zero():
+    m = asr_bench.compute_word_metrics("hello world", "hello world")
+    assert m.cer == 0.0
+
+
 def test_modelresult_avg_mer_wil():
     c1 = asr_bench.ClipResult(
         audio="a", audio_sec=1, transcribe_sec=1, rtfx=1, vram_peak_bytes=None,
@@ -70,3 +86,69 @@ def test_modelresult_avg_mer_wil():
     )
     assert abs(mr.avg_mer - 0.2) < 1e-9
     assert abs(mr.avg_wil - 0.4) < 1e-9
+
+
+def test_clipresult_has_cer_field_default_nan():
+    c = asr_bench.ClipResult(
+        audio="x.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1,
+    )
+    assert math.isnan(c.cer)  # default
+    c2 = asr_bench.ClipResult(
+        audio="x.mp4", audio_sec=10.0, transcribe_sec=1.0, rtfx=10.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, cer=0.05,
+    )
+    assert c2.cer == 0.05
+
+
+# ---------------------------------------------------------------------------
+# Task 3 helpers — avg_cer, median_rtfx, median_sec_per_audio_min
+# ---------------------------------------------------------------------------
+
+def _clip(rtfx=10.0, audio_sec=600.0, transcribe_sec=60.0, cer=0.10):
+    return asr_bench.ClipResult(
+        audio="c.mp4", audio_sec=audio_sec, transcribe_sec=transcribe_sec,
+        rtfx=rtfx, vram_peak_bytes=None, hypothesis="h",
+        reference_normalized="h", hypothesis_normalized="h", wer=0.1, cer=cer,
+    )
+
+
+def _model(clips):
+    return asr_bench.ModelResult(
+        model_id="m", display="M", fw_name="m", params="1", developer="x",
+        languages="en", notes="", disk_bytes=None, load_sec=0.0, clips=clips,
+    )
+
+
+def test_avg_cer():
+    m = _model([_clip(cer=0.10), _clip(cer=0.20)])
+    assert abs(m.avg_cer - 0.15) < 1e-9
+
+
+def test_median_rtfx_resists_outlier():
+    clips = [_clip(rtfx=60.0, audio_sec=600.0, transcribe_sec=10.0),
+             _clip(rtfx=62.0, audio_sec=600.0, transcribe_sec=9.7),
+             _clip(rtfx=3.0, audio_sec=600.0, transcribe_sec=200.0)]
+    m = _model(clips)
+    assert m.median_rtfx == 60.0
+    assert m.median_rtfx > m.aggregate_rtfx  # outlier resistance
+
+
+def test_median_sec_per_audio_min():
+    m = _model([_clip(audio_sec=600.0, transcribe_sec=10.0)])
+    assert abs(m.median_sec_per_audio_min - 1.0) < 1e-9
+
+
+def test_median_sec_per_audio_min_skips_zero_audio():
+    m = _model([_clip(audio_sec=0.0, transcribe_sec=5.0),
+                _clip(audio_sec=600.0, transcribe_sec=10.0)])
+    assert abs(m.median_sec_per_audio_min - 1.0) < 1e-9
+
+
+def test_median_properties_empty_model():
+    m = _model([])
+    assert m.avg_cer == 0.0
+    assert m.median_rtfx == 0.0
+    assert m.median_sec_per_audio_min == 0.0

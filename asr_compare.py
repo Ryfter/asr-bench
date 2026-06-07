@@ -21,13 +21,14 @@ METRIC_META = {
     "wer":  {"label": "WER%", "pct": True,  "lower_better": True},
     "mer":  {"label": "MER%", "pct": True,  "lower_better": True},
     "wil":  {"label": "WIL%", "pct": True,  "lower_better": True},
+    "cer":  {"label": "CER%", "pct": True,  "lower_better": True},
     "rtfx": {"label": "RTFx", "pct": False, "lower_better": False},
     "der":  {"label": "DER%", "pct": True,  "lower_better": True},
 }
 
 # non-der metric key -> the aggregates field it comes from
 _AGG_KEYS = {"wer": "avg_wer", "mer": "avg_mer", "wil": "avg_wil",
-             "rtfx": "aggregate_rtfx"}
+             "cer": "avg_cer", "rtfx": "aggregate_rtfx"}
 
 # config fields whose mismatch makes a cross-run comparison suspect
 _CONFIG_KEYS = ["device", "compute_type", "beam_size", "vad_filter", "batch_size"]
@@ -120,7 +121,7 @@ def compare_runs(docs: List[dict], *, mode: str, per_clip: bool = False) -> dict
     runs = [{"label": d.get("_source_label", "?"),
              "corpus": d.get("run", {}).get("corpus"),
              "config": d.get("run", {}).get("config", {})} for d in docs]
-    metrics = ["wer", "mer", "wil", "rtfx"] + (["der"] if _has_any_der(docs) else [])
+    metrics = ["wer", "mer", "wil", "cer", "rtfx"] + (["der"] if _has_any_der(docs) else [])
 
     # union of model_ids in first-seen order; remember display + per-run lookup
     order: List[str] = []

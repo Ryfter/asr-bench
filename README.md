@@ -39,10 +39,12 @@ multi-language coverage, hand-corrected reference sets).
 | Metric | What it means |
 |---|---|
 | WER% | Word Error Rate vs your reference transcript |
+| CER% | Character Error Rate (jiwer) — finer-grained companion to WER; counts character edits rather than whole-word edits |
 | MER% | Match Error Rate — fraction of reference+hypothesis words that are errors (bounded [0,1]) |
 | WIL% | Word Information Lost — information-theoretic complement to WER (bounded [0,1]) |
 | S/D/I | Per-clip substitution / deletion / insertion counts |
 | RTFx | Audio seconds processed per wall-clock second (higher = faster than realtime) |
+| RTFx (med) | Median per-clip RTFx — robust to a single slow/locked clip that skews the totals-based aggregate RTFx |
 | Wall clock | Total processing time |
 | Peak VRAM | NVIDIA GPU memory peak during transcription (requires `nvidia-ml-py`) |
 | Disk size | Model file size after first download |
