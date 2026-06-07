@@ -56,6 +56,13 @@ def test_load_missing_file_returns_none(tmp_path, capsys):
     assert "skipping" in capsys.readouterr().err
 
 
+def test_load_non_dict_json_returns_none(tmp_path, capsys):
+    p = tmp_path / "weird.json"
+    p.write_text("[]", encoding="utf-8")   # valid JSON, but not a dict
+    assert asr_compare.load_results_json(p) is None
+    assert "skipping" in capsys.readouterr().err
+
+
 def test_join_shared_model_collects_both_values():
     a = _doc("a", models=[_model("big", "Big", wer=0.10, rtfx=60.0)])
     b = _doc("b", models=[_model("big", "Big", wer=0.08, rtfx=70.0)])

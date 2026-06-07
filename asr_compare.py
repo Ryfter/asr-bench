@@ -386,6 +386,9 @@ def load_results_json(path) -> Optional[dict]:
     except (OSError, ValueError) as e:
         print(f"warning: skipping {path}: {e}", file=sys.stderr)
         return None
+    if not isinstance(doc, dict):
+        print(f"warning: skipping {path}: not a JSON object", file=sys.stderr)
+        return None
     if doc.get("schema_version") != SCHEMA_VERSION:
         print(f"warning: skipping {path}: schema_version "
               f"{doc.get('schema_version')!r} != {SCHEMA_VERSION}", file=sys.stderr)
