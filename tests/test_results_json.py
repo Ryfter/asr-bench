@@ -247,3 +247,29 @@ def test_main_no_json_flag_skips_sidecar(tmp_path, monkeypatch):
         "--device", "cpu", "--no-diarize", "--output", str(md), "--no-json"])
     assert asr_bench.main() == 0
     assert not (tmp_path / "report.json").exists()
+
+
+def test_sidecar_clip_has_hallucination_fields():
+    import asr_bench
+    clip = asr_bench.ClipResult(
+        audio="c.mp4", audio_sec=600.0, transcribe_sec=10.0, rtfx=60.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, repeat_coverage=0.6,
+        compression_ratio=3.0)
+    d = asr_bench._clip_to_dict(clip)
+    assert d["repeat_coverage"] == 0.6
+    assert d["compression_ratio"] == 3.0
+    assert d["hallucination_suspect"] is True
+
+
+def test_sidecar_model_has_hallucination_rate():
+    import asr_bench
+    clip = asr_bench.ClipResult(
+        audio="c.mp4", audio_sec=600.0, transcribe_sec=10.0, rtfx=60.0,
+        vram_peak_bytes=None, hypothesis="h", reference_normalized="h",
+        hypothesis_normalized="h", wer=0.1, repeat_coverage=0.6)
+    m = asr_bench.ModelResult(
+        model_id="m", display="M", fw_name="m", params="1", developer="x",
+        languages="en", notes="", disk_bytes=None, load_sec=0.0, clips=[clip])
+    agg = asr_bench._model_to_dict(m)["aggregates"]
+    assert agg["hallucination_rate"] == 1.0

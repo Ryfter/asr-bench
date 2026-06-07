@@ -2026,6 +2026,9 @@ def _clip_to_dict(c: "ClipResult") -> Dict:
         "hypothesis": c.hypothesis,
         "reference_normalized": c.reference_normalized,
         "hypothesis_normalized": c.hypothesis_normalized,
+        "repeat_coverage": c.repeat_coverage,
+        "compression_ratio": c.compression_ratio,
+        "hallucination_suspect": c.is_hallucination_suspect,
     }
 
 
@@ -2044,6 +2047,7 @@ def _model_to_dict(m: "ModelResult") -> Dict:
             "median_rtfx": m.median_rtfx,
             "median_sec_per_audio_min": m.median_sec_per_audio_min,
             "peak_vram_bytes": m.peak_vram_bytes,
+            "hallucination_rate": m.hallucination_rate,
         },
         "clips": [_clip_to_dict(c) for c in m.clips],
     }
