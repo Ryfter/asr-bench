@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "asr-bench"
+description = "Independent benchmarking tool for local speech-recognition models (Whisper, WhisperX, NIM)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Kevin Rank" }]
+keywords = ["asr", "whisper", "speech-recognition", "benchmark", "wer", "captions", "accessibility"]
+dynamic = ["version"]
+
+# Core runtime — deliberately minimal. faster-whisper (via ctranslate2) and jiwer
+# both ship wheels for current Python including 3.14, so the core install works
+# where torch does not. GPU and NIM dependencies are opt-in extras below.
+dependencies = [
+    "faster-whisper>=1.0",
+    "jiwer>=3.0",
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+]
+
+[project.optional-dependencies]
+# GPU acceleration + peak-VRAM tracking. The CUDA wheels carry the cuBLAS 12 /
+# cuDNN 9 DLLs ctranslate2 loads at transcribe time; asr_bench adds them to the
+# DLL search path on Windows. CPU/mac users skip this extra.
+gpu = [
+    "nvidia-ml-py>=12.0",
+    "nvidia-cublas-cu12; platform_system == 'Windows' or platform_system == 'Linux'",
+    "nvidia-cudnn-cu12; platform_system == 'Windows' or platform_system == 'Linux'",
+]
+# NVIDIA NIM (Riva gRPC) engine — only needed when benchmarking a `nim`-engine model.
+nim = ["nvidia-riva-client>=2.14"]
+
+# NOTE: WhisperX + pyannote + torch are NOT a pip extra here — they have no
+# Python 3.14 wheels and live in a separate Python <=3.13 venv (.venv-whisperx,
+# created by setup_whisperx_venv.ps1). asr-bench shells out to that venv.
+
+[project.urls]
+Homepage = "https://github.com/Ryfter/asr-bench"
+Repository = "https://github.com/Ryfter/asr-bench"
+
+[project.scripts]
+asr-bench = "asr_bench:main"
+
+[tool.setuptools]
+# Single-file modules, kept flat so `python asr_bench.py` and `import asr_bench`
+# keep working exactly as before. whisperx_runner ships alongside so the
+# subprocess path can locate it next to asr_bench in site-packages.
+py-modules = ["asr_bench", "asr_compare", "whisperx_runner"]
+
+[tool.setuptools.dynamic]
+version = { attr = "asr_bench.__version__" }

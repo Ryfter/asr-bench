@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """
-asr-bench v0.1 — benchmark local Whisper variants on your own audio.
+asr-bench — benchmark local Whisper variants on your own audio.
 
 Usage:
   python asr_bench.py --corpus ./test-corpus
   python asr_bench.py --corpus ./test-corpus --models small,medium
   python asr_bench.py --corpus ./test-corpus --device cpu
 
+Installed (pip install .): the `asr-bench` console command is equivalent.
+
 See README.md for corpus layout. See SPEC.md for the v0.2/v0.3 roadmap.
 """
 from __future__ import annotations
+
+__version__ = "0.3.5"
 
 import argparse
 import copy
@@ -2438,6 +2442,7 @@ def main() -> int:
         description="Benchmark local Whisper variants on your own audio.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    ap.add_argument("--version", action="version", version=f"asr-bench {__version__}")
     ap.add_argument(
         "--corpus",
         default=str(Path(__file__).resolve().parent / "test-corpus"),
