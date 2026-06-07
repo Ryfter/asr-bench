@@ -14,7 +14,7 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
 - **Owner:** Ryfter (Kevin Rank)
 - **License:** MIT
 
-## Status — v0.3 on feat/whisperx-diarization (not yet merged to main)
+## Status — v0.3 + extensions shipped to main
 
 | Model ID | Params | Disk | Run via |
 |---|---|---|---|
@@ -50,7 +50,7 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
 - **Drift guard** — per-window WER(fused vs base model) flags potential hallucination or omission
 - **`--rescore-against-fused`** — re-scores every model against the verbatim fused VTT as reference; emits a second table explicitly labeled "fused verbatim consensus (agreement-biased)"
 
-### What's new in v0.3 (feat/whisperx-diarization — 119 tests pass, 2 skipped)
+### What's new in v0.3 (all merged to main — 209 tests pass, 2 skipped)
 - **`<size>+whisperx` model IDs** — e.g. `large-v3-turbo+whisperx`; pairs any Whisper size with WhisperX word alignment + pyannote speaker diarization
 - **Two execution paths, auto-selected** — in-process when `torch` is importable in the running interpreter; otherwise a subprocess to a Python ≤ 3.13 venv (`--whisperx-python`, auto-detects `./.venv-whisperx`). Rationale: torch has no Python 3.14 wheels and asr-bench's core runs on 3.14.
 - **`whisperx_runner.py`** — standalone script: transcribe → align → diarize (pyannote) → DER; runs in the WhisperX venv, communicates via JSON
@@ -76,7 +76,7 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
   single-model runs, unlike cue-density); per-model `hallucination_rate`; additive
   sidecar fields (`schema_version` stays 1).
 
-Branch `feat/whisperx-diarization` is pushed to GitHub. **Not yet merged to main** (live WhisperX + diarization run pending — no pyannote venv set up on reference machine yet).
+All v0.3 work is **merged to main and pushed**. WhisperX + diarization was live-validated on the RTX 5090 (2026-06-05, DER 13.8% @ 2-speaker hint) before merge. Post-v0.3 extensions also on main: the `compare` subcommand, CER% + median latency metrics, and reference-free hallucination-rate detection (see decision log).
 
 See [`SPEC.md`](./SPEC.md) for the v0.4 (NVIDIA NeMo / Canary-Qwen) and v0.5 (community models) roadmap.
 
