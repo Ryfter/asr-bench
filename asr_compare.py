@@ -124,6 +124,83 @@ def compare_runs(docs: List[dict], *, mode: str) -> dict:
     return report
 
 
+def _fmt(metric: str, value: Optional[float]) -> str:
+    if value is None:
+        return "—"
+    if METRIC_META[metric]["pct"]:
+        return f"{value * 100:.1f}"
+    return f"{value:.1f}"
+
+
+def _delta_mark(metric: str, delta: Optional[float]) -> str:
+    if delta is None or delta == 0:
+        return ""
+    improved = (delta < 0) == METRIC_META[metric]["lower_better"]
+    return "✓" if improved else "✗"
+
+
+def _fmt_delta(metric: str, delta: Optional[float]) -> str:
+    if delta is None:
+        return ""
+    scale = 100 if METRIC_META[metric]["pct"] else 1
+    return f"{delta * scale:+.1f}"
+
+
+def _render_delta(report: dict) -> List[str]:
+    metrics = report["metrics"]
+    head = "| Model | Status | " + " | ".join(METRIC_META[m]["label"]
+                                              for m in metrics) + " |"
+    sep = "|" + "---|" * (2 + len(metrics))
+    rows = [head, sep]
+    for m in report["models"]:
+        cells = [m["display"], m.get("status", "")]
+        for k in metrics:
+            base_v, cand_v = m["values"][k][0], m["values"][k][1]
+            if base_v is None and cand_v is None:
+                cells.append("—")
+                continue
+            txt = f"{_fmt(k, base_v)} → {_fmt(k, cand_v)}"
+            d = m.get("deltas", {}).get(k)
+            if d is not None:
+                mark = _delta_mark(k, d)
+                txt += f" ({_fmt_delta(k, d)}{(' ' + mark) if mark else ''})"
+            cells.append(txt)
+        rows.append("| " + " | ".join(cells) + " |")
+    return rows
+
+
+def _render_matrix(report: dict) -> List[str]:
+    runs = report["runs"]
+    metrics = report["metrics"]
+    head = "| Model | Metric | " + " | ".join(f"`{r['label']}`" for r in runs) + " |"
+    sep = "|" + "---|" * (2 + len(runs))
+    rows = [head, sep]
+    for m in report["models"]:
+        for k in metrics:
+            cells = [m["display"], METRIC_META[k]["label"]]
+            cells += [_fmt(k, m["values"][k][i]) for i in range(len(runs))]
+            rows.append("| " + " | ".join(cells) + " |")
+    return rows
+
+
+def render_comparison_markdown(report: dict) -> str:
+    now = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+    lines: List[str] = ["# ASR Run Comparison", "", f"_Generated {now}_", "",
+                        "Runs compared:"]
+    for i, r in enumerate(report["runs"]):
+        tag = " (baseline)" if report["mode"] == "delta" and i == 0 else ""
+        lines.append(f"- `{r['label']}`{tag} — corpus `{r['corpus']}`")
+    lines.append("")
+    for w in report.get("warnings", []):
+        lines.append(f"> ⚠️ {w}")
+    if report.get("warnings"):
+        lines.append("")
+    lines += (_render_delta(report) if report["mode"] == "delta"
+              else _render_matrix(report))
+    lines.append("")
+    return "\n".join(lines)
+
+
 def load_results_json(path) -> Optional[dict]:
     """Read a results sidecar; return the dict if schema_version == 1, else None.
     Tags the dict with `_source_label` (the file stem) for display. Unreadable

@@ -155,3 +155,57 @@ def test_compare_runs_delta_requires_two_docs():
     a = _doc("a", models=[_model("m")])
     with pytest.raises(ValueError):
         asr_compare.compare_runs([a], mode="delta")
+
+
+def test_fmt_pct_and_rtfx_and_none():
+    assert asr_compare._fmt("wer", 0.089) == "8.9"
+    assert asr_compare._fmt("rtfx", 64.8) == "64.8"
+    assert asr_compare._fmt("wer", None) == "—"
+
+
+def test_delta_mark_direction():
+    assert asr_compare._delta_mark("wer", -0.02) == "✓"
+    assert asr_compare._delta_mark("wer", 0.02) == "✗"
+    assert asr_compare._delta_mark("rtfx", 10.0) == "✓"
+    assert asr_compare._delta_mark("rtfx", -10.0) == "✗"
+    assert asr_compare._delta_mark("wer", 0.0) == ""
+
+
+def test_render_delta_has_models_metrics_and_marks():
+    a = _doc("runA", models=[_model("big", "Big Model", wer=0.10, rtfx=60.0)])
+    b = _doc("runB", models=[_model("big", "Big Model", wer=0.08, rtfx=70.0)])
+    rep = asr_compare.compare_runs([a, b], mode="delta")
+    md = asr_compare.render_comparison_markdown(rep)
+    assert "# ASR Run Comparison" in md
+    assert "Big Model" in md
+    assert "WER%" in md and "RTFx" in md
+    assert "✓" in md
+    assert "8.0" in md
+
+
+def test_render_matrix_has_one_column_per_run():
+    a = _doc("runA", models=[_model("m", "M", wer=0.10)])
+    b = _doc("runB", models=[_model("m", "M", wer=0.09)])
+    c = _doc("runC", models=[_model("m", "M", wer=0.08)])
+    rep = asr_compare.compare_runs([a, b, c], mode="matrix")
+    md = asr_compare.render_comparison_markdown(rep)
+    assert "`runA`" in md and "`runB`" in md and "`runC`" in md
+    assert "10.0" in md and "9.0" in md and "8.0" in md
+
+
+def test_render_warnings_as_blockquotes():
+    a = _doc("a", corpus="A", models=[_model("m")])
+    b = _doc("b", corpus="B", models=[_model("m")])
+    md = asr_compare.render_comparison_markdown(
+        asr_compare.compare_runs([a, b], mode="delta"))
+    assert "> ⚠️" in md
+    assert "corpus differs" in md
+
+
+def test_render_added_removed_show_dash():
+    a = _doc("a", models=[_model("old", "Old", wer=0.10)])
+    b = _doc("b", models=[_model("new", "New", wer=0.08)])
+    md = asr_compare.render_comparison_markdown(
+        asr_compare.compare_runs([a, b], mode="delta"))
+    assert "removed" in md and "added" in md
+    assert "—" in md
