@@ -465,10 +465,19 @@ To benchmark a NIM ASR endpoint (e.g. a self-hosted Canary NIM):
 pip install nvidia-riva-client
 ```
 
-This is only needed when you request a `nim`-engine model. Example:
+This is only needed when you request a `nim`-engine model. The engine reaches a
+server two ways. **Local self-hosted is the preferred, default path**; the remote
+hosted endpoint is a flag-gated fallback for users without a local container
+runtime (and is never the default — consistent with the "local engines only"
+ethos).
 
 ```bash
+# Local (preferred): self-hosted container over gRPC
 python asr_bench.py --models large-v3-turbo,canary-nim --nim-url localhost:50051
+
+# Remote (fallback): NVIDIA hosted NVCF endpoint — needs an NGC API key
+python asr_bench.py --models large-v3-turbo,canary-nim \
+  --nim-url <host>:443 --nim-api-key <NGC key> --nim-ssl
 ```
 
 NIM rows report WER, RTFx, and wall-clock like any engine. Because the model

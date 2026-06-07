@@ -149,11 +149,22 @@ python asr_bench.py --device cpu
 python asr_bench.py --no-vad-filter
 ```
 
-### Benchmark a self-hosted NIM against Whisper
+### Benchmark a NIM against Whisper (two transports — local preferred)
+The NIM engine reaches a server two ways. **Local self-hosted is the preferred,
+default path** (stays within the "local engines only" rule — local inference
+behind a gRPC port). The remote/hosted path is a permitted fallback for users
+without a local container runtime, gated behind explicit flags so it is never the
+default.
+
 ```powershell
+# Local (preferred): self-hosted container over gRPC
 python asr_bench.py --models large-v3-turbo,canary-nim --nim-url localhost:50051
+
+# Remote (fallback): NVIDIA hosted NVCF endpoint — needs an NGC API key
+python asr_bench.py --models large-v3-turbo,canary-nim `
+  --nim-url <host>:443 --nim-api-key <NGC key> --nim-ssl
 ```
-NIM rows report WER/RTFx/wall-clock normally; VRAM is shown as total-used (`*`) and disk as `n/a` (see the report's "Engines in this run" note). Ad-hoc unregistered NIM models: `--models nim:<riva-model-name>`.
+NIM rows report WER/RTFx/wall-clock normally; VRAM is shown as total-used (`*`) and disk as `n/a` (see the report's "Engines in this run" note). Ad-hoc unregistered NIM models: `--models nim:<riva-model-name>`. Both transports are implemented; neither is live-validated yet (see `memory/validate-live-nim.md`).
 
 ### Run WhisperX (word alignment + speaker diarization)
 ```powershell
@@ -265,3 +276,4 @@ Reads `schema_version 1` sidecars. 2 files → delta view; 3+ → matrix; `--del
 - **2026-06-05** — **Live-validated WhisperX end-to-end** (Task 13) on the RTX 5090; merged after. Three fixes the real run forced: (1) the runner now emits **pure JSON on stdout** — whisperx/torch/pyannote write progress + logging there, which broke `SubprocessWhisperX`'s `json.loads(stdout)`; main() redirects both `sys.stdout` and OS fd 1 to stderr during processing. (2) **pyannote-audio 4.x kwarg** `use_auth_token` → `token` (try-new-fall-back-to-old). (3) **Default diarization model is now `pyannote/speaker-diarization-community-1`**, not 3.1 — pyannote 4.x unified on this one self-contained gated repo (loading the 3.1 id under 4.x pulls community-1 assets anyway); `--diarize-model` overrides for 3.x. Also: a bare `pip install whisperx` pulls **CPU-only torch** on Windows — the setup script now installs the cu128 build first. And pyannote **over-clusters on long audio** (82-min 2-speaker call → 12 speakers / DER 27.4%); `--min/max-speakers 2` → 2 speakers / DER 13.8%.
 - **2026-06-06** — Shipped the **`compare` subcommand** (merged to main `6417f42`). Reads 2+ `results/*.json` sidecars (schema_version 1) and renders a markdown **delta** (2 files: baseline→candidate, signed Δ with ✓/✗ by metric direction) or **matrix** (3+: one column per run), auto by count with `--delta`/`--matrix` overrides. Joins per-model headline metrics on `model_id`; per-model DER averaged from per-clip `der`; corpus/config drift surfaced as ⚠️ warnings (not hard errors — comparing across corpora is suspect but sometimes intentional). `--last N`, `--per-clip`, `--output` round it out. Implemented as a **first-positional `compare` keyword pre-dispatch** (3 lines at top of `main()`) into a standalone, pure, torch-free **`asr_compare.py`** — the bench CLI is byte-for-byte unchanged and a plain run never imports the module. Robustness: warn-and-skip on unreadable / non-object / wrong-schema sidecars. 175 tests pass. Spec/plan under `docs/superpowers/`.
 - **2026-06-06** — Shipped CER (char-level, via jiwer on the same normalized text as WER, added to WordMetrics so all three engines get it from one call) and a robust median speed pair (`median_rtfx`, `median_sec_per_audio_min`) beside the totals-based `aggregate_rtfx`. Sidecar fields additive within schema_version 1; CER also surfaced in `compare`. Report columns: "CER%" (per-clip and per-model tables), "RTFx (med)" (headline table).
+- **2026-06-07** — NIM transport policy made explicit (no code change — confirming intent): the NIM engine supports **two transports, with local self-hosted as the preferred default and remote hosted NVCF as a flag-gated fallback**. Local (`--nim-url localhost:<port>`) keeps within the "local engines only" rule (local inference behind a gRPC port); remote (`--nim-url <host>:443 --nim-api-key <NGC key> --nim-ssl`) exists only for users without a local container runtime and is never the default. Both have been implemented since 2026-05-31 but neither is live-validated; validation stays pending (`memory/validate-live-nim.md`), local-first when a Docker Desktop + NGC setup is ready.
