@@ -17,7 +17,7 @@ last year. Outputs markdown tables you can paste into a doc.
 
 ## Status
 
-**v0.3 — feat/whisperx-diarization branch. Local Whisper variants + optional fusion + WhisperX word alignment and speaker diarization:**
+**v0.3.5 (on main). Local Whisper variants + optional fusion + WhisperX word alignment and speaker diarization; pip-installable with an `asr-bench` console command:**
 - `small` (244M, ~470MB)
 - `medium` (769M, ~1.5GB)
 - `large-v3` (1550M, ~3.1GB)
@@ -71,9 +71,21 @@ exactly what was substituted, deleted, or inserted.
 python -m pip install -r requirements.txt
 ```
 
-The `nvidia-ml-py` dep is optional but enables peak-VRAM tracking. Without it
-the VRAM column shows `n/a`. For the fusion stage, [Ollama](https://ollama.ai)
-is an additional optional dependency (only needed with `--llm ollama:...`).
+Or install it as a package to get the `asr-bench` console command:
+
+```bash
+pip install -e .            # core (CPU) deps only — torch-free
+pip install -e ".[gpu]"     # + NVML VRAM tracking + CUDA wheels
+pip install -e ".[nim]"     # + nvidia-riva-client for NIM runs
+asr-bench --version
+```
+
+`asr-bench ...` is equivalent to `python asr_bench.py ...` (same for the
+`compare` and `prepare-gold` subcommands). The `nvidia-ml-py` dep is optional but
+enables peak-VRAM tracking; without it the VRAM column shows `n/a`. For the fusion
+stage, [Ollama](https://ollama.ai) is an additional optional dependency (only
+needed with `--llm ollama:...`). WhisperX is **not** a pip extra — it needs a
+separate Python ≤ 3.13 venv (see the WhisperX section below).
 
 ### Prepare your corpus
 
@@ -110,6 +122,21 @@ Reference files can be:
 - Plain text (one transcript per file)
 - SRT-shaped (Panopto exports use this — timestamps + cue numbers stripped automatically)
 - WebVTT (`.vtt`)
+
+**Converting captions to references (`prepare-gold`):** if your references are
+`.vtt`/`.srt` caption files, turn them into the plain `.txt` the scorer reads:
+
+```bash
+python asr_bench.py prepare-gold --corpus ./test-corpus   # *.vtt/*.srt -> *.txt
+python asr_bench.py prepare-gold lecture.vtt --overwrite   # one file
+python asr_bench.py prepare-gold ./corpus --dry-run        # preview only
+```
+
+Timing and cue numbers are stripped and cues joined. asr-bench's own
+`_Captions_*.vtt` outputs are skipped (so a model's output can't become its own
+reference). Auto-generated / Panopto sources keep a proxy marker so they stay
+flagged as **not gold** — proofread the resulting `.txt` and delete that header
+line to promote it to a true gold reference.
 
 ### Run
 
@@ -324,10 +351,11 @@ python asr_bench.py compare --last 2 --per-clip
 python asr_bench.py compare results/a.json results/b.json --output report/compare.md
 ```
 
-Force a layout with `--delta` (exactly 2 files) or `--matrix`. WER/MER/WIL/DER are
-lower-is-better (improvement marked ✓); RTFx is higher-is-better. Differing corpus
-or key config between runs is flagged as a ⚠️ warning (comparing WER across
-different corpora is not meaningful).
+Force a layout with `--delta` (exactly 2 files) or `--matrix`. WER/MER/WIL/CER/DER
+are lower-is-better (improvement marked ✓); RTFx is higher-is-better. When any
+compared run has hallucination data, a `Halluc%` column appears (lower is better).
+Differing corpus or key config between runs is flagged as a ⚠️ warning (comparing
+WER across different corpora is not meaningful).
 
 ## What's in the box
 
