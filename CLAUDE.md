@@ -58,7 +58,7 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
 - **DER (Diarization Error Rate)** — computed via pyannote.metrics; gated on a `<base>.rttm` ground-truth sidecar next to the audio. Report shows DER% + Speakers columns only when diarization data is present.
 - **Auth** — diarization needs a free HuggingFace token (`--hf-token` or `HF_TOKEN`/`HUGGINGFACE_TOKEN` env) + accepting the gated `pyannote/speaker-diarization-community-1` model (pyannote-audio 4.x default; self-contained — bundles segmentation + embedding). Missing token warns and falls back to alignment-only; `--no-diarize` skips diarization entirely. `--diarize-model` overrides (e.g. `pyannote/speaker-diarization-3.1` on a pyannote 3.x install).
 - **New CLI flags** — `--diarize`/`--no-diarize`, `--hf-token`, `--min-speakers`, `--max-speakers`, `--whisperx-python`
-- **JSON results sidecar** — every run writes `results/<timestamp>.json` (or `<output>.json`) mirroring the full run (config, per-model/per-clip metrics, transcripts, speaker/DER) for cross-run aggregation. `schema_version: 1`. NaN→null; `hf_token`/`nim_api_key` redacted. `--no-json` opts out. Foundation for a future `asr_bench compare`.
+- **JSON results sidecar** — every run writes `results/<timestamp>.json` (or `<output>.json`) mirroring the full run (config, per-model/per-clip metrics, transcripts, speaker/DER) for cross-run aggregation. `schema_version: 1`. NaN→null; `hf_token`/`nim_api_key` redacted. `--no-json` opts out. Consumed by the `compare` subcommand (below).
 - **`compare` subcommand** — `python asr_bench.py compare a.json b.json` reads 2+
   `results/*.json` sidecars and renders a delta (2 files) or matrix (3+) markdown
   comparison of per-model WER/MER/WIL/RTFx/DER, with corpus/config mismatch
@@ -205,7 +205,7 @@ Get-Content -Wait $(Get-ChildItem report\*.md | Sort LastWriteTime -Desc | Selec
 ### Compare runs across the JSON sidecars
 ```powershell
 python asr_bench.py compare results/<old>.json results/<new>.json          # delta
-python asr_bench.py compare --last 3                                        # matrix of 3 newest
+python asr_bench.py compare --last 3                                        # 3 newest (matrix if ≥3 exist)
 python asr_bench.py compare results/a.json results/b.json --per-clip        # + per-clip
 ```
 Reads `schema_version 1` sidecars. 2 files → delta view; 3+ → matrix; `--delta`/`--matrix` force.
