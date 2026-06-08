@@ -16,7 +16,9 @@ All heavy imports (torch/nemo) are INSIDE functions so the torch-free helpers
 import argparse
 import json
 import os
+import subprocess
 import sys
+import tempfile
 import time
 from typing import List, Optional
 
@@ -35,6 +37,38 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 _SAMPLE_RATE = 16000
+
+
+def _needs_decode(audio: str) -> bool:
+    """True unless the input is already a .wav. NeMo/lhotse reads .wav via
+    soundfile, but cannot open compressed containers (mp4/m4a/...) under
+    torchaudio >=2.11 -- torchaudio.io (the ffmpeg backend) was removed, so
+    lhotse's Recording.from_file raises ModuleNotFoundError. We decode anything
+    non-wav to a 16 kHz mono WAV up front."""
+    return not audio.lower().endswith(".wav")
+
+
+def _ffmpeg_to_wav(audio: str) -> str:
+    """Decode `audio` to a temp 16 kHz mono WAV via the ffmpeg CLI and return its
+    path (caller deletes it). Mirrors the WhisperX runner's self-contained decode
+    so nemo_runner accepts the same mp4/m4a corpus files the rest of asr-bench
+    does. Raises RuntimeError with a clear hint if ffmpeg is missing or fails."""
+    fd, wav = tempfile.mkstemp(suffix=".wav", prefix="nemo_")
+    os.close(fd)
+    cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+           "-i", audio, "-ac", "1", "-ar", str(_SAMPLE_RATE), "-vn", wav]
+    try:
+        subprocess.run(cmd, check=True)
+    except FileNotFoundError:
+        os.path.exists(wav) and os.remove(wav)
+        raise RuntimeError(
+            "ffmpeg not found on PATH -- required to decode non-wav audio for NeMo "
+            "(torchaudio.io was removed in torchaudio >=2.11). Install ffmpeg or "
+            "pass a .wav file.")
+    except subprocess.CalledProcessError as e:
+        os.path.exists(wav) and os.remove(wav)
+        raise RuntimeError(f"ffmpeg failed to decode {audio!r}: exit {e.returncode}")
+    return wav
 
 
 def _looks_like_salm(model: str) -> bool:
@@ -102,54 +136,66 @@ def run_nemo(audio: str, model: str, device: str, language: str = "en",
     if device == "cuda" and torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
 
-    if _looks_like_salm(model):
-        from nemo.collections.speechlm2.models import SALM
-        salm = SALM.from_pretrained(model)
-        if device == "cuda" and torch.cuda.is_available():
-            salm = salm.to("cuda").eval()
-        from nemo.collections.asr.parts.preprocessing.segment import AudioSegment
-        seg = AudioSegment.from_file(audio, target_sr=_SAMPLE_RATE)
-        chunk = int(chunk_len_secs * _SAMPLE_RATE)
-        samples = seg.samples
-        t0 = time.time()
-        parts: List[str] = []
-        for i in range(0, len(samples), chunk):
-            window = samples[i:i + chunk]
-            # SALM.generate wants torch tensors, NOT numpy: audios float32 (B, T),
-            # audio_lens int64 (B,). The kwarg is `audio_lens` (not `audio_lengths`
-            # -- that name silently falls into **generation_kwargs, leaving
-            # audio_lens=None and tripping perception's input validation).
-            audios = torch.as_tensor(window, dtype=torch.float32,
-                                     device=salm.device)[None, :]
-            audio_lens = torch.tensor([audios.shape[1]], dtype=torch.int64,
-                                      device=salm.device)
-            ans = salm.generate(
-                prompts=[[{"role": "user",
-                           "content": f"Transcribe the following: {salm.audio_locator_tag}"}]],
-                audios=audios, audio_lens=audio_lens,
-                max_new_tokens=max_new_tokens)
-            parts.append(salm.tokenizer.ids_to_text(ans[0].cpu()).strip())
-        transcribe_sec = time.time() - t0
-        text = " ".join(p for p in parts if p).strip()
-        return {"text": text, "segments": [], "words": [],
-                "transcribe_sec": transcribe_sec,
-                "vram_peak_bytes": _peak_vram_bytes(torch, device), "language": language}
+    # NeMo can't decode compressed containers (mp4/m4a) under torchaudio >=2.11;
+    # normalize anything non-wav to a temp 16 kHz mono WAV and clean it up after.
+    tmp_wav = _ffmpeg_to_wav(audio) if _needs_decode(audio) else None
+    if tmp_wav:
+        audio = tmp_wav
+    try:
+        if _looks_like_salm(model):
+            from nemo.collections.speechlm2.models import SALM
+            salm = SALM.from_pretrained(model)
+            if device == "cuda" and torch.cuda.is_available():
+                salm = salm.to("cuda").eval()
+            from nemo.collections.asr.parts.preprocessing.segment import AudioSegment
+            seg = AudioSegment.from_file(audio, target_sr=_SAMPLE_RATE)
+            chunk = int(chunk_len_secs * _SAMPLE_RATE)
+            samples = seg.samples
+            t0 = time.time()
+            parts: List[str] = []
+            for i in range(0, len(samples), chunk):
+                window = samples[i:i + chunk]
+                # SALM.generate wants torch tensors, NOT numpy: audios float32
+                # (B, T), audio_lens int64 (B,). The kwarg is `audio_lens` (not
+                # `audio_lengths` -- that name silently falls into
+                # **generation_kwargs, leaving audio_lens=None and tripping
+                # perception's input validation).
+                audios = torch.as_tensor(window, dtype=torch.float32,
+                                         device=salm.device)[None, :]
+                audio_lens = torch.tensor([audios.shape[1]], dtype=torch.int64,
+                                          device=salm.device)
+                ans = salm.generate(
+                    prompts=[[{"role": "user",
+                               "content": f"Transcribe the following: {salm.audio_locator_tag}"}]],
+                    audios=audios, audio_lens=audio_lens,
+                    max_new_tokens=max_new_tokens)
+                parts.append(salm.tokenizer.ids_to_text(ans[0].cpu()).strip())
+            transcribe_sec = time.time() - t0
+            text = " ".join(p for p in parts if p).strip()
+            return {"text": text, "segments": [], "words": [],
+                    "transcribe_sec": transcribe_sec,
+                    "vram_peak_bytes": _peak_vram_bytes(torch, device),
+                    "language": language}
 
-    import nemo.collections.asr as nemo_asr
-    asr = nemo_asr.models.ASRModel.from_pretrained(model_name=model)
-    if device == "cuda" and torch.cuda.is_available():
-        asr = asr.to("cuda")
-    t0 = time.time()
-    out = asr.transcribe([audio], timestamps=True)
-    transcribe_sec = time.time() - t0
-    hyp = out[0]
-    ts = getattr(hyp, "timestamp", {}) or {}
-    segments = _segments_to_json(ts.get("segment"))
-    words = _words_to_json(ts.get("word"))
-    text = getattr(hyp, "text", "") or " ".join(s["text"] for s in segments)
-    return {"text": text.strip(), "segments": segments, "words": words,
-            "transcribe_sec": transcribe_sec,
-            "vram_peak_bytes": _peak_vram_bytes(torch, device), "language": language}
+        import nemo.collections.asr as nemo_asr
+        asr = nemo_asr.models.ASRModel.from_pretrained(model_name=model)
+        if device == "cuda" and torch.cuda.is_available():
+            asr = asr.to("cuda")
+        t0 = time.time()
+        out = asr.transcribe([audio], timestamps=True)
+        transcribe_sec = time.time() - t0
+        hyp = out[0]
+        ts = getattr(hyp, "timestamp", {}) or {}
+        segments = _segments_to_json(ts.get("segment"))
+        words = _words_to_json(ts.get("word"))
+        text = getattr(hyp, "text", "") or " ".join(s["text"] for s in segments)
+        return {"text": text.strip(), "segments": segments, "words": words,
+                "transcribe_sec": transcribe_sec,
+                "vram_peak_bytes": _peak_vram_bytes(torch, device),
+                "language": language}
+    finally:
+        if tmp_wav and os.path.exists(tmp_wav):
+            os.remove(tmp_wav)
 
 
 def main() -> int:

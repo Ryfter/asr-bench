@@ -20,6 +20,16 @@ def test_looks_like_salm():
     assert nemo_runner._looks_like_salm("nvidia/parakeet-tdt-0.6b-v2") is False
 
 
+def test_needs_decode():
+    # .wav passes through; everything else (mp4/m4a/flac) gets decoded first,
+    # because NeMo/lhotse can't open compressed containers under torchaudio >=2.11.
+    assert nemo_runner._needs_decode("clip.wav") is False
+    assert nemo_runner._needs_decode("CLIP.WAV") is False
+    assert nemo_runner._needs_decode("lecture.mp4") is True
+    assert nemo_runner._needs_decode("a.m4a") is True
+    assert nemo_runner._needs_decode("b.flac") is True
+
+
 def test_segments_to_json_from_dicts():
     segs = [{"start": 0.0, "end": 2.0, "segment": "hello there"},
             {"start": 2.0, "end": 4.0, "text": "hi back"}]
