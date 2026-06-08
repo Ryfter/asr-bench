@@ -25,7 +25,7 @@ def test_console_script_points_at_main():
 
 def test_py_modules_cover_all_top_level_modules():
     mods = set(_pyproject()["tool"]["setuptools"]["py-modules"])
-    assert {"asr_bench", "asr_compare", "whisperx_runner"} <= mods
+    assert {"asr_bench", "asr_compare", "whisperx_runner", "nemo_runner"} <= mods
 
 
 def test_dynamic_version_sourced_from_module():
