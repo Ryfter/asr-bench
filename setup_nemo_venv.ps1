@@ -1,7 +1,7 @@
 # Creates the NeMo venv that asr-bench auto-detects (./.venv-nemo).
-# NVIDIA NeMo needs PyTorch, which has no Python 3.14 wheels — so this venv uses
+# NVIDIA NeMo needs PyTorch, which has no Python 3.14 wheels -- so this venv uses
 # 3.12. NeMo also has aggressive dependency pins (numpy>=2.0, transformers,
-# lightning) that can collide with WhisperX/pyannote, so it gets its OWN venv —
+# lightning) that can collide with WhisperX/pyannote, so it gets its OWN venv --
 # do NOT share with .venv-whisperx.
 #
 # Usage:  ./setup_nemo_venv.ps1                 # default CUDA build (cu128)
@@ -9,7 +9,7 @@
 #         ./setup_nemo_venv.ps1 -CudaIndex cu124 # older CUDA toolkit
 #
 # Why -CudaIndex: a bare `pip install nemo_toolkit[asr]` pulls PyTorch from PyPI,
-# which on Windows is the CPU-ONLY wheel — torch.cuda.is_available() comes back
+# which on Windows is the CPU-ONLY wheel -- torch.cuda.is_available() comes back
 # False and every run silently falls back to CPU. We install the CUDA build from
 # PyTorch's own index FIRST so NeMo then sees torch already satisfied. cu128 has
 # Blackwell (RTX 50xx / sm_120) support; use cu124 for older toolkits, or cpu to
@@ -39,7 +39,7 @@ if ($CudaIndex -ne "cpu") {
     .\.venv-nemo\Scripts\python.exe -c "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)"
     if ($LASTEXITCODE -ne 0) {
         Write-Host ""
-        Write-Host "ERROR: torch.cuda.is_available() is False — the CPU-only wheel got installed." -ForegroundColor Red
+        Write-Host "ERROR: torch.cuda.is_available() is False -- the CPU-only wheel got installed." -ForegroundColor Red
         Write-Host "Delete .venv-nemo and re-run; ensure the cu128 index URL was used." -ForegroundColor Red
         exit 1
     }
@@ -52,8 +52,8 @@ Write-Host "Recording the installed version triple (record this in CLAUDE.md/SPE
 Write-Host ""
 Write-Host "Done. asr-bench auto-detects .venv-nemo for the nemo subprocess adapter."
 Write-Host "Next: smoke-test the runner on one short clip before a full benchmark:"
-Write-Host "  .\.venv-nemo\Scripts\python.exe nemo_runner.py --audio <short.wav> --model nvidia/parakeet-tdt-0.6b-v2 --device cuda"
-Write-Host "  .\.venv-nemo\Scripts\python.exe nemo_runner.py --audio <short.wav> --model nvidia/canary-qwen-2.5b --device cuda"
+Write-Host "  .\.venv-nemo\Scripts\python.exe nemo_runner.py --audio SHORT.wav --model nvidia/parakeet-tdt-0.6b-v2 --device cuda"
+Write-Host "  .\.venv-nemo\Scripts\python.exe nemo_runner.py --audio SHORT.wav --model nvidia/canary-qwen-2.5b --device cuda"
 Write-Host "Each must print a single JSON document on stdout (Parakeet has segments/words;"
 Write-Host "Canary is text-only). Then run a full benchmark:"
 Write-Host "  python asr_bench.py --models large-v3-turbo,parakeet-tdt-0.6b-v2,canary-qwen-2.5b --device cuda"

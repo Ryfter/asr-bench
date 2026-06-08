@@ -1,12 +1,12 @@
 # Creates the WhisperX venv that asr-bench auto-detects (./.venv-whisperx).
-# WhisperX needs PyTorch, which has no Python 3.14 wheels — so this venv uses 3.12.
+# WhisperX needs PyTorch, which has no Python 3.14 wheels -- so this venv uses 3.12.
 #
 # Usage:  ./setup_whisperx_venv.ps1                 # default CUDA build (cu128)
 #         ./setup_whisperx_venv.ps1 -CudaIndex cpu  # CPU-only torch
 #         ./setup_whisperx_venv.ps1 -CudaIndex cu124 # older CUDA toolkit
 #
 # Why -CudaIndex: `pip install whisperx` pulls PyTorch from PyPI, which on Windows
-# is the CPU-ONLY wheel — torch.cuda.is_available() comes back False and every run
+# is the CPU-ONLY wheel -- torch.cuda.is_available() comes back False and every run
 # silently falls back to CPU. We install the CUDA build from PyTorch's own index
 # FIRST so whisperx then sees torch already satisfied. cu128 has Blackwell (RTX
 # 50xx / sm_120) support; use cu124 for older toolkits, or cpu to skip CUDA.
