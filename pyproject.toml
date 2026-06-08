@@ -56,7 +56,7 @@ asr-bench = "asr_bench:main"
 # Single-file modules, kept flat so `python asr_bench.py` and `import asr_bench`
 # keep working exactly as before. whisperx_runner ships alongside so the
 # subprocess path can locate it next to asr_bench in site-packages.
-py-modules = ["asr_bench", "asr_compare", "whisperx_runner", "nemo_runner"]
+py-modules = ["asr_bench", "asr_compare", "whisperx_runner", "nemo_runner", "hf_runner"]
 packages = ["engines"]
 
 [tool.setuptools.dynamic]

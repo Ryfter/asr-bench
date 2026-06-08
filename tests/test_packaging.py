@@ -28,6 +28,11 @@ def test_py_modules_cover_all_top_level_modules():
     assert {"asr_bench", "asr_compare", "whisperx_runner", "nemo_runner"} <= mods
 
 
+def test_hf_runner_in_py_modules():
+    mods = set(_pyproject()["tool"]["setuptools"]["py-modules"])
+    assert "hf_runner" in mods
+
+
 def test_dynamic_version_sourced_from_module():
     data = _pyproject()
     assert "version" in data["project"].get("dynamic", [])
