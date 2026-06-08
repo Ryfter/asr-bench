@@ -14,7 +14,7 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
 - **Owner:** Ryfter (Kevin Rank)
 - **License:** MIT
 
-## Status — v0.3.5 shipped to main
+## Status — v0.3.5 shipped to main; v0.4 (NeMo) code-complete on `feat/v0.4-nemo`, pending live validation
 
 | Model ID | Params | Disk | Run via |
 |---|---|---|---|
@@ -23,6 +23,10 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
 | `large-v3` | 1550M | ~3.1GB | faster-whisper |
 | `large-v3-turbo` | 809M | ~1.6GB | faster-whisper |
 | `<size>+whisperx` | same | same | WhisperX (align + diarize) |
+| `parakeet-tdt-0.6b-v2` | 600M | model cache (~n/a) | NeMo (subprocess venv) |
+| `canary-qwen-2.5b` | 2.5B | model cache (~n/a) | NeMo (subprocess venv) |
+
+NeMo rows are code-complete on `feat/v0.4-nemo` but not yet live-validated (see the v0.4 section + decision log). **Canary-Qwen is WER-only — no VTT** (no native timestamps; text-only row like NIM's `n/a`).
 
 ### What works in v0.1
 - Multi-model benchmark with one report-per-run
@@ -85,6 +89,17 @@ All v0.3 work is **merged to main and pushed**. WhisperX + diarization was live-
 - **Median compute-latency column** — the headline table now shows **`s/aud-min (med)`** (median processing seconds per minute of audio) next to `RTFx (med)` — the human-intuitive complement that already lived in the sidecar (`median_sec_per_audio_min`) but had no report consumer.
 - **Markdown pipe-escaping** — `_md_escape` escapes `|` (and flattens newlines) in free-text table cells (model display, notes, clip filenames) so a literal `|` no longer splits a row into phantom columns.
 
+### What's new in v0.4 (NeMo / Canary-Qwen) — code-complete on `feat/v0.4-nemo`, pending live validation
+> **Not shipped / not merged / not live-validated.** The NeMo engine is implemented and unit-tested but has **never been run against a real model** (no GPU/venv in the dev environment). Framed like NIM: implemented + unit-tested; live validation on the RTX 5090 pending. The validated `(Python 3.12, torch+cu128, nemo_toolkit)` version triple and measured VRAM are _to be recorded after live validation on the RTX 5090_.
+
+- **NeMo is the 4th `Engine` family.** Two registered models: `parakeet-tdt-0.6b-v2` (Parakeet TDT 0.6B v2 — native word/segment timestamps → full VTT + `_Words_*.json`) and `canary-qwen-2.5b` (Canary-Qwen 2.5B — best-in-class English WER, **WER-only / no VTT**, text-only row like NIM's `n/a`). Plus `nemo:<model>` ad-hoc IDs (mirrors `nim:<name>`).
+- **Subprocess into a dedicated Python 3.12 `.venv-nemo`** (torch has no 3.14 wheels) via a new standalone `nemo_runner.py` — pure-JSON stdout, dual `stdout`→`stderr` redirect mirroring `whisperx_runner.py`. Provisioned by `setup_nemo_venv.ps1` (cu128 torch FIRST, then `nemo_toolkit[asr]`, verify CUDA). NeMo gets its **OWN** venv (not shared with `.venv-whisperx`) because of aggressive pins (numpy>=2.0, transformers, lightning).
+- **Transcription-only** — no diarization/DER (NeMo diarization is a separate model family, out of scope for v0.4).
+- **Both venv installers are optional & independent** — a Whisper/NIM run never needs `.venv-nemo`; a NeMo model with no venv is **skipped (warning), not a crash** (graceful pre-flight in `main()`, the same way NIM is handled). Other engines in the same run still execute.
+- **Additive only** — no new `ClipResult`/`ModelResult` fields, so **`schema_version` stays 1**; `render_markdown` + the JSON sidecar are byte-stable. Core stays torch-free.
+- **New CLI flag `--nemo-python`** (path to the venv python; auto-detects `./.venv-nemo`). `nemo_python` is in the sidecar config (non-secret).
+- **Canary-Qwen long-form handling** — needs 40 s non-overlapping chunked inference (no native long-form) with a raised `max_new_tokens` per chunk; this is part of the live-validation surface still to be exercised.
+
 See [`SPEC.md`](./SPEC.md) for the v0.4 (NVIDIA NeMo / Canary-Qwen) and v0.5 (community models) roadmap.
 
 ## Reference benchmark — sample lecture corpus
@@ -125,6 +140,15 @@ These need to be true on any machine that runs asr-bench against GPU. Document e
 - **RTTM sidecars** — to get DER scoring, drop `<base>.rttm` next to the audio file. The `find_rttm` helper locates it by stem match.
 - **Speaker hints for long audio** — pyannote over-clusters on long noisy recordings (an 82-min 2-speaker Zoom call estimated as 12 speakers, DER 27.4%). Pass `--min-speakers`/`--max-speakers` when the count is known — constraining to 2 gave 2 speakers, DER 13.8%.
 - **Live validation (2026-06-05)** — full path exercised on RTX 5090 (torch 2.8.0+cu128, whisperx 3.8.6, pyannote-audio 4.0.4): transcribe+align (82 min → 763 segs / 11,274 words), diarization (community-1), DER end-to-end (13.8% @ 2-speaker hint). Runner fixes the live run required: pure-JSON stdout (lib chatter → stderr), `use_auth_token`→`token` kwarg, community-1 default + `--diarize-model`.
+
+### NeMo setup notes (reference machine)
+
+- **Dedicated Python 3.12 venv** — NeMo + PyTorch have no Python 3.14 wheels, so NeMo runs as a subprocess into `.venv-nemo`. Provision with `./setup_nemo_venv.ps1` (creates `.venv-nemo`, installs cu128 torch FIRST, then `nemo_toolkit[asr]`, verifies CUDA). asr-bench auto-detects this path; `--nemo-python` overrides.
+- **Its OWN venv — not shared with `.venv-whisperx`** — NeMo's pins are aggressive (numpy>=2.0, transformers, lightning) and conflict with the WhisperX environment. Keep the two venvs separate.
+- **CUDA wheels — install torch FIRST** — same trap as WhisperX: a bare `pip install nemo_toolkit[asr]` can pull a CPU-only torch on Windows. The setup script installs `torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128` (cu128 = Blackwell/RTX 5090/sm_120) before NeMo. Always verify `cuda True` in the venv.
+- **Optional & independent** — Whisper/NIM runs never need `.venv-nemo`. If a NeMo model is requested without a venv, the pre-flight in `main()` warns and skips just those models; other engines still run.
+- **Canary-Qwen long-form** — no native long-form decode; the runner chunks at 40 s (non-overlapping) with a raised `max_new_tokens` per chunk. Parakeet has native word/segment timestamps and needs no chunking.
+- **Validated version triple + VRAM** — _to be recorded after live validation on the RTX 5090_ (no GPU/venv in the dev environment yet; same status as NIM). Do not assume numbers until the live run.
 
 ## Common workflows
 
@@ -206,6 +230,17 @@ python asr_bench.py --models large-v3-turbo+whisperx --whisperx-python C:\venvs\
 python asr_bench.py --models large-v3-turbo+whisperx --diarize --min-speakers 2 --max-speakers 4 --hf-token hf_...
 ```
 
+### Run NeMo (Parakeet / Canary-Qwen)
+```powershell
+# one-time: provision the venv (Python 3.12 + cu128 torch + nemo_toolkit[asr])
+./setup_nemo_venv.ps1
+# benchmark NeMo models against Whisper
+python asr_bench.py --models large-v3-turbo,parakeet-tdt-0.6b-v2,canary-qwen-2.5b --device cuda
+# ad-hoc NeMo model not in the registry
+python asr_bench.py --models nemo:nvidia/canary-1b-flash
+```
+Without `.venv-nemo`, NeMo models are skipped with a warning (other engines still run); override the venv path with `--nemo-python`. Parakeet emits a full VTT + `_Words_*.json`; Canary-Qwen is WER-only (no VTT). Code-complete on `feat/v0.4-nemo` — not yet live-validated.
+
 ### Generate a context file template for fusion
 ```powershell
 python asr_bench.py --init-context context.md
@@ -260,11 +295,11 @@ Strips timing/cue numbers and joins cues into the plain `.txt` the scorer reads.
 
 ## Development workflow
 
-- **Main script** — `asr_bench.py` is the core. `whisperx_runner.py` is the only file broken out so far (it must run inside a Python ≤ 3.13 venv). The `engines/` subpackage split remains deferred until a fourth engine family (NeMo/Canary-Qwen) lands.
-- **Add a new engine family**: implement the `Engine` ABC (`run(entry, pairs, cfg) -> ModelResult`), register the class in `ENGINES`, and give its models `"engine": "<name>"` in `MODELS`. `FasterWhisperEngine`, `NimEngine`, and `WhisperXEngine` are the three reference implementations. Share the metrics infrastructure (`ClipResult`, `ModelResult`, `render_markdown`).
+- **Main script** — `asr_bench.py` is the core. `whisperx_runner.py` and `nemo_runner.py` are the two files broken out so far (each must run inside a Python ≤ 3.13 venv). The `engines/` subpackage split is **still deferred** even with NeMo (the fourth engine family) added in-file; the split + PyInstaller binaries remain separate later work.
+- **Add a new engine family**: implement the `Engine` ABC (`run(entry, pairs, cfg) -> ModelResult`), register the class in `ENGINES`, and give its models `"engine": "<name>"` in `MODELS`. `FasterWhisperEngine`, `NimEngine`, `WhisperXEngine`, and `NeMoEngine` are the four reference implementations. Share the metrics infrastructure (`ClipResult`, `ModelResult`, `render_markdown`).
 - **Add a new Whisper variant**: extend the `MODELS` dict (`"engine": "faster-whisper"`) + add an entry to `_MODEL_VRAM_COST` for batch sizing.
 - **Add a new WhisperX variant**: extend `MODELS` with `"engine": "whisperx"` and ensure the base model name (before `+whisperx`) maps to a valid faster-whisper model key.
-- **Tests**: pytest suite under `tests/`. Run `python -m pytest`. 229 pass, 2 skipped (pyannote not installed in core venv — WhisperX diarization tests are subprocess-gated).
+- **Tests**: pytest suite under `tests/`. Run `python -m pytest`. 262 pass, 2 skipped (pyannote not installed in core venv — WhisperX diarization tests are subprocess-gated). The NeMo engine is unit-tested via fake adapters; no live NeMo run yet.
 - **Linting**: none yet — follow the style already in `asr_bench.py`
 
 ## Hard rules
@@ -305,3 +340,4 @@ Strips timing/cue numbers and joins cues into the plain `.txt` the scorer reads.
 - **2026-06-07** — NIM transport policy made explicit (no code change — confirming intent): the NIM engine supports **two transports, with local self-hosted as the preferred default and remote hosted NVCF as a flag-gated fallback**. Local (`--nim-url localhost:<port>`) keeps within the "local engines only" rule (local inference behind a gRPC port); remote (`--nim-url <host>:443 --nim-api-key <NGC key> --nim-ssl`) exists only for users without a local container runtime and is never the default. Both have been implemented since 2026-05-31 but neither is live-validated; validation stays pending (`memory/validate-live-nim.md`), local-first when a Docker Desktop + NGC setup is ready.
 - **2026-06-07** — `AGENTS.md` (Codex handoff) is kept as a **faithful mirror of this file** — same body, differing only in the tool-name intro + a cross-agent sync note. Rationale: a stale handoff (AGENTS.md had drifted to v0.1) is worse than none; mirroring guarantees Codex/Gemini/Claude all start from identical project state. **Any substantive change here (status, decisions, workflows) must be propagated to `AGENTS.md`, and vice-versa.** Reference PDFs and the local `.claude/` tooling dir are gitignored (copyright / local-only).
 - **2026-06-07 (v0.3.5)** — Shipped a polish batch on `feat/v0.3.5` (merged to main). Five items: **(C2)** headline `s/aud-min (med)` column — the sidecar already computed `median_sec_per_audio_min` but no report consumed it; it's the human-intuitive complement to RTFx for faculty ("0.9s to process a minute of audio" vs "64× realtime"). **(C3)** `_md_escape` for free-text table cells — a literal `|` in a filename/model name silently split rows into phantom columns; pipes are escaped and newlines flattened. **(C1)** `Halluc%` in `compare` — gated on presence like DER so old sidecars don't grow an all-`—` column; additive, `schema_version` stays 1. **(B1)** `pyproject.toml` packaging with an `asr-bench` console entry point — chose a **flat `py-modules` layout** (not a package dir) so `python asr_bench.py` and `import asr_bench` are unchanged and the existing test suite/tooling keeps working; core deps stay torch-free with GPU/NIM as opt-in extras, WhisperX excluded (no 3.14 wheels). **(B2)** `prepare-gold` subcommand converts VTT/SRT → plain `.txt` references (user-chosen shape: a format converter, not a model-bootstrapped draft). Key correctness call: since `load_reference_text` strips the `[Auto-generated transcript]` header, a naive convert would **launder a proxy caption into apparent gold** — so proxy sources keep that marker re-prepended (still strips at scoring, still flags as proxy). Excludes asr-bench's own `_Captions_*.vtt` outputs to prevent circular references. 229 tests pass.
+- **2026-06-08 (v0.4 — code-complete on `feat/v0.4-nemo`, NOT shipped/merged, live validation pending)** — Added **NVIDIA NeMo** as the fourth `Engine` family (`NeMoEngine` + standalone `nemo_runner.py`). Spec: `docs/superpowers/specs/2026-06-08-v0.4-nemo-engine-design.md`; plan: `docs/superpowers/plans/2026-06-08-v0.4-nemo-engine.md`. Six locked decisions: **(1)** register **both** `parakeet-tdt-0.6b-v2` and `canary-qwen-2.5b` (the user wants a direct Parakeet-vs-Canary comparison in one report, not just the headline Canary). **(2)** **Canary-Qwen is WER-only (no VTT)** — it has no native timestamps and asr-bench is a *benchmark*, so a text-only row (like NIM's `n/a` for VTT) is the honest shape; faking timestamps would mislead. Parakeet has native word/segment timestamps → full VTT + `_Words_*.json`. **(3)** NeMo gets its **own dedicated `.venv-nemo`** (Python 3.12, not shared with `.venv-whisperx`) because NeMo's pins (numpy>=2.0, transformers, lightning) are aggressive and conflict; run as a subprocess (torch has no 3.14 wheels) via `nemo_runner.py` with pure-JSON stdout + dual `stdout`→`stderr` redirect, mirroring `whisperx_runner.py`. **(4)** **Transcription-only** — no diarization/DER (NeMo diarization is a separate model family, out of scope for v0.4). **(5)** Both venv installers (`setup_nemo_venv.ps1`, `setup_whisperx_venv.ps1`) are **optional & independent** — a Whisper/NIM run never needs `.venv-nemo`; a NeMo model with no venv is **skipped with a warning, not a crash** (graceful pre-flight in `main()`). **(6)** Support both **registered IDs and `nemo:<model>` ad-hoc IDs** (mirrors `nim:<name>`). New CLI flag `--nemo-python` (auto-detects `./.venv-nemo`); `nemo_python` added to the sidecar config (non-secret). Additive only — **`schema_version` stays 1**, `render_markdown` + JSON sidecar byte-stable, core stays torch-free. **NeMo was added in-file; the `engines/` package split + PyInstaller binaries remain deferred** to separate later work. Status: **implemented + unit-tested (262 pass, 2 skipped) but NEVER run against a real model — live validation on the RTX 5090 is pending, analogous to NIM.** The validated `(Python 3.12, torch+cu128, nemo_toolkit)` version triple and measured VRAM are _to be recorded after live validation_.
