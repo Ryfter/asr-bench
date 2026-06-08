@@ -811,6 +811,8 @@ class RunConfig:
     hf_token: Optional[str] = None
     min_speakers: Optional[int] = None
     max_speakers: Optional[int] = None
+    # nemo only
+    nemo_python: Optional[str] = None
 
 
 class Engine(ABC):
@@ -1433,6 +1435,79 @@ def make_whisperx_adapter(cfg: "RunConfig") -> WhisperXAdapter:
         "WhisperX needs torch (not importable here) or a 3.12 venv. Create one "
         "(py -3.12 -m venv .venv-whisperx && .venv-whisperx/Scripts/pip install whisperx) "
         "and pass --whisperx-python, or run asr-bench under a torch-enabled interpreter."
+    )
+
+
+# ---- NeMo adapter -----------------------------------------------------------
+_NEMO_RUNNER_PATH = str(Path(__file__).resolve().parent / "nemo_runner.py")
+
+
+class NeMoAdapter(ABC):
+    """Turns an audio file into a NeMoResult. Subprocess (to a 3.12 .venv-nemo)
+    is the only real impl — torch has no 3.14 wheels — plus a Fake for tests."""
+    name: str = ""
+
+    @abstractmethod
+    def transcribe(self, audio_path: str, model: str, cfg: "RunConfig") -> "NeMoResult":
+        ...
+
+
+class FakeNeMoAdapter(NeMoAdapter):
+    name = "fake"
+
+    def __init__(self, result: "NeMoResult"):
+        self._result = result
+
+    def transcribe(self, audio_path, model, cfg):
+        return self._result
+
+
+def _nemo_runner_args(audio_path: str, model: str, cfg: "RunConfig") -> List[str]:
+    return [_NEMO_RUNNER_PATH, "--audio", audio_path, "--model", model,
+            "--device", cfg.device, "--language", "en"]
+
+
+class SubprocessNeMo(NeMoAdapter):
+    """Runs nemo_runner.py under a configured 3.12 venv python; parses JSON."""
+    name = "subprocess"
+
+    def __init__(self, python: str, timeout: float = 7200.0):
+        self.python = python
+        self.timeout = timeout
+
+    def transcribe(self, audio_path, model, cfg):
+        exe = shutil.which(self.python) or self.python
+        cmd = [exe, *_nemo_runner_args(audio_path, model, cfg)]
+        env = dict(os.environ)
+        # torch 2.6+ defaults weights_only=True; some NeMo checkpoints need this off.
+        env["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] = "1"
+        proc = subprocess.run(cmd, capture_output=True, text=True,
+                              timeout=self.timeout, check=False, env=env)
+        if proc.returncode != 0:
+            raise RuntimeError(f"nemo_runner failed ({proc.returncode}): {proc.stderr[:500]}")
+        return NeMoResult.from_dict(json.loads(proc.stdout))
+
+
+def _default_nemo_python() -> Optional[str]:
+    """Look for a conventional sibling venv (./.venv-nemo)."""
+    root = Path(__file__).resolve().parent
+    for rel in (".venv-nemo/Scripts/python.exe", ".venv-nemo/bin/python"):
+        cand = root / rel
+        if cand.is_file():
+            return str(cand)
+    return None
+
+
+def make_nemo_adapter(cfg: "RunConfig") -> NeMoAdapter:
+    """Subprocess to a 3.12 venv python (cfg.nemo_python or ./.venv-nemo). NeMo is
+    never run in-process: core is Python 3.14 (no torch wheels) and a fresh
+    subprocess gives clean per-model VRAM teardown."""
+    venv_py = cfg.nemo_python or _default_nemo_python()
+    if venv_py:
+        return SubprocessNeMo(venv_py)
+    raise RuntimeError(
+        "NeMo needs a Python 3.12 venv with torch (cu128) + nemo_toolkit. "
+        "Run setup_nemo_venv.ps1 (creates ./.venv-nemo) or pass --nemo-python."
     )
 
 
