@@ -120,6 +120,23 @@ Report: `report/20260530-190913.md` (local only — gitignored).
 - **Medium > Small on WER** (Medium more literal where Panopto's editorial cleanup makes the proxy reference diverge — same pattern as the canvas-toolchain `compare_transcripts` runs)
 - **Large V3 had a 1-second-cue decoder lockup ~25 min into one 54-min lecture** — fell into 1-cue-per-second for 33 min, inflating its WER from ~12% to 14.2%. Fixed by `vad_filter=True` (now default).
 
+### All-engine comparison snapshot (2026-06-08, single 6.8-min lecture)
+
+One run, all four live engine families on the same clip (`ITM310 003 - Spring 2026 Week 16 - Friday`, proxy Panopto reference — read WER as **relative divergence between engines**, not absolute accuracy). RTX 5090, float16, batch 32, VAD on. Report: `report/20260608-020836.md` (local only — gitignored).
+
+| Engine | WER% | MER% | WIL% | CER% | RTFx | Peak VRAM | Outputs |
+|---|---|---|---|---|---|---|---|
+| **Parakeet TDT 0.6B v2** (NeMo) | **6.2** | 6.1 | 7.9 | **4.0** | **194×** | 8.3 GB | VTT + words |
+| Whisper Large V3 Turbo (faster-whisper) | 6.7 | 6.7 | 8.2 | 4.4 | 129× | **241 MB** | VTT |
+| Canary-Qwen 2.5B (NeMo) | 7.2 | 7.2 | 8.9 | 4.6 | 6.5× | 9.8 GB | WER-only |
+| Whisper Large V3 Turbo **+ WhisperX** | 8.4 | 8.3 | 10.2 | 5.9 | 5.9× | n/a | VTT + word align + 2-spk diarize |
+| `canary-nim` (NIM / Riva gRPC) | — | — | — | — | — | — | **not run — no server reachable on this box** |
+
+**Notes:**
+- **Parakeet wins both axes** on this clip (lowest WER + fastest), edging Whisper Turbo; Turbo stays the VRAM featherweight (241 MB vs Parakeet's 8.3 GB).
+- **WhisperX scores ~1.7 pts worse WER than the plain Turbo it wraps** — its own VAD/segmentation + wav2vec2 re-alignment diverge more from the proxy reference, and it trades ~22× throughput for word-level timestamps + pyannote diarization (detected 2 speakers; no DER — clip has no `.rttm` ground truth). Expected: WhisperX's value is alignment/diarization, not raw WER.
+- **NIM still unvalidated** — container-only, and this box has no container runtime (no Docker/WSL distro). Pending live gate tracked in `memory/validate-live-nim.md`; both transports (local gRPC preferred / remote NVCF fallback) are implemented but neither is live-run.
+
 ## Locally-discovered setup notes (reference machine)
 
 These need to be true on any machine that runs asr-bench against GPU. Document equivalents for new machines.
