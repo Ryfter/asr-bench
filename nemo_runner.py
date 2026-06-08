@@ -34,9 +34,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return ap
 
 
+_SAMPLE_RATE = 16000
+
+
 def _looks_like_salm(model: str) -> bool:
     """Canary-Qwen is a Speech-LLM (SALM); everything else we ship is an ASRModel."""
     return "canary-qwen" in model.lower()
+
+
+def _num(x) -> float:
+    """Coerce a timestamp to float, treating a missing (None) value as 0.0 so a
+    segment/word with absent timing keeps its text rather than crashing the run."""
+    return float(x) if x is not None else 0.0
 
 
 def _segments_to_json(segments) -> List[dict]:
@@ -50,7 +59,7 @@ def _segments_to_json(segments) -> List[dict]:
         else:
             start = getattr(s, "start", None); end = getattr(s, "end", None)
             text = getattr(s, "segment", None) or getattr(s, "text", "") or ""
-        out.append({"start": float(start), "end": float(end), "text": str(text).strip()})
+        out.append({"start": _num(start), "end": _num(end), "text": str(text).strip()})
     return out
 
 
@@ -62,7 +71,7 @@ def _words_to_json(words) -> List[dict]:
         else:
             word = getattr(w, "word", None); start = getattr(w, "start", None)
             end = getattr(w, "end", None)
-        out.append({"word": word, "start": float(start), "end": float(end)})
+        out.append({"word": word, "start": _num(start), "end": _num(end)})
     return out
 
 
@@ -89,9 +98,8 @@ def run_nemo(audio: str, model: str, device: str, language: str = "en",
         if device == "cuda" and torch.cuda.is_available():
             salm = salm.to("cuda").eval()
         from nemo.collections.asr.parts.preprocessing.segment import AudioSegment
-        seg = AudioSegment.from_file(audio, target_sr=16000)
-        sr = 16000
-        chunk = int(chunk_len_secs * sr)
+        seg = AudioSegment.from_file(audio, target_sr=_SAMPLE_RATE)
+        chunk = int(chunk_len_secs * _SAMPLE_RATE)
         samples = seg.samples
         t0 = time.time()
         parts: List[str] = []

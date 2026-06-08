@@ -37,3 +37,25 @@ def test_words_to_json_from_dicts():
 def test_segments_to_json_empty():
     assert nemo_runner._segments_to_json([]) == []
     assert nemo_runner._words_to_json(None) == []
+
+
+def test_segments_to_json_from_objects():
+    from types import SimpleNamespace
+    seg = SimpleNamespace(start=1.0, end=3.0, segment="spoken text")
+    assert nemo_runner._segments_to_json([seg]) == [
+        {"start": 1.0, "end": 3.0, "text": "spoken text"}]
+
+
+def test_words_to_json_from_objects():
+    from types import SimpleNamespace
+    w = SimpleNamespace(word="hi", start=0.0, end=0.4)
+    assert nemo_runner._words_to_json([w]) == [{"word": "hi", "start": 0.0, "end": 0.4}]
+
+
+def test_missing_timestamp_coerced_not_crash():
+    # A segment/word missing start/end keeps its text/word at 0.0 rather than
+    # raising float(None) — defensive against partial NeMo output.
+    assert nemo_runner._segments_to_json([{"text": "no timing"}]) == [
+        {"start": 0.0, "end": 0.0, "text": "no timing"}]
+    assert nemo_runner._words_to_json([{"word": "x"}]) == [
+        {"word": "x", "start": 0.0, "end": 0.0}]
