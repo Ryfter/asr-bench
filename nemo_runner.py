@@ -88,6 +88,16 @@ def run_nemo(audio: str, model: str, device: str, language: str = "en",
              chunk_len_secs: float = 40.0, max_new_tokens: int = 1024) -> dict:
     """Transcribe with NeMo. Branches: SALM (Canary-Qwen, chunked generate, text
     only) vs ASRModel (Parakeet, timestamps=True). Heavy imports are local."""
+    # Windows load-order workaround: NeMo's import chain (sklearn -> pandas ->
+    # pyarrow) segfaults (0xC0000005) if pyarrow's native libs load AFTER certain
+    # other native deps pulled in earlier in the chain. Pre-importing pyarrow here
+    # loads it cleanly first; NeMo's later `import pyarrow` becomes a no-op. Bare
+    # `import pyarrow` is fine on its own -- only the in-chain ordering crashes.
+    # Guarded so it's a harmless no-op where pyarrow isn't installed.
+    try:
+        import pyarrow  # noqa: F401
+    except Exception:
+        pass
     import torch
     if device == "cuda" and torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
@@ -105,10 +115,18 @@ def run_nemo(audio: str, model: str, device: str, language: str = "en",
         parts: List[str] = []
         for i in range(0, len(samples), chunk):
             window = samples[i:i + chunk]
+            # SALM.generate wants torch tensors, NOT numpy: audios float32 (B, T),
+            # audio_lens int64 (B,). The kwarg is `audio_lens` (not `audio_lengths`
+            # -- that name silently falls into **generation_kwargs, leaving
+            # audio_lens=None and tripping perception's input validation).
+            audios = torch.as_tensor(window, dtype=torch.float32,
+                                     device=salm.device)[None, :]
+            audio_lens = torch.tensor([audios.shape[1]], dtype=torch.int64,
+                                      device=salm.device)
             ans = salm.generate(
                 prompts=[[{"role": "user",
                            "content": f"Transcribe the following: {salm.audio_locator_tag}"}]],
-                audios=window[None, :], audio_lengths=[len(window)],
+                audios=audios, audio_lens=audio_lens,
                 max_new_tokens=max_new_tokens)
             parts.append(salm.tokenizer.ids_to_text(ans[0].cpu()).strip())
         transcribe_sec = time.time() - t0
