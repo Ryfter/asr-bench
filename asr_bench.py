@@ -1301,6 +1301,42 @@ def write_words_sidecar(audio_path: Path, model_label: str, result: "WhisperXRes
     return out
 
 
+# ---- NeMo result ------------------------------------------------------------
+@dataclass
+class NeMoResult:
+    """Parsed output of a NeMo run. Parakeet yields segments+words (native
+    timestamps); Canary-Qwen yields full_text only (no timestamps). Duck-typed to
+    reuse write_whisperx_vtt / write_words_sidecar (they read .segments / .words)."""
+    segments: List[Dict] = field(default_factory=list)   # [{start, end, text}]
+    words: List[Dict] = field(default_factory=list)       # [{word, start, end}]
+    full_text: str = ""
+    transcribe_sec: Optional[float] = None
+    vram_peak_bytes: Optional[int] = None
+    language: str = ""
+
+    @classmethod
+    def from_dict(cls, d: Dict) -> "NeMoResult":
+        return cls(
+            segments=list(d.get("segments") or []),
+            words=list(d.get("words") or []),
+            full_text=d.get("text") or "",
+            transcribe_sec=d.get("transcribe_sec"),
+            vram_peak_bytes=d.get("vram_peak_bytes"),
+            language=d.get("language") or "",
+        )
+
+    def text(self) -> str:
+        if self.segments:
+            return " ".join(s.get("text", "").strip() for s in self.segments).strip()
+        return self.full_text.strip()
+
+    def has_timestamps(self) -> bool:
+        return bool(self.segments)
+
+    def speaker_segments(self) -> List[Tuple[float, float, str]]:
+        return []   # v0.4 NeMo is transcription-only
+
+
 # ---- WhisperX adapter -------------------------------------------------------
 _RUNNER_PATH = str(Path(__file__).resolve().parent / "whisperx_runner.py")
 
