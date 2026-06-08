@@ -178,6 +178,7 @@ MODELS: Dict[str, Dict] = {
 }
 
 _NIM_ADHOC_RE = re.compile(r"^nim:(.+)$")
+_NEMO_ADHOC_RE = re.compile(r"^nemo:(.*)$")
 _WHISPERX_RE = re.compile(r"^(.+)\+whisperx$")
 _WHISPERX_SIZES = {"small", "medium", "large-v3", "large-v3-turbo"}
 
@@ -227,6 +228,21 @@ def resolve_model_entry(model_id: str) -> Dict:
             "languages": "—",
             "riva_model": name,
             "notes": f"Ad-hoc NIM model '{name}' via Riva gRPC.",
+        }
+    nm = _NEMO_ADHOC_RE.match(model_id)
+    if nm:
+        name = nm.group(1).strip()
+        if not name:
+            raise ValueError(f"empty NeMo model name in '{model_id}'")
+        return {
+            "id": model_id,
+            "engine": "nemo",
+            "display": f"NeMo ({name})",
+            "developer": "NVIDIA",
+            "params": "—",
+            "languages": "—",
+            "nemo_model": name,
+            "notes": f"Ad-hoc NeMo model '{name}'.",
         }
     raise ValueError(f"unknown model id: {model_id}")
 
