@@ -5,3 +5,6 @@ live inside each engine's run()/adapter, never here. asr_bench re-exports ENGINE
 and the engine classes so the public surface stays byte-stable across the split."""
 
 ENGINES: dict = {}
+
+from engines.faster_whisper import FasterWhisperEngine  # noqa: E402
+ENGINES["faster-whisper"] = FasterWhisperEngine
