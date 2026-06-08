@@ -8,3 +8,6 @@ ENGINES: dict = {}
 
 from engines.faster_whisper import FasterWhisperEngine  # noqa: E402
 ENGINES["faster-whisper"] = FasterWhisperEngine
+
+from engines.nim import NimEngine  # noqa: E402
+ENGINES["nim"] = NimEngine
