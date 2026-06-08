@@ -157,6 +157,24 @@ MODELS: Dict[str, Dict] = {
         "riva_model": "",  # "" => let the NIM server pick its default model
         "notes": "NVIDIA NIM ASR via Riva gRPC. Endpoint set by --nim-url.",
     },
+    "parakeet-tdt-0.6b-v2": {
+        "engine": "nemo",
+        "display": "Parakeet TDT 0.6B v2 (NeMo)",
+        "params": "600M",
+        "developer": "NVIDIA",
+        "languages": "en",
+        "nemo_model": "nvidia/parakeet-tdt-0.6b-v2",
+        "notes": "NeMo FastConformer-TDT. Native word/segment timestamps -> VTT.",
+    },
+    "canary-qwen-2.5b": {
+        "engine": "nemo",
+        "display": "Canary-Qwen 2.5B (NeMo)",
+        "params": "2.5B",
+        "developer": "NVIDIA",
+        "languages": "en",
+        "nemo_model": "nvidia/canary-qwen-2.5b",
+        "notes": "NeMo SALM (FastConformer enc + Qwen3 dec). WER-only - no native timestamps.",
+    },
 }
 
 _NIM_ADHOC_RE = re.compile(r"^nim:(.+)$")
@@ -1593,6 +1611,72 @@ class WhisperXEngine(Engine):
 
 
 ENGINES["whisperx"] = WhisperXEngine
+
+
+class NeMoEngine(Engine):
+    name = "nemo"
+
+    def run(self, entry: Dict, pairs: List[Pair], cfg: RunConfig) -> ModelResult:
+        adapter = make_nemo_adapter(cfg)
+        print(f"\n[{entry['display']}] using NeMo adapter: {adapter.name}", flush=True)
+        result_model = ModelResult(
+            model_id=entry["id"], display=entry["display"], fw_name=entry.get("fw_name", ""),
+            params=entry["params"], developer=entry["developer"], languages=entry["languages"],
+            notes=entry["notes"], disk_bytes=None, load_sec=0.0,
+            engine="nemo", vram_is_total=False,
+        )
+        for clip_idx, pair in enumerate(pairs, start=1):
+            print(f"  [{clip_idx}/{len(pairs)}] transcribing {pair.audio.name}...", flush=True)
+            ref_text = load_reference_text(pair.reference)
+            ref_origin, ref_label = detect_reference_origin(pair.reference)
+            t0 = time.time()
+            try:
+                nm = adapter.transcribe(str(pair.audio), entry["nemo_model"], cfg)
+            except Exception as e:
+                print(f"  ERROR nemo on {pair.audio.name}: {e}", file=sys.stderr)
+                continue
+            wall = time.time() - t0
+            transcribe_sec = nm.transcribe_sec if nm.transcribe_sec is not None else wall
+
+            hypothesis = nm.text()
+            ref_norm = normalize_for_wer(ref_text)
+            hyp_norm = normalize_for_wer(hypothesis)
+            metrics = compute_word_metrics(ref_norm, hyp_norm)
+
+            label = _model_label(entry["id"])
+            vtt_path = None
+            cue_count = 0
+            if nm.has_timestamps():
+                vtt_path = str(write_whisperx_vtt(pair.audio, label, nm))
+                write_words_sidecar(pair.audio, label, nm)
+                cue_count = len(nm.segments)
+
+            audio_sec = _audio_duration_sec(str(pair.audio)) or (
+                nm.segments[-1]["end"] if nm.segments else 0.0)
+            rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
+
+            print(f"    {audio_sec:.1f}s in {transcribe_sec:.1f}s "
+                  f"(RTFx {rtfx:.2f}, WER {metrics.wer*100:.1f}%, "
+                  f"{'timestamps' if nm.has_timestamps() else 'text-only'})", flush=True)
+
+            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
+            result_model.clips.append(ClipResult(
+                audio=pair.audio.name, audio_sec=audio_sec, transcribe_sec=transcribe_sec,
+                rtfx=rtfx, vram_peak_bytes=nm.vram_peak_bytes, hypothesis=hypothesis,
+                reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
+                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer,
+                repeat_coverage=rep_cov, compression_ratio=comp_ratio,
+                hits=metrics.hits, substitutions=metrics.substitutions,
+                deletions=metrics.deletions, insertions=metrics.insertions,
+                cue_count=cue_count, vtt_path=vtt_path,
+                reference_origin=ref_origin, reference_label=ref_label,
+            ))
+        if not result_model.clips:
+            result_model.notes = "ALL CLIPS FAILED — check NeMo setup/.venv-nemo and stderr above"
+        return result_model
+
+
+ENGINES["nemo"] = NeMoEngine
 
 
 # ---- Fusion -----------------------------------------------------------------
