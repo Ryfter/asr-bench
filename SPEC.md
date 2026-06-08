@@ -76,16 +76,31 @@ Fusion is fully unit-tested via `FakeLLMBackend` but **not yet validated against
 **Remaining v0.3-era item (not yet implemented):**
 - Speaker labels in reference sets for DER ground-truth preparation
 
-### Planned for v0.4 — NVIDIA NeMo (Canary-Qwen and family)
+### v0.4 — NVIDIA NeMo (Canary-Qwen + Parakeet) — **live-validated on `feat/v0.4-nemo`, ready to merge**
 
-[NVIDIA NeMo](https://github.com/NVIDIA/NeMo) — separate ASR stack with strong English models. **Canary-Qwen-2.5B** (2025) is competitive with Whisper Large-V3 on English, faster on NVIDIA hardware.
+> **Status: live-validated on the RTX 5090 (2026-06-07); NOT yet merged to main.** Both models run end-to-end through the full asr_bench pipeline. Validated version triple: **Python 3.12 · torch 2.11.0+cu128 · nemo_toolkit 2.7.3**. Peak VRAM: **Parakeet ~8.3 GB, Canary-Qwen ~9.8 GB**. First-run results (6.8-min lecture, proxy ref): Parakeet WER 6.2% / RTFx 201.8× / VTT written; Canary-Qwen WER 7.2% / RTFx 5.57× / WER-only; alongside Whisper Large V3 Turbo WER 6.7% / RTFx 111×. 263 tests pass, 2 skipped. Four live-run fixes (PS-script ASCII, pyarrow pre-import segfault, SALM `audio_lens` API, ffmpeg mp4 decode) — see decision log. Spec: `docs/superpowers/specs/2026-06-08-v0.4-nemo-engine-design.md`; plan: `docs/superpowers/plans/2026-06-08-v0.4-nemo-engine.md`.
+
+[NVIDIA NeMo](https://github.com/NVIDIA/NeMo) — separate ASR stack with strong English models, added as the fourth `Engine` family (`NeMoEngine` + standalone `nemo_runner.py`).
+
+**Model IDs (registered):**
+- `parakeet-tdt-0.6b-v2` (Parakeet TDT 0.6B v2) — native word/segment timestamps → full VTT + `_Words_*.json`.
+- `canary-qwen-2.5b` (Canary-Qwen 2.5B) — best-in-class English WER, **WER-only / no VTT** (no native timestamps; text-only row like NIM's `n/a`). Needs 40 s non-overlapping chunked inference (no native long-form); raised `max_new_tokens` per chunk.
+- `nemo:<model>` ad-hoc IDs (mirrors `nim:<name>`).
+
+**What's implemented:**
+- Runs as a **subprocess** into a dedicated **Python 3.12 `.venv-nemo`** (torch has no 3.14 wheels) via `nemo_runner.py` — pure-JSON stdout, dual `stdout`→`stderr` redirect mirroring `whisperx_runner.py`. Provisioned by `setup_nemo_venv.ps1` (cu128 torch FIRST, then `nemo_toolkit[asr]`, verify CUDA). NeMo gets its **OWN** venv (not shared with `.venv-whisperx`) due to aggressive pins (numpy>=2.0, transformers, lightning).
+- **Transcription-only** — no diarization/DER (NeMo diarization is a separate model family, out of scope for v0.4).
+- Both venv installers are **optional & independent** — a Whisper/NIM run never needs `.venv-nemo`; a NeMo model with no venv is **skipped (warning), not a crash** (graceful pre-flight in `main()`).
+- New CLI flag `--nemo-python` (auto-detects `./.venv-nemo`); `nemo_python` in the sidecar config (non-secret). Additive only — **`schema_version` stays 1**; `render_markdown` + JSON sidecar byte-stable; core stays torch-free.
 
 Why v0.4 not earlier:
 - NeMo install is heavy, CUDA-pinned, benefits from its own venv.
 - Different API — needs its own engine wrapper.
 - Production deployments often use NVIDIA NIM (Inference Microservice) — benchmark could exercise via HTTP.
 
-Other NeMo models to slot in: `Parakeet-CTC-1.1B`, `Parakeet-TDT`, older `Citrinet`.
+Other NeMo models to slot in later: `Parakeet-CTC-1.1B`, older `Citrinet`.
+
+**Still deferred (separate later milestones):** the `engines/` package split (NeMo was added in-file alongside the other three Engine subclasses) and PyInstaller prebuilt binaries.
 
 ### Planned for v0.5 — Conformer + community models
 
@@ -149,8 +164,8 @@ v0.3 adds:
 
 - v0.1: public GitHub repo, `python asr_bench.py ...` entry.
 - v0.2: same single-file entry; optional `ollama` dependency for fusion.
-- v0.3: pip-installable (`pip install asr-bench`), `asr-bench` CLI — not yet implemented (deferred to v0.3+).
-- v0.4: prebuilt Windows/macOS binaries via PyInstaller. Audience: faculty IT staff making accessibility purchasing decisions.
+- v0.3.5 (shipped): pip-installable (`pip install asr-bench`), `asr-bench` CLI (flat `py-modules`, GPU/NIM extras).
+- v0.4+ (deferred — NOT part of the v0.4 NeMo branch): prebuilt Windows/macOS binaries via PyInstaller, plus the `engines/` package split. Audience: faculty IT staff making accessibility purchasing decisions.
 
 ## Anti-goals
 
@@ -220,3 +235,52 @@ v0.3 adds:
   **(C2)** `s/aud-min (med)` headline column (the sidecar's `median_sec_per_audio_min`
   finally has a report consumer). **(C3)** `_md_escape` for pipe/newline-safe table
   cells. All additive; `schema_version` stays 1. 229 tests pass.
+- **2026-06-08 (v0.4 — code-complete on `feat/v0.4-nemo`, NOT shipped/merged,
+  live validation pending)** — Added **NVIDIA NeMo** as the fourth `Engine` family
+  (`NeMoEngine` + standalone `nemo_runner.py`). Spec:
+  `docs/superpowers/specs/2026-06-08-v0.4-nemo-engine-design.md`; plan:
+  `docs/superpowers/plans/2026-06-08-v0.4-nemo-engine.md`. Six locked decisions:
+  **(1)** register **both** `parakeet-tdt-0.6b-v2` and `canary-qwen-2.5b` (user
+  wants a direct Parakeet-vs-Canary comparison in one report). **(2)** **Canary-Qwen
+  is WER-only (no VTT)** — no native timestamps and asr-bench is a *benchmark*, so a
+  text-only row (like NIM's `n/a`) is the honest shape; Parakeet has native
+  word/segment timestamps → full VTT + `_Words_*.json`. **(3)** NeMo gets its **own
+  dedicated `.venv-nemo`** (Python 3.12, not shared with `.venv-whisperx`) because
+  its pins (numpy>=2.0, transformers, lightning) conflict; subprocess (torch has no
+  3.14 wheels) via `nemo_runner.py` with pure-JSON stdout + dual `stdout`→`stderr`
+  redirect, mirroring `whisperx_runner.py`. **(4)** **Transcription-only** — no
+  diarization/DER (separate NeMo model family, out of scope). **(5)** Both venv
+  installers (`setup_nemo_venv.ps1`, `setup_whisperx_venv.ps1`) are **optional &
+  independent** — a Whisper/NIM run never needs `.venv-nemo`; a NeMo model with no
+  venv is **skipped with a warning, not a crash** (graceful pre-flight in `main()`).
+  **(6)** Support both **registered IDs and `nemo:<model>` ad-hoc IDs** (mirrors
+  `nim:<name>`). New CLI flag `--nemo-python` (auto-detects `./.venv-nemo`);
+  `nemo_python` in the sidecar config (non-secret). Additive only — `schema_version`
+  stays 1, `render_markdown` + JSON sidecar byte-stable, core stays torch-free.
+  **NeMo was added in-file; the `engines/` package split + PyInstaller binaries
+  remain deferred** to separate later work. Status: implemented + unit-tested, then
+  **live-validated on the RTX 5090 (2026-06-07)** — see the 2026-06-07 entry below.
+
+- **2026-06-07 (v0.4 — LIVE-VALIDATED on RTX 5090, ready to merge)** — Ran the full
+  setup + benchmark on the reference box. Validated version triple: **Python 3.12 ·
+  torch 2.11.0+cu128 · nemo_toolkit 2.7.3**. Peak VRAM: **Parakeet ~8.3 GB,
+  Canary-Qwen ~9.8 GB**. First-real-run results on a 6.8-min lecture (proxy
+  reference): **Parakeet WER 6.2% / RTFx 201.8× / VTT written** (won this lecture on
+  both WER and speed), **Canary-Qwen WER 7.2% / RTFx 5.57× / WER-only (no VTT)**, both
+  alongside Whisper Large V3 Turbo (WER 6.7% / RTFx 111×) in one report + JSON
+  sidecar. **Four bugs the live run forced (none caught by unit tests — exactly why
+  the live gate exists):** **(a)** both `setup_*_venv.ps1` were UTF-8-no-BOM with
+  em-dashes; under Windows PowerShell 5.1 the em-dash's `0x94` byte decodes as a curly
+  quote PS treats as a string delimiter → cascading parse errors. Fixed to pure ASCII
+  (`e9013d3`). **(b)** `import nemo.collections.asr` **segfaults (0xC0000005)** on
+  Windows — NeMo's chain (sklearn→pandas→pyarrow) loads pyarrow's native libs after a
+  conflicting native dep; pre-importing pyarrow at the top of `run_nemo` loads it
+  cleanly first (guarded; keeps the module import torch-free *and* pyarrow-free for
+  core-venv tests) (`cbcbc38`). **(c)** SALM (Canary) `generate()` needs a
+  **torch.Tensor float32 (B, T)** + **`audio_lens`** (int64) — was passing numpy +
+  `audio_lengths=` which silently fell into `**generation_kwargs`, leaving
+  `audio_lens=None` and tripping perception's validation (`cbcbc38`). **(d)** NeMo/lhotse
+  decode via **`torchaudio.io`, removed in torchaudio ≥ 2.11** → can't open mp4;
+  `nemo_runner` now decodes any non-wav input to a temp 16 kHz mono WAV via the ffmpeg
+  CLI up front, mirroring WhisperX's self-contained decode (`9696e8d`). 263 tests pass,
+  2 skipped. Merge to main now unblocked.

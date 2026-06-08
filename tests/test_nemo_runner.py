@@ -1,0 +1,71 @@
+# tests/test_nemo_runner.py
+"""Torch-free helpers of nemo_runner. The heavy run_nemo path is live-validated
+on the RTX 5090, not unit-tested (no torch/nemo in the core venv)."""
+import nemo_runner
+
+
+def test_arg_parser_required_and_defaults():
+    ns = nemo_runner.build_arg_parser().parse_args(
+        ["--audio", "a.wav", "--model", "nvidia/parakeet-tdt-0.6b-v2"])
+    assert ns.audio == "a.wav"
+    assert ns.model == "nvidia/parakeet-tdt-0.6b-v2"
+    assert ns.device == "cuda"
+    assert ns.language == "en"
+    assert ns.chunk_len_secs == 40.0
+    assert ns.max_new_tokens >= 256        # generous default so chunks don't truncate
+
+
+def test_looks_like_salm():
+    assert nemo_runner._looks_like_salm("nvidia/canary-qwen-2.5b") is True
+    assert nemo_runner._looks_like_salm("nvidia/parakeet-tdt-0.6b-v2") is False
+
+
+def test_needs_decode():
+    # .wav passes through; everything else (mp4/m4a/flac) gets decoded first,
+    # because NeMo/lhotse can't open compressed containers under torchaudio >=2.11.
+    assert nemo_runner._needs_decode("clip.wav") is False
+    assert nemo_runner._needs_decode("CLIP.WAV") is False
+    assert nemo_runner._needs_decode("lecture.mp4") is True
+    assert nemo_runner._needs_decode("a.m4a") is True
+    assert nemo_runner._needs_decode("b.flac") is True
+
+
+def test_segments_to_json_from_dicts():
+    segs = [{"start": 0.0, "end": 2.0, "segment": "hello there"},
+            {"start": 2.0, "end": 4.0, "text": "hi back"}]
+    out = nemo_runner._segments_to_json(segs)
+    assert out == [{"start": 0.0, "end": 2.0, "text": "hello there"},
+                   {"start": 2.0, "end": 4.0, "text": "hi back"}]
+
+
+def test_words_to_json_from_dicts():
+    words = [{"word": "hello", "start": 0.0, "end": 0.5}]
+    out = nemo_runner._words_to_json(words)
+    assert out == [{"word": "hello", "start": 0.0, "end": 0.5}]
+
+
+def test_segments_to_json_empty():
+    assert nemo_runner._segments_to_json([]) == []
+    assert nemo_runner._words_to_json(None) == []
+
+
+def test_segments_to_json_from_objects():
+    from types import SimpleNamespace
+    seg = SimpleNamespace(start=1.0, end=3.0, segment="spoken text")
+    assert nemo_runner._segments_to_json([seg]) == [
+        {"start": 1.0, "end": 3.0, "text": "spoken text"}]
+
+
+def test_words_to_json_from_objects():
+    from types import SimpleNamespace
+    w = SimpleNamespace(word="hi", start=0.0, end=0.4)
+    assert nemo_runner._words_to_json([w]) == [{"word": "hi", "start": 0.0, "end": 0.4}]
+
+
+def test_missing_timestamp_coerced_not_crash():
+    # A segment/word missing start/end keeps its text/word at 0.0 rather than
+    # raising float(None) — defensive against partial NeMo output.
+    assert nemo_runner._segments_to_json([{"text": "no timing"}]) == [
+        {"start": 0.0, "end": 0.0, "text": "no timing"}]
+    assert nemo_runner._words_to_json([{"word": "x"}]) == [
+        {"word": "x", "start": 0.0, "end": 0.0}]

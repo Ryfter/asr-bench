@@ -157,9 +157,28 @@ MODELS: Dict[str, Dict] = {
         "riva_model": "",  # "" => let the NIM server pick its default model
         "notes": "NVIDIA NIM ASR via Riva gRPC. Endpoint set by --nim-url.",
     },
+    "parakeet-tdt-0.6b-v2": {
+        "engine": "nemo",
+        "display": "Parakeet TDT 0.6B v2 (NeMo)",
+        "params": "600M",
+        "developer": "NVIDIA",
+        "languages": "en",
+        "nemo_model": "nvidia/parakeet-tdt-0.6b-v2",
+        "notes": "NeMo FastConformer-TDT. Native word/segment timestamps -> VTT.",
+    },
+    "canary-qwen-2.5b": {
+        "engine": "nemo",
+        "display": "Canary-Qwen 2.5B (NeMo)",
+        "params": "2.5B",
+        "developer": "NVIDIA",
+        "languages": "en",
+        "nemo_model": "nvidia/canary-qwen-2.5b",
+        "notes": "NeMo SALM (FastConformer enc + Qwen3 dec). WER-only - no native timestamps.",
+    },
 }
 
 _NIM_ADHOC_RE = re.compile(r"^nim:(.+)$")
+_NEMO_ADHOC_RE = re.compile(r"^nemo:(.*)$")
 _WHISPERX_RE = re.compile(r"^(.+)\+whisperx$")
 _WHISPERX_SIZES = {"small", "medium", "large-v3", "large-v3-turbo"}
 
@@ -209,6 +228,21 @@ def resolve_model_entry(model_id: str) -> Dict:
             "languages": "—",
             "riva_model": name,
             "notes": f"Ad-hoc NIM model '{name}' via Riva gRPC.",
+        }
+    nm = _NEMO_ADHOC_RE.match(model_id)
+    if nm:
+        name = nm.group(1).strip()
+        if not name:
+            raise ValueError(f"empty NeMo model name in '{model_id}'")
+        return {
+            "id": model_id,
+            "engine": "nemo",
+            "display": f"NeMo ({name})",
+            "developer": "NVIDIA",
+            "params": "—",
+            "languages": "—",
+            "nemo_model": name,
+            "notes": f"Ad-hoc NeMo model '{name}'.",
         }
     raise ValueError(f"unknown model id: {model_id}")
 
@@ -554,7 +588,11 @@ def gpu_name() -> Optional[str]:
 # Rough VRAM cost per model at compute_type=float16, including a base + per-batch-item slope.
 # Numbers come from observed peaks; conservative so the recommendation doesn't OOM.
 _MODEL_VRAM_COST: Dict[str, Tuple[int, int]] = {
-    # model_id -> (base_bytes, per_batch_item_bytes)
+    # model_id -> (base_bytes, per_batch_item_bytes). faster-whisper only — it is
+    # the only engine that uses --batch-size. nim/whisperx/nemo are intentionally
+    # absent: they manage their own batching (in-container or in the subprocess
+    # runner), so recommend_batch_size correctly ignores them. NeMo peak VRAM is
+    # measured live by the runner (torch.cuda.max_memory_allocated), not sized here.
     "small":          (int(0.8 * 1024**3), int(0.18 * 1024**3)),
     "medium":         (int(1.8 * 1024**3), int(0.45 * 1024**3)),
     "large-v3":       (int(4.0 * 1024**3), int(0.90 * 1024**3)),
@@ -811,6 +849,8 @@ class RunConfig:
     hf_token: Optional[str] = None
     min_speakers: Optional[int] = None
     max_speakers: Optional[int] = None
+    # nemo only
+    nemo_python: Optional[str] = None
 
 
 class Engine(ABC):
@@ -1301,6 +1341,42 @@ def write_words_sidecar(audio_path: Path, model_label: str, result: "WhisperXRes
     return out
 
 
+# ---- NeMo result ------------------------------------------------------------
+@dataclass
+class NeMoResult:
+    """Parsed output of a NeMo run. Parakeet yields segments+words (native
+    timestamps); Canary-Qwen yields full_text only (no timestamps). Duck-typed to
+    reuse write_whisperx_vtt / write_words_sidecar (they read .segments / .words)."""
+    segments: List[Dict] = field(default_factory=list)   # [{start, end, text}]
+    words: List[Dict] = field(default_factory=list)       # [{word, start, end}]
+    full_text: str = ""
+    transcribe_sec: Optional[float] = None
+    vram_peak_bytes: Optional[int] = None
+    language: str = ""
+
+    @classmethod
+    def from_dict(cls, d: Dict) -> "NeMoResult":
+        return cls(
+            segments=list(d.get("segments") or []),
+            words=list(d.get("words") or []),
+            full_text=d.get("text") or "",
+            transcribe_sec=d.get("transcribe_sec"),
+            vram_peak_bytes=d.get("vram_peak_bytes"),
+            language=d.get("language") or "",
+        )
+
+    def text(self) -> str:
+        if self.segments:
+            return " ".join(s.get("text", "").strip() for s in self.segments).strip()
+        return self.full_text.strip()
+
+    def has_timestamps(self) -> bool:
+        return bool(self.segments)
+
+    def speaker_segments(self) -> List[Tuple[float, float, str]]:
+        return []   # v0.4 NeMo is transcription-only
+
+
 # ---- WhisperX adapter -------------------------------------------------------
 _RUNNER_PATH = str(Path(__file__).resolve().parent / "whisperx_runner.py")
 
@@ -1400,6 +1476,84 @@ def make_whisperx_adapter(cfg: "RunConfig") -> WhisperXAdapter:
     )
 
 
+# ---- NeMo adapter -----------------------------------------------------------
+_NEMO_RUNNER_PATH = str(Path(__file__).resolve().parent / "nemo_runner.py")
+
+
+class NeMoAdapter(ABC):
+    """Turns an audio file into a NeMoResult. Subprocess (to a 3.12 .venv-nemo)
+    is the only real impl — torch has no 3.14 wheels — plus a Fake for tests."""
+    name: str = ""
+
+    @abstractmethod
+    def transcribe(self, audio_path: str, model: str, cfg: "RunConfig") -> "NeMoResult":
+        ...
+
+
+class FakeNeMoAdapter(NeMoAdapter):
+    name = "fake"
+
+    def __init__(self, result: "NeMoResult"):
+        self._result = result
+
+    def transcribe(self, audio_path, model, cfg):
+        return self._result
+
+
+def _nemo_runner_args(audio_path: str, model: str, cfg: "RunConfig") -> List[str]:
+    return [_NEMO_RUNNER_PATH, "--audio", audio_path, "--model", model,
+            "--device", cfg.device, "--language", "en"]
+
+
+class SubprocessNeMo(NeMoAdapter):
+    """Runs nemo_runner.py under a configured 3.12 venv python; parses JSON."""
+    name = "subprocess"
+
+    def __init__(self, python: str, timeout: float = 7200.0):  # NeMo first-run downloads can exceed WhisperX's 1h
+        self.python = python
+        self.timeout = timeout
+
+    def transcribe(self, audio_path, model, cfg):
+        exe = shutil.which(self.python) or self.python
+        cmd = [exe, *_nemo_runner_args(audio_path, model, cfg)]
+        env = dict(os.environ)
+        # torch 2.6+ defaults weights_only=True; some NeMo checkpoints need this off.
+        env["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] = "1"
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True,
+                                  timeout=self.timeout, check=False, env=env)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(
+                f"nemo_runner timed out after {self.timeout}s — increase "
+                "SubprocessNeMo(timeout=...) or use faster storage for the model cache")
+        if proc.returncode != 0:
+            raise RuntimeError(f"nemo_runner failed ({proc.returncode}): {proc.stderr[:500]}")
+        return NeMoResult.from_dict(json.loads(proc.stdout))
+
+
+def _default_nemo_python() -> Optional[str]:
+    """Look for a conventional sibling venv (./.venv-nemo)."""
+    root = Path(__file__).resolve().parent
+    for rel in (".venv-nemo/Scripts/python.exe", ".venv-nemo/bin/python"):
+        cand = root / rel
+        if cand.is_file():
+            return str(cand)
+    return None
+
+
+def make_nemo_adapter(cfg: "RunConfig") -> NeMoAdapter:
+    """Subprocess to a 3.12 venv python (cfg.nemo_python or ./.venv-nemo). NeMo is
+    never run in-process: core is Python 3.14 (no torch wheels) and a fresh
+    subprocess gives clean per-model VRAM teardown."""
+    venv_py = cfg.nemo_python or _default_nemo_python()
+    if venv_py:
+        return SubprocessNeMo(venv_py)
+    raise RuntimeError(
+        "NeMo needs a Python 3.12 venv with torch (cu128) + nemo_toolkit. "
+        "Run setup_nemo_venv.ps1 (creates ./.venv-nemo) or pass --nemo-python."
+    )
+
+
 def _audio_duration_sec(audio_path: str) -> float:
     """Best-effort audio duration in seconds via pyav (a faster-whisper dep).
     Returns 0.0 on failure; callers fall back to the last segment end."""
@@ -1477,6 +1631,72 @@ class WhisperXEngine(Engine):
 
 
 ENGINES["whisperx"] = WhisperXEngine
+
+
+class NeMoEngine(Engine):
+    name = "nemo"
+
+    def run(self, entry: Dict, pairs: List[Pair], cfg: RunConfig) -> ModelResult:
+        adapter = make_nemo_adapter(cfg)
+        print(f"\n[{entry['display']}] using NeMo adapter: {adapter.name}", flush=True)
+        result_model = ModelResult(
+            model_id=entry["id"], display=entry["display"], fw_name=entry.get("fw_name", ""),
+            params=entry["params"], developer=entry["developer"], languages=entry["languages"],
+            notes=entry["notes"], disk_bytes=None, load_sec=0.0,
+            engine="nemo", vram_is_total=False,
+        )
+        for clip_idx, pair in enumerate(pairs, start=1):
+            print(f"  [{clip_idx}/{len(pairs)}] transcribing {pair.audio.name}...", flush=True)
+            ref_text = load_reference_text(pair.reference)
+            ref_origin, ref_label = detect_reference_origin(pair.reference)
+            t0 = time.time()
+            try:
+                nm = adapter.transcribe(str(pair.audio), entry["nemo_model"], cfg)
+            except Exception as e:
+                print(f"  ERROR nemo on {pair.audio.name}: {e}", file=sys.stderr)
+                continue
+            wall = time.time() - t0
+            transcribe_sec = nm.transcribe_sec if nm.transcribe_sec is not None else wall
+
+            hypothesis = nm.text()
+            ref_norm = normalize_for_wer(ref_text)
+            hyp_norm = normalize_for_wer(hypothesis)
+            metrics = compute_word_metrics(ref_norm, hyp_norm)
+
+            label = _model_label(entry["id"])
+            vtt_path = None
+            cue_count = 0
+            if nm.has_timestamps():
+                vtt_path = str(write_whisperx_vtt(pair.audio, label, nm))
+                write_words_sidecar(pair.audio, label, nm)
+                cue_count = len(nm.segments)
+
+            audio_sec = _audio_duration_sec(str(pair.audio)) or (
+                nm.segments[-1]["end"] if nm.segments else 0.0)
+            rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
+
+            print(f"    {audio_sec:.1f}s in {transcribe_sec:.1f}s "
+                  f"(RTFx {rtfx:.2f}, WER {metrics.wer*100:.1f}%, "
+                  f"{'timestamps' if nm.has_timestamps() else 'text-only'})", flush=True)
+
+            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
+            result_model.clips.append(ClipResult(
+                audio=pair.audio.name, audio_sec=audio_sec, transcribe_sec=transcribe_sec,
+                rtfx=rtfx, vram_peak_bytes=nm.vram_peak_bytes, hypothesis=hypothesis,
+                reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
+                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer,
+                repeat_coverage=rep_cov, compression_ratio=comp_ratio,
+                hits=metrics.hits, substitutions=metrics.substitutions,
+                deletions=metrics.deletions, insertions=metrics.insertions,
+                cue_count=cue_count, vtt_path=vtt_path,
+                reference_origin=ref_origin, reference_label=ref_label,
+            ))
+        if not result_model.clips:
+            result_model.notes = "ALL CLIPS FAILED — check NeMo setup/.venv-nemo and stderr above"
+        return result_model
+
+
+ENGINES["nemo"] = NeMoEngine
 
 
 # ---- Fusion -----------------------------------------------------------------
@@ -2074,7 +2294,8 @@ def _config_to_dict(cfg: "RunConfig") -> Dict:
         "vad_filter": cfg.vad_filter,
         "nim_url": cfg.nim_url, "nim_model": cfg.nim_model,
         "nim_language": cfg.nim_language, "nim_ssl": cfg.nim_ssl,
-        "whisperx_python": cfg.whisperx_python, "diarize": cfg.diarize,
+        "whisperx_python": cfg.whisperx_python, "nemo_python": cfg.nemo_python,
+        "diarize": cfg.diarize,
         "min_speakers": cfg.min_speakers, "max_speakers": cfg.max_speakers,
     }
 
@@ -2601,6 +2822,9 @@ def main() -> int:
     ap.add_argument("--whisperx-python", default=None,
                     help="Path to a 3.12 venv python with whisperx+torch+pyannote "
                          "(for the subprocess adapter; auto-detects ./.venv-whisperx if omitted).")
+    ap.add_argument("--nemo-python", default=None,
+                    help="Path to a 3.12 venv python with torch (cu128) + nemo_toolkit "
+                         "(subprocess adapter; auto-detects ./.venv-nemo if omitted).")
     ap.add_argument("--diarize", action=argparse.BooleanOptionalAction, default=True,
                     help="Run pyannote speaker diarization for whisperx models (default on). "
                          "Without an HF token it warns and falls back to alignment-only.")
@@ -2716,6 +2940,19 @@ def main() -> int:
               "WhisperX will run alignment-only. Get a free token and accept the gated "
               "pyannote/speaker-diarization-3.1 model to enable diarization.", file=sys.stderr)
 
+    # Pre-flight: NeMo models need a .venv-nemo (or --nemo-python). Skip just those
+    # models (not the whole run) when absent, so Whisper/NIM models still benchmark.
+    nemo_requested = [m for m in requested if resolve_model_entry(m)["engine"] == "nemo"]
+    if nemo_requested and not (args.nemo_python or _default_nemo_python()):
+        print(f"WARNING: NeMo model(s) {', '.join(nemo_requested)} requested but no "
+              f".venv-nemo found and --nemo-python not given. Skipping them. "
+              f"Run setup_nemo_venv.ps1 to enable NeMo.", file=sys.stderr)
+        requested = [m for m in requested if m not in nemo_requested]
+        if not requested:
+            print("ERROR: no runnable models left after skipping NeMo "
+                  "(no .venv-nemo). See setup_nemo_venv.ps1.", file=sys.stderr)
+            return 2
+
     pairs = discover_pairs(corpus)
     if args.include:
         include_re = re.compile(args.include, re.IGNORECASE)
@@ -2784,6 +3021,7 @@ def main() -> int:
         nim_api_key=args.nim_api_key,
         nim_ssl=args.nim_ssl,
         whisperx_python=args.whisperx_python,
+        nemo_python=args.nemo_python,
         diarize=args.diarize,
         hf_token=args.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN"),
         min_speakers=args.min_speakers,
