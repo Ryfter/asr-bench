@@ -1471,7 +1471,7 @@ class SubprocessNeMo(NeMoAdapter):
     """Runs nemo_runner.py under a configured 3.12 venv python; parses JSON."""
     name = "subprocess"
 
-    def __init__(self, python: str, timeout: float = 7200.0):
+    def __init__(self, python: str, timeout: float = 7200.0):  # NeMo first-run downloads can exceed WhisperX's 1h
         self.python = python
         self.timeout = timeout
 
@@ -1481,8 +1481,13 @@ class SubprocessNeMo(NeMoAdapter):
         env = dict(os.environ)
         # torch 2.6+ defaults weights_only=True; some NeMo checkpoints need this off.
         env["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] = "1"
-        proc = subprocess.run(cmd, capture_output=True, text=True,
-                              timeout=self.timeout, check=False, env=env)
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True,
+                                  timeout=self.timeout, check=False, env=env)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(
+                f"nemo_runner timed out after {self.timeout}s — increase "
+                "SubprocessNeMo(timeout=...) or use faster storage for the model cache")
         if proc.returncode != 0:
             raise RuntimeError(f"nemo_runner failed ({proc.returncode}): {proc.stderr[:500]}")
         return NeMoResult.from_dict(json.loads(proc.stdout))

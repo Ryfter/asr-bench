@@ -50,3 +50,58 @@ def test_make_nemo_adapter_uses_subprocess_with_venv(monkeypatch):
     a = asr_bench.make_nemo_adapter(cfg)
     assert isinstance(a, asr_bench.SubprocessNeMo)
     assert a.python == "/x/.venv-nemo/bin/python"
+
+
+def test_subprocess_transcribe_parses_json_and_sets_env(monkeypatch):
+    import subprocess
+    from asr_bench import SubprocessNeMo, RunConfig
+    captured = {}
+
+    class _Proc:
+        returncode = 0
+        stdout = '{"text": "hello", "transcribe_sec": 1.0}'
+        stderr = ""
+
+    def fake_run(cmd, **kw):
+        captured["cmd"] = cmd
+        captured["env"] = kw.get("env")
+        return _Proc()
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    adapter = SubprocessNeMo("python")
+    cfg = RunConfig(device="cuda", compute_type="float16")
+    result = adapter.transcribe("a.wav", "nvidia/canary-qwen-2.5b", cfg)
+
+    assert result.text() == "hello"
+    assert result.transcribe_sec == 1.0
+    assert captured["env"]["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] == "1"
+    assert "--model" in captured["cmd"] and "nvidia/canary-qwen-2.5b" in captured["cmd"]
+
+
+def test_subprocess_transcribe_nonzero_raises(monkeypatch):
+    import subprocess
+    from asr_bench import SubprocessNeMo, RunConfig
+
+    class _Proc:
+        returncode = 1
+        stdout = ""
+        stderr = "boom traceback"
+
+    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: _Proc())
+    import pytest
+    with pytest.raises(RuntimeError, match="boom traceback"):
+        SubprocessNeMo("python").transcribe("a.wav", "m", RunConfig(device="cpu", compute_type="int8"))
+
+
+def test_subprocess_transcribe_timeout_raises_runtimeerror(monkeypatch):
+    import subprocess
+    from asr_bench import SubprocessNeMo, RunConfig
+
+    def fake_run(cmd, **kw):
+        raise subprocess.TimeoutExpired(cmd, kw.get("timeout", 1))
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    import pytest
+    with pytest.raises(RuntimeError, match="timed out"):
+        SubprocessNeMo("python", timeout=5).transcribe(
+            "a.wav", "m", RunConfig(device="cpu", compute_type="int8"))
