@@ -139,6 +139,10 @@ from engines.nemo import (  # noqa: E402,F401
     make_nemo_adapter, _default_nemo_python, _nemo_runner_args, _NEMO_RUNNER_PATH,
     NeMoEngine,
 )
+from engines.hf import (  # noqa: E402,F401
+    HFResult, HFAdapter, FakeHFAdapter, SubprocessHF,
+    make_hf_adapter, _default_hf_python, HFTransformersEngine,
+)
 
 
 # ---- Model registry ---------------------------------------------------------
@@ -188,6 +192,20 @@ MODELS: Dict[str, Dict] = {
         "fw_name": "distil-large-v3.5",   # CT2 id resolves to distil-whisper/distil-large-v3.5-ct2
         "notes": "Community distil fine-tune of large-v3 (English). faster-whisper/CT2.",
     },
+    "wav2vec2-large-960h": {
+        "engine": "hf",
+        "display": "Wav2Vec2 Large 960h",
+        "params": "315M", "developer": "Meta / facebook", "languages": "en",
+        "hf_model": "facebook/wav2vec2-large-960h",
+        "notes": "HF transformers CTC. Word timestamps via pipeline -> VTT.",
+    },
+    "wav2vec2-conformer-large": {
+        "engine": "hf",
+        "display": "Wav2Vec2-Conformer Large (RoPE)",
+        "params": "600M", "developer": "Meta / facebook", "languages": "en",
+        "hf_model": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+        "notes": "HF transformers Conformer-CTC. Word timestamps via pipeline -> VTT.",
+    },
     "canary-nim": {
         "engine": "nim",
         "display": "Canary (NIM)",
@@ -219,6 +237,7 @@ MODELS: Dict[str, Dict] = {
 
 _NIM_ADHOC_RE = re.compile(r"^nim:(.+)$")
 _NEMO_ADHOC_RE = re.compile(r"^nemo:(.*)$")
+_HF_ADHOC_RE = re.compile(r"^hf:(.*)$")
 _WHISPERX_RE = re.compile(r"^(.+)\+whisperx$")
 _WHISPERX_SIZES = {"small", "medium", "large-v3", "large-v3-turbo"}
 
@@ -283,6 +302,18 @@ def resolve_model_entry(model_id: str) -> Dict:
             "languages": "—",
             "nemo_model": name,
             "notes": f"Ad-hoc NeMo model '{name}'.",
+        }
+    hf = _HF_ADHOC_RE.match(model_id)
+    if hf:
+        name = hf.group(1).strip()
+        if not name:
+            raise ValueError(f"empty HF model name in '{model_id}'")
+        return {
+            "id": model_id, "engine": "hf",
+            "display": f"HF ({name})", "developer": "HuggingFace",
+            "params": "—", "languages": "—",
+            "hf_model": name,
+            "notes": f"Ad-hoc HF transformers model '{name}'.",
         }
     raise ValueError(f"unknown model id: {model_id}")
 
@@ -1020,6 +1051,7 @@ def _config_to_dict(cfg: "RunConfig") -> Dict:
         "nim_url": cfg.nim_url, "nim_model": cfg.nim_model,
         "nim_language": cfg.nim_language, "nim_ssl": cfg.nim_ssl,
         "whisperx_python": cfg.whisperx_python, "nemo_python": cfg.nemo_python,
+        "hf_python": cfg.hf_python,
         "diarize": cfg.diarize,
         "min_speakers": cfg.min_speakers, "max_speakers": cfg.max_speakers,
     }
@@ -1550,6 +1582,9 @@ def main() -> int:
     ap.add_argument("--nemo-python", default=None,
                     help="Path to a 3.12 venv python with torch (cu128) + nemo_toolkit "
                          "(subprocess adapter; auto-detects ./.venv-nemo if omitted).")
+    ap.add_argument("--hf-python", default=None,
+                    help="Path to a 3.12 venv python with torch (cu128) + transformers "
+                         "(subprocess adapter; auto-detects ./.venv-hf if omitted).")
     ap.add_argument("--diarize", action=argparse.BooleanOptionalAction, default=True,
                     help="Run pyannote speaker diarization for whisperx models (default on). "
                          "Without an HF token it warns and falls back to alignment-only.")
@@ -1678,6 +1713,19 @@ def main() -> int:
                   "(no .venv-nemo). See setup_nemo_venv.ps1.", file=sys.stderr)
             return 2
 
+    # Pre-flight: HF-transformers models need a .venv-hf (or --hf-python). Skip
+    # just those models (not the whole run) when absent.
+    hf_requested = [m for m in requested if resolve_model_entry(m)["engine"] == "hf"]
+    if hf_requested and not (args.hf_python or _default_hf_python()):
+        print(f"WARNING: HF model(s) {', '.join(hf_requested)} requested but no "
+              f".venv-hf found and --hf-python not given. Skipping them. "
+              f"Run setup_hf_venv.ps1 to enable the HF engine.", file=sys.stderr)
+        requested = [m for m in requested if m not in hf_requested]
+        if not requested:
+            print("ERROR: no runnable models left after skipping HF "
+                  "(no .venv-hf). See setup_hf_venv.ps1.", file=sys.stderr)
+            return 2
+
     pairs = discover_pairs(corpus)
     if args.include:
         include_re = re.compile(args.include, re.IGNORECASE)
@@ -1747,6 +1795,7 @@ def main() -> int:
         nim_ssl=args.nim_ssl,
         whisperx_python=args.whisperx_python,
         nemo_python=args.nemo_python,
+        hf_python=args.hf_python,
         diarize=args.diarize,
         hf_token=args.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN"),
         min_speakers=args.min_speakers,

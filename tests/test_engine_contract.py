@@ -24,6 +24,6 @@ def test_nim_engine_name():
 
 
 def test_engines_registry_has_both():
-    assert set(asr_bench.ENGINES.keys()) == {"faster-whisper", "nim", "whisperx", "nemo"}
+    assert set(asr_bench.ENGINES.keys()) == {"faster-whisper", "nim", "whisperx", "nemo", "hf"}
     for cls in asr_bench.ENGINES.values():
         assert issubclass(cls, asr_bench.Engine)

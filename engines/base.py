@@ -509,6 +509,8 @@ class RunConfig:
     max_speakers: Optional[int] = None
     # nemo only
     nemo_python: Optional[str] = None
+    # hf only
+    hf_python: Optional[str] = None
 
 
 class Engine(ABC):

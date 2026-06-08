@@ -4,8 +4,8 @@ import sys
 import asr_bench
 
 
-def test_engines_registry_has_all_four_families():
-    assert set(asr_bench.ENGINES) == {"faster-whisper", "nim", "whisperx", "nemo"}
+def test_engines_registry_has_all_families():
+    assert set(asr_bench.ENGINES) == {"faster-whisper", "nim", "whisperx", "nemo", "hf"}
 
 
 def test_relocated_names_still_resolve_from_asr_bench():

@@ -17,3 +17,6 @@ ENGINES["whisperx"] = WhisperXEngine
 
 from engines.nemo import NeMoEngine  # noqa: E402
 ENGINES["nemo"] = NeMoEngine
+
+from engines.hf import HFTransformersEngine  # noqa: E402
+ENGINES["hf"] = HFTransformersEngine
