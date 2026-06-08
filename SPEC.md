@@ -100,11 +100,17 @@ Why v0.4 not earlier:
 
 Other NeMo models to slot in later: `Parakeet-CTC-1.1B`, older `Citrinet`.
 
-**Still deferred (separate later milestones):** the `engines/` package split (NeMo was added in-file alongside the other three Engine subclasses) and PyInstaller prebuilt binaries.
+**Still deferred (separate later milestone):** PyInstaller prebuilt binaries.
 
-### Planned for v0.5 — Conformer + community models
+### v0.5 — Conformer + community models (CODE-COMPLETE on `feat/v0.5-community-models`; live-validation PENDING)
 
-Stretch. Wav2vec2-large, conformer open models, distil-whisper community fine-tunes. Criteria: locally runnable, Python wrapper, timed segments output.
+The `engines/` package split landed as **Phase 0** of v0.5 (`engines/base.py` holds the shared types + writers; each engine family is its own module under `engines/`; `asr_bench` re-exports for a byte-stable public surface). Phase 1 + 2 then add three community models, criteria met (locally runnable, Python wrapper, timed segments output):
+
+- **`distil-large-v3.5`** (Phase 1) — Distil-Whisper Large V3.5, 756M, English. Runs through the **existing faster-whisper engine** (CT2 id `distil-large-v3.5`, resolved to `distil-whisper/distil-large-v3.5-ct2`); registry-only addition (`MODELS` + `_MODEL_VRAM_COST` sized like turbo).
+- **`wav2vec2-large-960h`** + **`wav2vec2-conformer-large`** (Phase 2) — a new **HuggingFace-transformers engine** (`HFTransformersEngine` + `hf_runner.py`) running CTC models via the transformers ASR pipeline. Word-level timestamps (`return_timestamps="word"`) -> full VTT + `_Words_*.json`. Plus `hf:<model>` ad-hoc ids.
+- Runs as a **subprocess into a dedicated `.venv-hf`** (Python 3.12; torch has no 3.14 wheels) via pure-JSON stdout, mirroring the NeMo engine. Own venv (not shared with `.venv-nemo`/`.venv-whisperx`) to avoid pin collisions. `--hf-python` overrides; `hf_python` is a non-secret sidecar config field. Graceful pre-flight skip when no venv is present (other engines still run). Additive only — `schema_version` stays 1, core stays torch-free.
+
+**Live-validation gate (PENDING, RTX 5090):** the `run_hf` path (transformers pipeline, real CTC timestamps, CUDA) is exercised only on the GPU box; not yet merged to main. Other NeMo models to slot in later still apply.
 
 ## Metrics — full roadmap
 

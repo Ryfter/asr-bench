@@ -99,15 +99,50 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 # Path is imported earlier above for _add_nvidia_dll_directories — already in scope.
 
-# ---- Optional VRAM tracking via NVIDIA NVML ---------------------------------
-try:
-    import pynvml  # provided by nvidia-ml-py3
-    pynvml.nvmlInit()
-    _HAS_NVML = True
-    _NVML_DEVICE_COUNT = pynvml.nvmlDeviceGetCount()
-except Exception:
-    _HAS_NVML = False
-    _NVML_DEVICE_COUNT = 0
+# ---- Re-exported shared support layer (lives in engines/base.py) ------------
+# The Engine ABC, result/config dataclasses, metrics, VRAM sampling, audio
+# decode, reference/caption parsing, and the VTT/words writers now live in the
+# torch-free engines/base.py. They are re-exported here so the public surface
+# (import asr_bench / python asr_bench.py) and the entire test suite keep working
+# unchanged.
+from engines.base import (  # noqa: E402,F401
+    _HAS_NVML, _NVML_DEVICE_COUNT,
+    HALLUCINATION_NGRAM, HALLUCINATION_MIN_WORDS, HALLUCINATION_MIN_CHARS,
+    HALLUCINATION_REPEAT_COVERAGE, HALLUCINATION_COMPRESSION_RATIO,
+    HALLUCINATION_INSERTION_RATE,
+    gpu_used_bytes, gpu_total_and_free_bytes, gpu_name,
+    detect_reference_origin, load_reference_text, Cue, parse_caption_cues,
+    normalize_for_wer, WordMetrics, _repeat_coverage, _compression_ratio,
+    compute_hallucination_signals, compute_word_metrics,
+    Pair, _fused_base, _fmt_vtt_time, write_whisper_vtt, write_whisperx_vtt,
+    write_words_sidecar, find_rttm, _model_label,
+    ClipResult, ModelResult, RunConfig, Engine,
+    VramSampler, group_words_into_cues, decode_to_pcm16, _audio_duration_sec,
+)
+
+# ---- Re-exported engine families (live in engines/<name>.py) ----------------
+# Each engine class now lives in its own module under engines/; the ENGINES
+# registry is assembled in engines/__init__.py. Re-exported here so the public
+# surface (asr_bench.FasterWhisperEngine, etc.) and the test suite are unchanged.
+from engines import ENGINES  # noqa: E402,F401  (registry assembled in engines/__init__.py)
+from engines.faster_whisper import FasterWhisperEngine, model_disk_bytes  # noqa: E402,F401
+from engines.nim import (  # noqa: E402,F401
+    NimEngine, build_nim_auth_kwargs, nim_response_to_hypothesis, nim_response_to_words,
+)
+from engines.whisperx import (  # noqa: E402,F401
+    WhisperXResult, WhisperXAdapter, FakeWhisperXAdapter,
+    InProcessWhisperX, SubprocessWhisperX, make_whisperx_adapter, _default_whisperx_python,
+    WhisperXEngine,
+)
+from engines.nemo import (  # noqa: E402,F401
+    NeMoResult, NeMoAdapter, FakeNeMoAdapter, SubprocessNeMo,
+    make_nemo_adapter, _default_nemo_python, _nemo_runner_args, _NEMO_RUNNER_PATH,
+    NeMoEngine,
+)
+from engines.hf import (  # noqa: E402,F401
+    HFResult, HFAdapter, FakeHFAdapter, SubprocessHF,
+    make_hf_adapter, _default_hf_python, HFTransformersEngine,
+)
 
 
 # ---- Model registry ---------------------------------------------------------
@@ -148,6 +183,29 @@ MODELS: Dict[str, Dict] = {
         "fw_name": "large-v3-turbo",
         "notes": "Distilled large-v3. Accuracy close to large at medium-class speed.",
     },
+    "distil-large-v3.5": {
+        "engine": "faster-whisper",
+        "display": "Distil-Whisper Large V3.5",
+        "params": "756M",
+        "developer": "HuggingFace / distil-whisper",
+        "languages": "en",
+        "fw_name": "distil-large-v3.5",   # CT2 id resolves to distil-whisper/distil-large-v3.5-ct2
+        "notes": "Community distil fine-tune of large-v3 (English). faster-whisper/CT2.",
+    },
+    "wav2vec2-large-960h": {
+        "engine": "hf",
+        "display": "Wav2Vec2 Large 960h",
+        "params": "315M", "developer": "Meta / facebook", "languages": "en",
+        "hf_model": "facebook/wav2vec2-large-960h",
+        "notes": "HF transformers CTC. Word timestamps via pipeline -> VTT.",
+    },
+    "wav2vec2-conformer-large": {
+        "engine": "hf",
+        "display": "Wav2Vec2-Conformer Large (RoPE)",
+        "params": "600M", "developer": "Meta / facebook", "languages": "en",
+        "hf_model": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+        "notes": "HF transformers Conformer-CTC. Word timestamps via pipeline -> VTT.",
+    },
     "canary-nim": {
         "engine": "nim",
         "display": "Canary (NIM)",
@@ -179,6 +237,7 @@ MODELS: Dict[str, Dict] = {
 
 _NIM_ADHOC_RE = re.compile(r"^nim:(.+)$")
 _NEMO_ADHOC_RE = re.compile(r"^nemo:(.*)$")
+_HF_ADHOC_RE = re.compile(r"^hf:(.*)$")
 _WHISPERX_RE = re.compile(r"^(.+)\+whisperx$")
 _WHISPERX_SIZES = {"small", "medium", "large-v3", "large-v3-turbo"}
 
@@ -244,238 +303,23 @@ def resolve_model_entry(model_id: str) -> Dict:
             "nemo_model": name,
             "notes": f"Ad-hoc NeMo model '{name}'.",
         }
+    hf = _HF_ADHOC_RE.match(model_id)
+    if hf:
+        name = hf.group(1).strip()
+        if not name:
+            raise ValueError(f"empty HF model name in '{model_id}'")
+        return {
+            "id": model_id, "engine": "hf",
+            "display": f"HF ({name})", "developer": "HuggingFace",
+            "params": "—", "languages": "—",
+            "hf_model": name,
+            "notes": f"Ad-hoc HF transformers model '{name}'.",
+        }
     raise ValueError(f"unknown model id: {model_id}")
-
-
-# ---- Reference origin detection ---------------------------------------------
-_PANOPTO_FILENAME_RE = re.compile(r"_Captions_[A-Za-z]+(?:\s*\([^)]+\))?(?:\s*\(\d+\))?\.txt$")
-_ASR_HEADER_RE = re.compile(r"\[Auto-generated transcript", re.IGNORECASE)
-
-
-def detect_reference_origin(path: Path) -> Tuple[str, str]:
-    """Return (origin, label) for a reference file.
-
-    origin: 'panopto-asr' | 'asr-generic' | 'unknown'
-    label: short human-readable string for the report
-    """
-    name = path.name
-    if _PANOPTO_FILENAME_RE.search(name):
-        return ("panopto-asr", "Panopto auto-generated captions")
-    head = ""
-    try:
-        head = path.read_text(encoding="utf-8", errors="replace")[:2000]
-    except Exception:
-        pass
-    if _ASR_HEADER_RE.search(head):
-        return ("asr-generic", "ASR-generated captions (auto-detected from header)")
-    return ("unknown", "user-provided reference (gold unless --proxy-anyway)")
-
-
-# ---- Reference / hypothesis text loading ------------------------------------
-_TS_RE = re.compile(
-    r"\d{2}:\d{2}:\d{2}[,.]\d{3}\s+-->\s+\d{2}:\d{2}:\d{2}[,.]\d{3}"
-)
-_CUE_NUM_RE = re.compile(r"^\d+$")
-_BRACKETED_RE = re.compile(r"^\[.*\]$")
-
-
-def load_reference_text(path: Path) -> str:
-    """Strip SRT/VTT/Panopto formatting and return one flat string of words."""
-    raw = path.read_text(encoding="utf-8", errors="replace")
-    out: List[str] = []
-    for line in raw.splitlines():
-        s = line.strip()
-        if not s:
-            continue
-        if s.upper() == "WEBVTT":
-            continue
-        if _CUE_NUM_RE.match(s):
-            continue
-        if _TS_RE.search(s):
-            continue
-        # Strip Panopto's "[Auto-generated transcript. Edits may have been applied for clarity.]" header
-        if _BRACKETED_RE.match(s):
-            continue
-        out.append(s)
-    return " ".join(out)
-
-
-# ---- Caption cue parsing ----------------------------------------------------
-@dataclass
-class Cue:
-    start: float
-    end: float
-    text: str
-
-
-_VTT_TS_RE = re.compile(
-    r"(\d{2}):(\d{2}):(\d{2})[.,](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[.,](\d{3})"
-)
-
-
-def _ts_to_seconds(h: str, m: str, s: str, ms: str) -> float:
-    return int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000.0
-
-
-def parse_caption_cues(path: Path) -> List[Cue]:
-    """Parse a VTT or SRT file into timed cues.
-
-    Tolerant of both '.' (VTT) and ',' (SRT) millisecond separators. Drops the
-    WEBVTT header, numeric cue indices, and any fully bracketed line (e.g.
-    ``[Applause]``, ``[Music]``, Panopto's ``[Auto-generated transcript...]``).
-    Multi-line cue text is joined with spaces.
-    """
-    raw = path.read_text(encoding="utf-8", errors="replace")
-    cues: List[Cue] = []
-    start = end = None
-    buf: List[str] = []
-
-    def flush() -> None:
-        nonlocal start, end, buf
-        if start is not None and buf:
-            text = " ".join(buf).strip()
-            if text:
-                cues.append(Cue(start, end, text))
-        start = end = None
-        buf = []
-
-    for line in raw.splitlines():
-        s = line.strip()
-        m = _VTT_TS_RE.search(s)
-        if m:
-            flush()
-            start = _ts_to_seconds(m.group(1), m.group(2), m.group(3), m.group(4))
-            end = _ts_to_seconds(m.group(5), m.group(6), m.group(7), m.group(8))
-            continue
-        if not s:
-            flush()
-            continue
-        # Also drops a cue body that is a bare integer or fully bracketed — harmless for ASR content.
-        if s.upper() == "WEBVTT" or _CUE_NUM_RE.match(s) or _BRACKETED_RE.match(s):
-            continue
-        if start is not None:
-            buf.append(s)
-    flush()
-    return cues
-
-
-def normalize_for_wer(text: str) -> str:
-    """Lowercase, strip punctuation except apostrophes, collapse whitespace.
-
-    Keeps "don't" intact rather than splitting into "don" + "t". Most WER
-    implementations do this; we do it explicitly for reproducibility.
-    """
-    text = text.lower()
-    text = re.sub(r"[^\w\s']", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-
-# ---- Word metrics -----------------------------------------------------------
-@dataclass
-class WordMetrics:
-    """All alignment scores from a single jiwer alignment (word-level + CER).
-
-    WER  = (S+D+I)/N1                      (edit cost; can exceed 1.0)
-    MER  = (S+D+I)/(H+S+D+I)               (Morris et al.; bounded [0,1])
-    WIL  = 1 - H*H/(N1*N2)                 (Morris et al.; bounded [0,1])
-    CER  = char edit distance / len(reference)  (character-level WER; bounded [0,inf])
-    where N1 = ref words = H+S+D, N2 = hyp words = H+S+I.
-    """
-    wer: float
-    mer: float
-    wil: float
-    cer: float
-    hits: int
-    substitutions: int
-    deletions: int
-    insertions: int
-
-
-# ---- Hallucination signals (reference-free) ---------------------------------
-HALLUCINATION_NGRAM = 4
-HALLUCINATION_MIN_WORDS = 8          # below this, repeat_coverage is unreliable -> 0.0
-HALLUCINATION_MIN_CHARS = 200        # below this, compression_ratio is meaningless -> 1.0
-HALLUCINATION_REPEAT_COVERAGE = 0.30  # flag threshold
-HALLUCINATION_COMPRESSION_RATIO = 2.4  # flag threshold (Whisper's own default)
-HALLUCINATION_INSERTION_RATE = 0.5   # report annotation threshold (reference-based)
-
-
-def _repeat_coverage(normalized_hypothesis: str, n: int = HALLUCINATION_NGRAM) -> float:
-    """Fraction of word positions covered by an n-gram that occurs >= 2 times.
-    0.0 when there are fewer than HALLUCINATION_MIN_WORDS words."""
-    words = normalized_hypothesis.split()
-    if len(words) < HALLUCINATION_MIN_WORDS:
-        return 0.0
-    ngrams = [tuple(words[i:i + n]) for i in range(len(words) - n + 1)]
-    if not ngrams:
-        return 0.0
-    counts: Dict[tuple, int] = {}
-    for g in ngrams:
-        counts[g] = counts.get(g, 0) + 1
-    covered = [False] * len(words)
-    for i, g in enumerate(ngrams):
-        if counts[g] >= 2:
-            for j in range(i, i + n):
-                covered[j] = True
-    return sum(covered) / len(words)
-
-
-def _compression_ratio(text: str) -> float:
-    """len(utf8 bytes) / len(gzip(bytes)). ~1.5-2.2 normal prose, >2.4 repetitive.
-    Returns 1.0 for text shorter than HALLUCINATION_MIN_CHARS (gzip overhead makes
-    tiny inputs meaningless)."""
-    raw = text.encode("utf-8")
-    if len(raw) < HALLUCINATION_MIN_CHARS:
-        return 1.0
-    import gzip
-    compressed = gzip.compress(raw)
-    return len(raw) / len(compressed) if compressed else 1.0
-
-
-def compute_hallucination_signals(hypothesis: str, hypothesis_normalized: str) -> Tuple[float, float]:
-    """(repeat_coverage, compression_ratio) for a clip. Reference-free."""
-    return _repeat_coverage(hypothesis_normalized), _compression_ratio(hypothesis)
-
-
-def compute_word_metrics(reference: str, hypothesis: str) -> WordMetrics:
-    """One jiwer.process_words call -> WER, MER, WIL, and H/S/D/I counts.
-
-    Inputs should already be normalized (see normalize_for_wer). Returns NaN
-    metrics (not an exception) when alignment is impossible (e.g. empty ref).
-    """
-    nan = float("nan")
-    if not reference.strip():
-        return WordMetrics(nan, nan, nan, nan, 0, 0, 0, 0)
-    from jiwer import process_words, cer as jiwer_cer
-    try:
-        out = process_words(reference, hypothesis)
-        return WordMetrics(
-            wer=float(out.wer),
-            mer=float(out.mer),
-            wil=float(out.wil),
-            cer=float(jiwer_cer(reference, hypothesis)),
-            hits=int(out.hits),
-            substitutions=int(out.substitutions),
-            deletions=int(out.deletions),
-            insertions=int(out.insertions),
-        )
-    except Exception:
-        return WordMetrics(nan, nan, nan, nan, 0, 0, 0, 0)
 
 
 # ---- Pair discovery ---------------------------------------------------------
 AUDIO_EXTS = {".mp4", ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm"}
-
-
-@dataclass
-class Pair:
-    audio: Path
-    reference: Path
-
-    @property
-    def stem(self) -> str:
-        return self.audio.stem.replace("_default", "")
 
 
 def discover_pairs(corpus: Path) -> List[Pair]:
@@ -532,29 +376,6 @@ def discover_pairs(corpus: Path) -> List[Pair]:
     return pairs
 
 
-# ---- Model size on disk -----------------------------------------------------
-def model_disk_bytes(fw_name: str) -> Optional[int]:
-    """Sum the size of all files in the HF hub cache for this model.
-
-    Returns None if not yet downloaded — that's fine, the script will fill the
-    column after the first run.
-    """
-    cache = Path.home() / ".cache" / "huggingface" / "hub"
-    if not cache.exists():
-        return None
-    # faster-whisper models are mirrored under Systran/faster-whisper-<name>
-    candidates = list(cache.glob(f"models--Systran--faster-whisper-{fw_name}"))
-    candidates += list(cache.glob(f"models--openai--whisper-{fw_name}"))
-    if not candidates:
-        return None
-    total = 0
-    for d in candidates:
-        for p in d.rglob("*"):
-            if p.is_file():
-                total += p.stat().st_size
-    return total or None
-
-
 def fmt_bytes(n: Optional[int]) -> str:
     if n is None:
         return "?"
@@ -568,23 +389,6 @@ def fmt_bytes(n: Optional[int]) -> str:
 
 
 # ---- GPU probe + batch-size recommendation ----------------------------------
-def gpu_total_and_free_bytes() -> Tuple[Optional[int], Optional[int]]:
-    """Return (total, free) VRAM bytes for GPU 0, or (None, None) if NVML is off."""
-    if not _HAS_NVML or _NVML_DEVICE_COUNT == 0:
-        return (None, None)
-    h = pynvml.nvmlDeviceGetHandleByIndex(0)
-    info = pynvml.nvmlDeviceGetMemoryInfo(h)
-    return (info.total, info.free)
-
-
-def gpu_name() -> Optional[str]:
-    if not _HAS_NVML or _NVML_DEVICE_COUNT == 0:
-        return None
-    h = pynvml.nvmlDeviceGetHandleByIndex(0)
-    name = pynvml.nvmlDeviceGetName(h)
-    return name if isinstance(name, str) else name.decode("utf-8", errors="replace")
-
-
 # Rough VRAM cost per model at compute_type=float16, including a base + per-batch-item slope.
 # Numbers come from observed peaks; conservative so the recommendation doesn't OOM.
 _MODEL_VRAM_COST: Dict[str, Tuple[int, int]] = {
@@ -597,6 +401,7 @@ _MODEL_VRAM_COST: Dict[str, Tuple[int, int]] = {
     "medium":         (int(1.8 * 1024**3), int(0.45 * 1024**3)),
     "large-v3":       (int(4.0 * 1024**3), int(0.90 * 1024**3)),
     "large-v3-turbo": (int(2.0 * 1024**3), int(0.45 * 1024**3)),
+    "distil-large-v3.5": (int(2.0 * 1024**3), int(0.45 * 1024**3)),  # ~turbo footprint
 }
 
 
@@ -632,57 +437,7 @@ def recommend_batch_size(model_ids: List[str], headroom_bytes: int = int(2 * 102
     )
 
 
-# ---- VTT output -------------------------------------------------------------
-def _fmt_vtt_time(seconds: float) -> str:
-    if seconds < 0:
-        seconds = 0
-    h = int(seconds // 3600)
-    m = int((seconds % 3600) // 60)
-    s = seconds - (h * 3600) - (m * 60)
-    return f"{h:02d}:{m:02d}:{s:06.3f}"
-
-
-def write_whisper_vtt(audio_path: Path, model_label: str, segments: List[Tuple[float, float, str]]) -> Path:
-    """Write a WebVTT file next to the audio, named to mirror Panopto's pattern.
-
-    Audio:  <base>_default.mp4  (or any audio extension)
-    Output: <base>_Captions_<Model>.vtt
-    If the stem doesn't end with `_default`, the bare stem is used.
-    """
-    stem = audio_path.stem
-    base = stem[: -len("_default")] if stem.endswith("_default") else stem
-    safe_model = re.sub(r"[^A-Za-z0-9._-]+", "-", model_label).strip("-")
-    out = audio_path.parent / f"{base}_Captions_{safe_model}.vtt"
-    lines: List[str] = ["WEBVTT", ""]
-    for i, (start, end, text) in enumerate(segments, start=1):
-        text = text.strip()
-        if not text:
-            continue
-        lines.append(str(i))
-        lines.append(f"{_fmt_vtt_time(start)} --> {_fmt_vtt_time(end)}")
-        lines.append(text)
-        lines.append("")
-    out.write_text("\n".join(lines), encoding="utf-8")
-    return out
-
-
-# ---- VRAM tracking ----------------------------------------------------------
-def gpu_used_bytes() -> int:
-    if not _HAS_NVML or _NVML_DEVICE_COUNT == 0:
-        return 0
-    handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-    return pynvml.nvmlDeviceGetMemoryInfo(handle).used
-
-
 # ---- Helpers ----------------------------------------------------------------
-def _model_label(model_id: str) -> str:
-    """small -> Small, large-v3 -> LargeV3, large-v3-turbo -> LargeV3Turbo.
-
-    Used for filename suffixes (`_Captions_<Label>.vtt`) and short report cells.
-    """
-    return "".join(p.capitalize() for p in model_id.split("-"))
-
-
 def _fmt_pct(value: float) -> str:
     """Format a 0-1 metric as a 1-decimal percentage, or '—' if NaN/None."""
     if value is None or (isinstance(value, float) and math.isnan(value)):
@@ -710,993 +465,6 @@ def _md_escape(text: object) -> str:
     return str(text).replace("|", "\\|").replace("\r", " ").replace("\n", " ")
 
 
-# ---- Per-model run ----------------------------------------------------------
-@dataclass
-class ClipResult:
-    audio: str
-    audio_sec: float
-    transcribe_sec: float
-    rtfx: float
-    vram_peak_bytes: Optional[int]
-    hypothesis: str
-    reference_normalized: str
-    hypothesis_normalized: str
-    wer: float
-    mer: float = float("nan")
-    wil: float = float("nan")
-    cer: float = float("nan")
-    repeat_coverage: float = 0.0
-    compression_ratio: float = 1.0
-    hits: int = 0
-    substitutions: int = 0
-    deletions: int = 0
-    insertions: int = 0
-    speaker_segments: List[Tuple[float, float, str]] = field(default_factory=list)
-    num_speakers: int = 0
-    der: float = float("nan")
-    cue_count: int = 0
-    vtt_path: Optional[str] = None
-    reference_origin: str = "unknown"
-    reference_label: str = ""
-
-    @property
-    def is_hallucination_suspect(self) -> bool:
-        return (self.repeat_coverage > HALLUCINATION_REPEAT_COVERAGE
-                or self.compression_ratio > HALLUCINATION_COMPRESSION_RATIO)
-
-
-@dataclass
-class ModelResult:
-    model_id: str
-    display: str
-    fw_name: str
-    params: str
-    developer: str
-    languages: str
-    notes: str
-    disk_bytes: Optional[int]
-    load_sec: float
-    engine: str = "faster-whisper"
-    vram_is_total: bool = False
-    clips: List[ClipResult] = field(default_factory=list)
-
-    @property
-    def avg_wer(self) -> float:
-        if not self.clips:
-            return 0.0
-        return sum(c.wer for c in self.clips) / len(self.clips)
-
-    @property
-    def avg_mer(self) -> float:
-        if not self.clips:
-            return 0.0
-        return sum(c.mer for c in self.clips) / len(self.clips)
-
-    @property
-    def avg_wil(self) -> float:
-        if not self.clips:
-            return 0.0
-        return sum(c.wil for c in self.clips) / len(self.clips)
-
-    @property
-    def avg_cer(self) -> float:
-        if not self.clips:
-            return 0.0
-        return sum(c.cer for c in self.clips) / len(self.clips)
-
-    @property
-    def total_audio_sec(self) -> float:
-        return sum(c.audio_sec for c in self.clips)
-
-    @property
-    def total_transcribe_sec(self) -> float:
-        return sum(c.transcribe_sec for c in self.clips)
-
-    @property
-    def aggregate_rtfx(self) -> float:
-        if self.total_transcribe_sec == 0:
-            return 0.0
-        return self.total_audio_sec / self.total_transcribe_sec
-
-    @property
-    def median_rtfx(self) -> float:
-        """Median per-clip RTFx — robust to a single decoder-lockup outlier that
-        would drag down the totals-based aggregate_rtfx."""
-        if not self.clips:
-            return 0.0
-        return statistics.median(c.rtfx for c in self.clips)
-
-    @property
-    def median_sec_per_audio_min(self) -> float:
-        """Median per-clip compute-seconds per minute of audio (lower = faster)."""
-        vals = [c.transcribe_sec * 60.0 / c.audio_sec
-                for c in self.clips if c.audio_sec > 0]
-        return statistics.median(vals) if vals else 0.0
-
-    @property
-    def peak_vram_bytes(self) -> Optional[int]:
-        peaks = [c.vram_peak_bytes for c in self.clips if c.vram_peak_bytes is not None]
-        return max(peaks) if peaks else None
-
-    @property
-    def hallucination_rate(self) -> float:
-        """Fraction of this model's clips flagged as hallucination-suspect."""
-        if not self.clips:
-            return 0.0
-        return sum(1 for c in self.clips if c.is_hallucination_suspect) / len(self.clips)
-
-
-@dataclass
-class RunConfig:
-    """Settings passed to an engine's run(). Engine-specific fields are ignored
-    by the engine they don't apply to."""
-    # shared
-    device: str
-    compute_type: str
-    # faster-whisper only
-    batch_size: int = 1
-    beam_size: int = 5
-    vad_filter: bool = True
-    # nim only
-    nim_url: str = "localhost:50051"
-    nim_model: str = ""
-    nim_language: str = "en-US"
-    nim_api_key: Optional[str] = None
-    nim_ssl: bool = False
-    # whisperx only
-    whisperx_python: Optional[str] = None
-    diarize: bool = True
-    hf_token: Optional[str] = None
-    min_speakers: Optional[int] = None
-    max_speakers: Optional[int] = None
-    # nemo only
-    nemo_python: Optional[str] = None
-
-
-class Engine(ABC):
-    """Contract every ASR engine family implements. Returns a ModelResult so the
-    report renderer is engine-agnostic."""
-    name: str = ""
-
-    @abstractmethod
-    def run(self, entry: Dict, pairs: List[Pair], cfg: RunConfig) -> "ModelResult":
-        ...
-
-
-# ---- NIM helpers ------------------------------------------------------------
-class VramSampler:
-    """Background poller that records peak total GPU memory used during a call.
-
-    Used for the NIM path, where a single blocking offline_recognize RPC offers
-    no per-segment loop to sample in. Reports TOTAL used (model is pre-resident
-    in the container), not a per-clip delta — callers must mark it as such.
-    """
-    def __init__(self, read_fn=gpu_used_bytes, interval: float = 0.1):
-        self._read_fn = read_fn
-        self._interval = interval
-        self.peak: int = 0
-        self._stop = threading.Event()
-        self._thread: Optional[threading.Thread] = None
-
-    def _record(self, value: int) -> None:
-        if value > self.peak:
-            self.peak = value
-
-    def _loop(self) -> None:
-        while not self._stop.is_set():
-            self._record(self._read_fn())
-            self._stop.wait(self._interval)
-
-    def start(self) -> "VramSampler":
-        self._stop.clear()
-        self._thread = threading.Thread(target=self._loop, daemon=True)
-        self._thread.start()
-        return self
-
-    def stop(self) -> int:
-        self._stop.set()
-        if self._thread is not None:
-            self._thread.join(timeout=1.0)
-        return self.peak
-
-
-def build_nim_auth_kwargs(url: str, api_key: Optional[str], ssl: bool) -> Dict:
-    """Build kwargs for riva.client.Auth. An API key implies SSL + a Bearer
-    authorization metadata header (the path a hosted endpoint needs)."""
-    kw: Dict = {"uri": url, "use_ssl": bool(ssl)}
-    if api_key:
-        kw["use_ssl"] = True
-        kw["metadata_args"] = [["authorization", f"Bearer {api_key}"]]
-    return kw
-
-
-def nim_response_to_hypothesis(response) -> str:
-    """Concatenate the top alternative transcript across all results."""
-    parts: List[str] = []
-    for result in getattr(response, "results", []) or []:
-        alts = getattr(result, "alternatives", None) or []
-        if alts:
-            parts.append(alts[0].transcript)
-    return " ".join(p.strip() for p in parts if p).strip()
-
-
-def nim_response_to_words(response) -> List[Tuple[float, float, str]]:
-    """Flatten word-level timings (Riva reports ms) into (start_s, end_s, word)."""
-    out: List[Tuple[float, float, str]] = []
-    for result in getattr(response, "results", []) or []:
-        alts = getattr(result, "alternatives", None) or []
-        if not alts:
-            continue
-        for w in getattr(alts[0], "words", None) or []:
-            out.append((float(w.start_time) / 1000.0, float(w.end_time) / 1000.0, w.word))
-    return out
-
-
-def group_words_into_cues(
-    words: List[Tuple[float, float, str]],
-    max_words: int = 12,
-    max_span: float = 6.0,
-) -> List[Tuple[float, float, str]]:
-    """Group word timings into VTT-style cues. Close a cue on sentence-final
-    punctuation, or when it reaches max_words, or spans >= max_span seconds."""
-    cues: List[Tuple[float, float, str]] = []
-    buf: List[str] = []
-    start: Optional[float] = None
-    end: float = 0.0
-    for (ws, we, text) in words:
-        if start is None:
-            start = ws
-        buf.append(text)
-        end = we
-        ends_sentence = text.rstrip().endswith((".", "?", "!"))
-        if ends_sentence or len(buf) >= max_words or (end - start) >= max_span:
-            cues.append((start, end, " ".join(buf)))
-            buf, start = [], None
-    if buf and start is not None:
-        cues.append((start, end, " ".join(buf)))
-    return cues
-
-
-def decode_to_pcm16(path: Path, target_rate: int = 16000) -> Tuple[bytes, int]:
-    """Decode any audio/video file to 16kHz mono s16le PCM bytes.
-
-    Primary: pyav (already installed via faster-whisper). Fallback: an ffmpeg
-    subprocess. Returns (pcm_bytes, n_samples). Raises RuntimeError if neither
-    path works.
-    """
-    # --- Primary: pyav ---
-    pyav_error = None
-    try:
-        import av  # type: ignore
-        from av.audio.resampler import AudioResampler  # type: ignore
-
-        container = av.open(str(path))
-        resampler = AudioResampler(format="s16", layout="mono", rate=target_rate)
-        chunks: List[bytes] = []
-        for frame in container.decode(audio=0):
-            for rframe in resampler.resample(frame):
-                chunks.append(rframe.to_ndarray().astype("<i2").tobytes())
-        # Flush the resampler.
-        for rframe in resampler.resample(None):
-            chunks.append(rframe.to_ndarray().astype("<i2").tobytes())
-        container.close()
-        pcm = b"".join(chunks)
-        if pcm:
-            return pcm, len(pcm) // 2
-    except Exception as e:
-        pyav_error = e  # fall through to ffmpeg
-
-    # --- Fallback: ffmpeg subprocess ---
-    import subprocess
-    try:
-        proc = subprocess.run(
-            ["ffmpeg", "-nostdin", "-i", str(path),
-             "-ar", str(target_rate), "-ac", "1", "-f", "s16le", "-"],
-            capture_output=True, check=True,
-        )
-        pcm = proc.stdout
-        return pcm, len(pcm) // 2
-    except (FileNotFoundError, subprocess.CalledProcessError) as e:
-        raise RuntimeError(
-            f"could not decode {path}: pyav error={pyav_error!r}; ffmpeg error={e}"
-        )
-
-
-class FasterWhisperEngine(Engine):
-    name = "faster-whisper"
-
-    def run(self, entry: Dict, pairs: List[Pair], cfg: RunConfig) -> ModelResult:
-        model_id = entry["id"]
-        assert entry.get("engine", "faster-whisper") == "faster-whisper", (
-            f"FasterWhisperEngine requires a faster-whisper entry, got engine={entry.get('engine')!r}"
-        )
-        info = entry  # alias: the resolved entry carries the same keys the old run_model read from MODELS
-        fw_name = info["fw_name"]
-        device = cfg.device
-        compute_type = cfg.compute_type
-        batch_size = cfg.batch_size
-        beam_size = cfg.beam_size
-        vad_filter = cfg.vad_filter
-        batched_note = f" batch_size={batch_size}" if batch_size > 1 else ""
-        print(f"\n[{info['display']}] loading on device={device} compute_type={compute_type}{batched_note}...", flush=True)
-
-        # Late import so the script can show --help without requiring the model dep
-        from faster_whisper import WhisperModel
-
-        t0 = time.time()
-        try:
-            model = WhisperModel(fw_name, device=device, compute_type=compute_type)
-            # BatchedInferencePipeline is the path to high GPU utilization. Sequential
-            # decoding tops out around 50% on big GPUs; batching pushes it past 80%.
-            if batch_size > 1:
-                from faster_whisper import BatchedInferencePipeline  # type: ignore
-                transcribe_target = BatchedInferencePipeline(model=model)
-            else:
-                transcribe_target = model
-        except Exception as e:
-            print(f"  ERROR loading {fw_name}: {e}", file=sys.stderr)
-            # Return a model result with a zero-clip note so the table shows the failure
-            return ModelResult(
-                model_id=model_id, display=info["display"], fw_name=fw_name,
-                params=info["params"], developer=info["developer"],
-                languages=info["languages"], notes=f"LOAD FAILED: {e}",
-                disk_bytes=model_disk_bytes(fw_name), load_sec=0.0,
-                engine="faster-whisper", vram_is_total=False,
-            )
-        load_sec = time.time() - t0
-        print(f"  loaded in {load_sec:.1f}s", flush=True)
-
-        result = ModelResult(
-            model_id=model_id, display=info["display"], fw_name=fw_name,
-            params=info["params"], developer=info["developer"],
-            languages=info["languages"], notes=info["notes"],
-            disk_bytes=model_disk_bytes(fw_name), load_sec=load_sec,
-            engine="faster-whisper", vram_is_total=False,
-        )
-
-        for clip_idx, pair in enumerate(pairs, start=1):
-            print(f"  [{clip_idx}/{len(pairs)}] transcribing {pair.audio.name}...", flush=True)
-            ref_text = load_reference_text(pair.reference)
-            ref_origin, ref_label = detect_reference_origin(pair.reference)
-
-            # Track peak VRAM during this clip's transcription
-            vram_baseline = gpu_used_bytes()
-            vram_peak = vram_baseline
-
-            t0 = time.time()
-            transcribe_kwargs = dict(language="en", beam_size=beam_size, vad_filter=vad_filter)
-            if batch_size > 1:
-                transcribe_kwargs["batch_size"] = batch_size
-            segments, audio_info = transcribe_target.transcribe(
-                str(pair.audio),
-                **transcribe_kwargs,
-            )
-            text_parts: List[str] = []
-            cue_tuples: List[Tuple[float, float, str]] = []
-            duration_sec = float(audio_info.duration) or 1.0
-            last_pct_printed = -10.0  # so first segment can trigger 0% line; tunable
-            for seg in segments:
-                text_parts.append(seg.text)
-                cue_tuples.append((float(seg.start), float(seg.end), seg.text))
-                cur = gpu_used_bytes()
-                if cur > vram_peak:
-                    vram_peak = cur
-                # Streaming progress: print every 10% of audio crossed so the user can
-                # see the run is alive (transcription is otherwise silent for minutes).
-                pct = (float(seg.end) / duration_sec) * 100.0
-                if pct - last_pct_printed >= 10.0:
-                    elapsed = time.time() - t0
-                    eta = (duration_sec - float(seg.end)) / max(float(seg.end), 1.0) * elapsed
-                    print(
-                        f"    {pct:5.1f}%  audio {int(seg.end):>5d}s/{int(duration_sec):>5d}s  "
-                        f"elapsed {elapsed:5.1f}s  eta {eta:5.1f}s",
-                        flush=True,
-                    )
-                    last_pct_printed = pct
-            transcribe_sec = time.time() - t0
-            hypothesis = " ".join(text_parts).strip()
-
-            # Write the per-model VTT next to the source audio so it stands alongside
-            # Panopto's own caption file.
-            vtt_path = write_whisper_vtt(pair.audio, _model_label(model_id), cue_tuples)
-
-            ref_norm = normalize_for_wer(ref_text)
-            hyp_norm = normalize_for_wer(hypothesis)
-            metrics = compute_word_metrics(ref_norm, hyp_norm)
-            wer_val = metrics.wer
-
-            audio_sec = float(audio_info.duration)
-            rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
-            vram_used = (vram_peak - vram_baseline) if _HAS_NVML and device == "cuda" else None
-
-            print(
-                f"    {audio_sec:.1f}s audio in {transcribe_sec:.1f}s "
-                f"(RTFx {rtfx:.2f}, WER {wer_val * 100:.1f}%)",
-                flush=True,
-            )
-
-            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
-            result.clips.append(
-                ClipResult(
-                    audio=pair.audio.name,
-                    audio_sec=audio_sec,
-                    transcribe_sec=transcribe_sec,
-                    rtfx=rtfx,
-                    vram_peak_bytes=vram_used,
-                    hypothesis=hypothesis,
-                    reference_normalized=ref_norm,
-                    hypothesis_normalized=hyp_norm,
-                    wer=wer_val,
-                    mer=metrics.mer,
-                    wil=metrics.wil,
-                    cer=metrics.cer,
-                    repeat_coverage=rep_cov, compression_ratio=comp_ratio,
-                    hits=metrics.hits,
-                    substitutions=metrics.substitutions,
-                    deletions=metrics.deletions,
-                    insertions=metrics.insertions,
-                    cue_count=len(cue_tuples),
-                    vtt_path=str(vtt_path),
-                    reference_origin=ref_origin,
-                    reference_label=ref_label,
-                )
-            )
-
-            # Refresh disk-size measurement now that the model has fully downloaded
-            if result.disk_bytes is None:
-                result.disk_bytes = model_disk_bytes(fw_name)
-
-        # Drop the model reference so Python can release memory between runs
-        del model
-        return result
-
-
-class NimEngine(Engine):
-    name = "nim"
-
-    def run(self, entry: Dict, pairs: List[Pair], cfg: RunConfig) -> ModelResult:
-        riva_model = cfg.nim_model or entry.get("riva_model", "")
-        print(
-            f"\n[{entry['display']}] connecting to NIM at {cfg.nim_url} "
-            f"(model={riva_model or 'server default'})...",
-            flush=True,
-        )
-
-        def _fail(msg: str) -> ModelResult:
-            print(f"  ERROR: {msg}", file=sys.stderr)
-            # NIM has no local model file; fw_name/disk are N/A
-            return ModelResult(
-                model_id=entry["id"], display=entry["display"], fw_name="",  # fw_name: N/A for NIM
-                params=entry.get("params", "—"), developer=entry.get("developer", "NVIDIA"),
-                languages=entry.get("languages", "—"), notes=f"LOAD FAILED: {msg}",
-                disk_bytes=None, load_sec=0.0, engine="nim", vram_is_total=True,
-            )
-
-        t0 = time.time()
-        try:
-            import riva.client  # late import; only needed for NIM runs
-            auth = riva.client.Auth(**build_nim_auth_kwargs(cfg.nim_url, cfg.nim_api_key, cfg.nim_ssl))
-            asr = riva.client.ASRService(auth)
-        except ImportError:
-            return _fail("nvidia-riva-client not installed (pip install nvidia-riva-client)")
-        except Exception as e:
-            return _fail(f"could not connect to NIM at {cfg.nim_url}: {e}")
-        load_sec = time.time() - t0
-        print(f"  connected in {load_sec:.1f}s", flush=True)
-
-        # NIM has no local model file; fw_name/disk are N/A
-        result = ModelResult(
-            model_id=entry["id"], display=entry["display"], fw_name="",  # fw_name: N/A for NIM
-            params=entry.get("params", "—"), developer=entry.get("developer", "NVIDIA"),
-            languages=entry.get("languages", "—"), notes=entry.get("notes", ""),
-            disk_bytes=None, load_sec=load_sec, engine="nim", vram_is_total=True,
-        )
-
-        for clip_idx, pair in enumerate(pairs, start=1):
-            print(f"  [{clip_idx}/{len(pairs)}] transcribing {pair.audio.name}...", flush=True)
-            ref_text = load_reference_text(pair.reference)
-            ref_origin, ref_label = detect_reference_origin(pair.reference)
-
-            try:
-                pcm, n_samples = decode_to_pcm16(pair.audio)
-            except Exception as e:
-                print(f"    decode failed: {e}", file=sys.stderr)
-                continue
-            audio_sec = n_samples / 16000.0
-
-            config = riva.client.RecognitionConfig(
-                language_code=cfg.nim_language,
-                enable_automatic_punctuation=True,
-                enable_word_time_offsets=True,
-                max_alternatives=1,
-            )
-            # encoding / sample rate: LINEAR_PCM @ 16k mono
-            config.sample_rate_hertz = 16000
-            config.audio_channel_count = 1
-            # AudioEncoding location varies across nvidia-riva-client versions:
-            # newer exposes riva.client.AudioEncoding; older lives in the proto module.
-            try:
-                config.encoding = riva.client.AudioEncoding.LINEAR_PCM
-            except AttributeError:
-                from riva.client.proto.riva_audio_pb2 import AudioEncoding  # type: ignore
-                config.encoding = AudioEncoding.LINEAR_PCM
-            if riva_model:
-                config.model = riva_model
-
-            sampler = VramSampler().start() if _HAS_NVML else None
-            print(f"    offline_recognize: {audio_sec:.1f}s audio, awaiting NIM response...", flush=True)
-            t1 = time.time()
-            try:
-                response = asr.offline_recognize(pcm, config)
-            except Exception as e:
-                if sampler:
-                    sampler.stop()
-                print(f"    recognize failed: {e}", file=sys.stderr)
-                continue
-            transcribe_sec = time.time() - t1
-            vram_peak = sampler.stop() if sampler else None
-
-            hypothesis = nim_response_to_hypothesis(response)
-            words = nim_response_to_words(response)
-            cue_tuples = group_words_into_cues(words)
-            vtt_path = write_whisper_vtt(pair.audio, _model_label(entry["id"]), cue_tuples)
-
-            ref_norm = normalize_for_wer(ref_text)
-            hyp_norm = normalize_for_wer(hypothesis)
-            metrics = compute_word_metrics(ref_norm, hyp_norm)
-            wer_val = metrics.wer
-
-            rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
-            print(
-                f"    {audio_sec:.1f}s audio in {transcribe_sec:.1f}s "
-                f"(RTFx {rtfx:.2f}, WER {wer_val * 100:.1f}%)",
-                flush=True,
-            )
-
-            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
-            result.clips.append(
-                ClipResult(
-                    audio=pair.audio.name, audio_sec=audio_sec,
-                    transcribe_sec=transcribe_sec, rtfx=rtfx,
-                    vram_peak_bytes=vram_peak, hypothesis=hypothesis,
-                    reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
-                    wer=wer_val, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer,
-                    repeat_coverage=rep_cov, compression_ratio=comp_ratio,
-                    hits=metrics.hits, substitutions=metrics.substitutions,
-                    deletions=metrics.deletions, insertions=metrics.insertions,
-                    cue_count=len(cue_tuples), vtt_path=str(vtt_path),
-                    reference_origin=ref_origin, reference_label=ref_label,
-                )
-            )
-        if not result.clips:
-            result.notes = "ALL CLIPS FAILED — check NIM endpoint, audio decode, and stderr above"
-        return result
-
-
-ENGINES: Dict[str, type] = {
-    "faster-whisper": FasterWhisperEngine,
-    "nim": NimEngine,
-}
-
-
-# ---- WhisperX ---------------------------------------------------------------
-@dataclass
-class WhisperXResult:
-    """Parsed output of a WhisperX run (transcribe + align + optional diarize)."""
-    segments: List[Dict]                 # [{start, end, text, speaker?}]
-    words: List[Dict] = field(default_factory=list)
-    speakers: List[str] = field(default_factory=list)
-    der: Optional[float] = None
-    language: str = ""
-
-    @classmethod
-    def from_dict(cls, d: Dict) -> "WhisperXResult":
-        return cls(
-            segments=list(d.get("segments") or []),
-            words=list(d.get("words") or []),
-            speakers=list(d.get("speakers") or []),
-            der=d.get("der"),
-            language=d.get("language") or "",
-        )
-
-    def text(self) -> str:
-        return " ".join(s.get("text", "").strip() for s in self.segments).strip()
-
-    def speaker_segments(self) -> List[Tuple[float, float, str]]:
-        out: List[Tuple[float, float, str]] = []
-        for s in self.segments:
-            if s.get("speaker"):
-                out.append((float(s["start"]), float(s["end"]), s["speaker"]))
-        return out
-
-
-def write_whisperx_vtt(audio_path: Path, model_label: str, result: "WhisperXResult") -> Path:
-    """WebVTT with speaker-prefixed cues (e.g. 'SPEAKER_00: text'). Named like the
-    other engines' VTTs: <base>_Captions_<Model>.vtt."""
-    safe_model = re.sub(r"[^A-Za-z0-9._-]+", "-", model_label).strip("-")
-    out = audio_path.parent / f"{_fused_base(audio_path)}_Captions_{safe_model}.vtt"
-    lines: List[str] = ["WEBVTT", ""]
-    n = 0
-    for s in result.segments:
-        text = (s.get("text") or "").strip()
-        if not text:
-            continue
-        spk = s.get("speaker")
-        if spk:
-            text = f"{spk}: {text}"
-        n += 1
-        lines.append(str(n))
-        lines.append(f"{_fmt_vtt_time(float(s['start']))} --> {_fmt_vtt_time(float(s['end']))}")
-        lines.append(text)
-        lines.append("")
-    out.write_text("\n".join(lines), encoding="utf-8")
-    return out
-
-
-def write_words_sidecar(audio_path: Path, model_label: str, result: "WhisperXResult") -> Path:
-    """Write word-level timestamps (and speaker, if present) to a JSON sidecar."""
-    safe_model = re.sub(r"[^A-Za-z0-9._-]+", "-", model_label).strip("-")
-    out = audio_path.parent / f"{_fused_base(audio_path)}_Words_{safe_model}.json"
-    out.write_text(json.dumps(result.words, ensure_ascii=False, indent=0), encoding="utf-8")
-    return out
-
-
-# ---- NeMo result ------------------------------------------------------------
-@dataclass
-class NeMoResult:
-    """Parsed output of a NeMo run. Parakeet yields segments+words (native
-    timestamps); Canary-Qwen yields full_text only (no timestamps). Duck-typed to
-    reuse write_whisperx_vtt / write_words_sidecar (they read .segments / .words)."""
-    segments: List[Dict] = field(default_factory=list)   # [{start, end, text}]
-    words: List[Dict] = field(default_factory=list)       # [{word, start, end}]
-    full_text: str = ""
-    transcribe_sec: Optional[float] = None
-    vram_peak_bytes: Optional[int] = None
-    language: str = ""
-
-    @classmethod
-    def from_dict(cls, d: Dict) -> "NeMoResult":
-        return cls(
-            segments=list(d.get("segments") or []),
-            words=list(d.get("words") or []),
-            full_text=d.get("text") or "",
-            transcribe_sec=d.get("transcribe_sec"),
-            vram_peak_bytes=d.get("vram_peak_bytes"),
-            language=d.get("language") or "",
-        )
-
-    def text(self) -> str:
-        if self.segments:
-            return " ".join(s.get("text", "").strip() for s in self.segments).strip()
-        return self.full_text.strip()
-
-    def has_timestamps(self) -> bool:
-        return bool(self.segments)
-
-    def speaker_segments(self) -> List[Tuple[float, float, str]]:
-        return []   # v0.4 NeMo is transcription-only
-
-
-# ---- WhisperX adapter -------------------------------------------------------
-_RUNNER_PATH = str(Path(__file__).resolve().parent / "whisperx_runner.py")
-
-
-class WhisperXAdapter(ABC):
-    """Turns an audio file into a WhisperXResult. Two real impls (in-process /
-    subprocess to a 3.12 venv) + a Fake for tests."""
-    name: str = ""
-
-    @abstractmethod
-    def transcribe(self, audio_path: str, model: str, cfg: "RunConfig",
-                   rttm: Optional[str]) -> "WhisperXResult":
-        ...
-
-
-class FakeWhisperXAdapter(WhisperXAdapter):
-    name = "fake"
-
-    def __init__(self, result: "WhisperXResult"):
-        self._result = result
-
-    def transcribe(self, audio_path, model, cfg, rttm):
-        return self._result
-
-
-def _runner_args(audio_path: str, model: str, cfg: "RunConfig", rttm: Optional[str]) -> List[str]:
-    args = [_RUNNER_PATH, "--audio", audio_path, "--model", model,
-            "--device", cfg.device, "--language", "en"]
-    if cfg.diarize:
-        args.append("--diarize")
-        if cfg.min_speakers is not None:
-            args += ["--min-speakers", str(cfg.min_speakers)]
-        if cfg.max_speakers is not None:
-            args += ["--max-speakers", str(cfg.max_speakers)]
-    if rttm:
-        args += ["--rttm", rttm]
-    return args
-
-
-class InProcessWhisperX(WhisperXAdapter):
-    """Calls whisperx_runner.run_whisperx directly (torch importable here)."""
-    name = "in-process"
-
-    def transcribe(self, audio_path, model, cfg, rttm):
-        import whisperx_runner
-        d = whisperx_runner.run_whisperx(
-            audio=audio_path, model=model, device=cfg.device, language="en",
-            diarize=cfg.diarize, hf_token=cfg.hf_token,
-            min_speakers=cfg.min_speakers, max_speakers=cfg.max_speakers, rttm=rttm,
-        )
-        return WhisperXResult.from_dict(d)
-
-
-class SubprocessWhisperX(WhisperXAdapter):
-    """Runs whisperx_runner.py under a configured 3.12 venv python; parses JSON."""
-    name = "subprocess"
-
-    def __init__(self, python: str, timeout: float = 3600.0):
-        self.python = python
-        self.timeout = timeout
-
-    def transcribe(self, audio_path, model, cfg, rttm):
-        exe = shutil.which(self.python) or self.python
-        cmd = [exe, *_runner_args(audio_path, model, cfg, rttm)]
-        env = dict(os.environ)
-        if cfg.hf_token:
-            env["HF_TOKEN"] = cfg.hf_token
-        proc = subprocess.run(cmd, capture_output=True, text=True,
-                              timeout=self.timeout, check=False, env=env)
-        if proc.returncode != 0:
-            raise RuntimeError(f"whisperx_runner failed ({proc.returncode}): {proc.stderr[:500]}")
-        return WhisperXResult.from_dict(json.loads(proc.stdout))
-
-
-def _default_whisperx_python() -> Optional[str]:
-    """Look for a conventional sibling venv (./.venv-whisperx)."""
-    root = Path(__file__).resolve().parent
-    for rel in (".venv-whisperx/Scripts/python.exe", ".venv-whisperx/bin/python"):
-        cand = root / rel
-        if cand.is_file():
-            return str(cand)
-    return None
-
-
-def make_whisperx_adapter(cfg: "RunConfig") -> WhisperXAdapter:
-    """Auto-select: in-process if torch importable; else subprocess to a venv
-    python (cfg.whisperx_python or a default ./.venv-whisperx); else error."""
-    if importlib.util.find_spec("torch") is not None:
-        return InProcessWhisperX()
-    venv_py = cfg.whisperx_python or _default_whisperx_python()
-    if venv_py:
-        return SubprocessWhisperX(venv_py)
-    raise RuntimeError(
-        "WhisperX needs torch (not importable here) or a 3.12 venv. Create one "
-        "(py -3.12 -m venv .venv-whisperx && .venv-whisperx/Scripts/pip install whisperx) "
-        "and pass --whisperx-python, or run asr-bench under a torch-enabled interpreter."
-    )
-
-
-# ---- NeMo adapter -----------------------------------------------------------
-_NEMO_RUNNER_PATH = str(Path(__file__).resolve().parent / "nemo_runner.py")
-
-
-class NeMoAdapter(ABC):
-    """Turns an audio file into a NeMoResult. Subprocess (to a 3.12 .venv-nemo)
-    is the only real impl — torch has no 3.14 wheels — plus a Fake for tests."""
-    name: str = ""
-
-    @abstractmethod
-    def transcribe(self, audio_path: str, model: str, cfg: "RunConfig") -> "NeMoResult":
-        ...
-
-
-class FakeNeMoAdapter(NeMoAdapter):
-    name = "fake"
-
-    def __init__(self, result: "NeMoResult"):
-        self._result = result
-
-    def transcribe(self, audio_path, model, cfg):
-        return self._result
-
-
-def _nemo_runner_args(audio_path: str, model: str, cfg: "RunConfig") -> List[str]:
-    return [_NEMO_RUNNER_PATH, "--audio", audio_path, "--model", model,
-            "--device", cfg.device, "--language", "en"]
-
-
-class SubprocessNeMo(NeMoAdapter):
-    """Runs nemo_runner.py under a configured 3.12 venv python; parses JSON."""
-    name = "subprocess"
-
-    def __init__(self, python: str, timeout: float = 7200.0):  # NeMo first-run downloads can exceed WhisperX's 1h
-        self.python = python
-        self.timeout = timeout
-
-    def transcribe(self, audio_path, model, cfg):
-        exe = shutil.which(self.python) or self.python
-        cmd = [exe, *_nemo_runner_args(audio_path, model, cfg)]
-        env = dict(os.environ)
-        # torch 2.6+ defaults weights_only=True; some NeMo checkpoints need this off.
-        env["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] = "1"
-        try:
-            proc = subprocess.run(cmd, capture_output=True, text=True,
-                                  timeout=self.timeout, check=False, env=env)
-        except subprocess.TimeoutExpired:
-            raise RuntimeError(
-                f"nemo_runner timed out after {self.timeout}s — increase "
-                "SubprocessNeMo(timeout=...) or use faster storage for the model cache")
-        if proc.returncode != 0:
-            raise RuntimeError(f"nemo_runner failed ({proc.returncode}): {proc.stderr[:500]}")
-        return NeMoResult.from_dict(json.loads(proc.stdout))
-
-
-def _default_nemo_python() -> Optional[str]:
-    """Look for a conventional sibling venv (./.venv-nemo)."""
-    root = Path(__file__).resolve().parent
-    for rel in (".venv-nemo/Scripts/python.exe", ".venv-nemo/bin/python"):
-        cand = root / rel
-        if cand.is_file():
-            return str(cand)
-    return None
-
-
-def make_nemo_adapter(cfg: "RunConfig") -> NeMoAdapter:
-    """Subprocess to a 3.12 venv python (cfg.nemo_python or ./.venv-nemo). NeMo is
-    never run in-process: core is Python 3.14 (no torch wheels) and a fresh
-    subprocess gives clean per-model VRAM teardown."""
-    venv_py = cfg.nemo_python or _default_nemo_python()
-    if venv_py:
-        return SubprocessNeMo(venv_py)
-    raise RuntimeError(
-        "NeMo needs a Python 3.12 venv with torch (cu128) + nemo_toolkit. "
-        "Run setup_nemo_venv.ps1 (creates ./.venv-nemo) or pass --nemo-python."
-    )
-
-
-def _audio_duration_sec(audio_path: str) -> float:
-    """Best-effort audio duration in seconds via pyav (a faster-whisper dep).
-    Returns 0.0 on failure; callers fall back to the last segment end."""
-    try:
-        import av
-        with av.open(audio_path) as container:
-            if container.duration:
-                return float(container.duration) / 1_000_000.0
-    except Exception:
-        pass
-    return 0.0
-
-
-class WhisperXEngine(Engine):
-    name = "whisperx"
-
-    def run(self, entry: Dict, pairs: List[Pair], cfg: RunConfig) -> ModelResult:
-        adapter = make_whisperx_adapter(cfg)
-        print(f"\n[{entry['display']}] using WhisperX adapter: {adapter.name}", flush=True)
-        result_model = ModelResult(
-            model_id=entry["id"], display=entry["display"], fw_name=entry.get("fw_name", ""),
-            params=entry["params"], developer=entry["developer"], languages=entry["languages"],
-            notes=entry["notes"], disk_bytes=None, load_sec=0.0,
-            engine="whisperx", vram_is_total=False,
-        )
-        for clip_idx, pair in enumerate(pairs, start=1):
-            print(f"  [{clip_idx}/{len(pairs)}] transcribing {pair.audio.name}...", flush=True)
-            ref_text = load_reference_text(pair.reference)
-            ref_origin, ref_label = detect_reference_origin(pair.reference)
-            rttm = find_rttm(pair.audio)
-            t0 = time.time()
-            try:
-                wx = adapter.transcribe(str(pair.audio), entry["fw_name"], cfg,
-                                        str(rttm) if rttm else None)
-            except Exception as e:
-                print(f"  ERROR whisperx on {pair.audio.name}: {e}", file=sys.stderr)
-                continue
-            transcribe_sec = time.time() - t0
-
-            hypothesis = wx.text()
-            ref_norm = normalize_for_wer(ref_text)
-            hyp_norm = normalize_for_wer(hypothesis)
-            metrics = compute_word_metrics(ref_norm, hyp_norm)
-
-            label = _model_label(entry["id"])
-            vtt_path = write_whisperx_vtt(pair.audio, label, wx)
-            write_words_sidecar(pair.audio, label, wx)
-
-            spk_segs = wx.speaker_segments()
-            audio_sec = _audio_duration_sec(str(pair.audio)) or (
-                wx.segments[-1]["end"] if wx.segments else 0.0)
-            rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
-            der_val = wx.der if wx.der is not None else float("nan")
-
-            print(f"    {audio_sec:.1f}s in {transcribe_sec:.1f}s "
-                  f"(RTFx {rtfx:.2f}, WER {metrics.wer*100:.1f}%, "
-                  f"{len(wx.speakers)} speaker(s))", flush=True)
-
-            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
-            result_model.clips.append(ClipResult(
-                audio=pair.audio.name, audio_sec=audio_sec, transcribe_sec=transcribe_sec,
-                rtfx=rtfx, vram_peak_bytes=None, hypothesis=hypothesis,
-                reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
-                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer,
-                repeat_coverage=rep_cov, compression_ratio=comp_ratio,
-                hits=metrics.hits,
-                substitutions=metrics.substitutions, deletions=metrics.deletions,
-                insertions=metrics.insertions, cue_count=len(wx.segments),
-                vtt_path=str(vtt_path), reference_origin=ref_origin, reference_label=ref_label,
-                speaker_segments=spk_segs, num_speakers=len(wx.speakers), der=der_val,
-            ))
-        if not result_model.clips:
-            result_model.notes = "ALL CLIPS FAILED — check WhisperX setup/venv/token and stderr above"
-        return result_model
-
-
-ENGINES["whisperx"] = WhisperXEngine
-
-
-class NeMoEngine(Engine):
-    name = "nemo"
-
-    def run(self, entry: Dict, pairs: List[Pair], cfg: RunConfig) -> ModelResult:
-        adapter = make_nemo_adapter(cfg)
-        print(f"\n[{entry['display']}] using NeMo adapter: {adapter.name}", flush=True)
-        result_model = ModelResult(
-            model_id=entry["id"], display=entry["display"], fw_name=entry.get("fw_name", ""),
-            params=entry["params"], developer=entry["developer"], languages=entry["languages"],
-            notes=entry["notes"], disk_bytes=None, load_sec=0.0,
-            engine="nemo", vram_is_total=False,
-        )
-        for clip_idx, pair in enumerate(pairs, start=1):
-            print(f"  [{clip_idx}/{len(pairs)}] transcribing {pair.audio.name}...", flush=True)
-            ref_text = load_reference_text(pair.reference)
-            ref_origin, ref_label = detect_reference_origin(pair.reference)
-            t0 = time.time()
-            try:
-                nm = adapter.transcribe(str(pair.audio), entry["nemo_model"], cfg)
-            except Exception as e:
-                print(f"  ERROR nemo on {pair.audio.name}: {e}", file=sys.stderr)
-                continue
-            wall = time.time() - t0
-            transcribe_sec = nm.transcribe_sec if nm.transcribe_sec is not None else wall
-
-            hypothesis = nm.text()
-            ref_norm = normalize_for_wer(ref_text)
-            hyp_norm = normalize_for_wer(hypothesis)
-            metrics = compute_word_metrics(ref_norm, hyp_norm)
-
-            label = _model_label(entry["id"])
-            vtt_path = None
-            cue_count = 0
-            if nm.has_timestamps():
-                vtt_path = str(write_whisperx_vtt(pair.audio, label, nm))
-                write_words_sidecar(pair.audio, label, nm)
-                cue_count = len(nm.segments)
-
-            audio_sec = _audio_duration_sec(str(pair.audio)) or (
-                nm.segments[-1]["end"] if nm.segments else 0.0)
-            rtfx = audio_sec / transcribe_sec if transcribe_sec > 0 else 0.0
-
-            print(f"    {audio_sec:.1f}s in {transcribe_sec:.1f}s "
-                  f"(RTFx {rtfx:.2f}, WER {metrics.wer*100:.1f}%, "
-                  f"{'timestamps' if nm.has_timestamps() else 'text-only'})", flush=True)
-
-            rep_cov, comp_ratio = compute_hallucination_signals(hypothesis, hyp_norm)
-            result_model.clips.append(ClipResult(
-                audio=pair.audio.name, audio_sec=audio_sec, transcribe_sec=transcribe_sec,
-                rtfx=rtfx, vram_peak_bytes=nm.vram_peak_bytes, hypothesis=hypothesis,
-                reference_normalized=ref_norm, hypothesis_normalized=hyp_norm,
-                wer=metrics.wer, mer=metrics.mer, wil=metrics.wil, cer=metrics.cer,
-                repeat_coverage=rep_cov, compression_ratio=comp_ratio,
-                hits=metrics.hits, substitutions=metrics.substitutions,
-                deletions=metrics.deletions, insertions=metrics.insertions,
-                cue_count=cue_count, vtt_path=vtt_path,
-                reference_origin=ref_origin, reference_label=ref_label,
-            ))
-        if not result_model.clips:
-            result_model.notes = "ALL CLIPS FAILED — check NeMo setup/.venv-nemo and stderr above"
-        return result_model
-
-
-ENGINES["nemo"] = NeMoEngine
 
 
 # ---- Fusion -----------------------------------------------------------------
@@ -1847,18 +615,6 @@ class FusionResult:
     verbatim_cues: List[Cue] = field(default_factory=list)
     kb_chunks: List[Dict] = field(default_factory=list)   # {start, end, text}
     flags: List[str] = field(default_factory=list)        # drift warnings
-
-
-def _fused_base(audio_path: Path) -> str:
-    stem = audio_path.stem
-    return stem[: -len("_default")] if stem.endswith("_default") else stem
-
-
-def find_rttm(audio_path: Path) -> Optional[Path]:
-    """Return the <base>.rttm ground-truth sidecar next to the audio, or None.
-    Matches the same base as the VTT writers (strips a trailing _default)."""
-    cand = audio_path.parent / f"{_fused_base(audio_path)}.rttm"
-    return cand if cand.is_file() else None
 
 
 def write_fused_vtt(audio_path: Path, cues: List[Cue]) -> Path:
@@ -2295,6 +1051,7 @@ def _config_to_dict(cfg: "RunConfig") -> Dict:
         "nim_url": cfg.nim_url, "nim_model": cfg.nim_model,
         "nim_language": cfg.nim_language, "nim_ssl": cfg.nim_ssl,
         "whisperx_python": cfg.whisperx_python, "nemo_python": cfg.nemo_python,
+        "hf_python": cfg.hf_python,
         "diarize": cfg.diarize,
         "min_speakers": cfg.min_speakers, "max_speakers": cfg.max_speakers,
     }
@@ -2825,6 +1582,9 @@ def main() -> int:
     ap.add_argument("--nemo-python", default=None,
                     help="Path to a 3.12 venv python with torch (cu128) + nemo_toolkit "
                          "(subprocess adapter; auto-detects ./.venv-nemo if omitted).")
+    ap.add_argument("--hf-python", default=None,
+                    help="Path to a 3.12 venv python with torch (cu128) + transformers "
+                         "(subprocess adapter; auto-detects ./.venv-hf if omitted).")
     ap.add_argument("--diarize", action=argparse.BooleanOptionalAction, default=True,
                     help="Run pyannote speaker diarization for whisperx models (default on). "
                          "Without an HF token it warns and falls back to alignment-only.")
@@ -2953,6 +1713,19 @@ def main() -> int:
                   "(no .venv-nemo). See setup_nemo_venv.ps1.", file=sys.stderr)
             return 2
 
+    # Pre-flight: HF-transformers models need a .venv-hf (or --hf-python). Skip
+    # just those models (not the whole run) when absent.
+    hf_requested = [m for m in requested if resolve_model_entry(m)["engine"] == "hf"]
+    if hf_requested and not (args.hf_python or _default_hf_python()):
+        print(f"WARNING: HF model(s) {', '.join(hf_requested)} requested but no "
+              f".venv-hf found and --hf-python not given. Skipping them. "
+              f"Run setup_hf_venv.ps1 to enable the HF engine.", file=sys.stderr)
+        requested = [m for m in requested if m not in hf_requested]
+        if not requested:
+            print("ERROR: no runnable models left after skipping HF "
+                  "(no .venv-hf). See setup_hf_venv.ps1.", file=sys.stderr)
+            return 2
+
     pairs = discover_pairs(corpus)
     if args.include:
         include_re = re.compile(args.include, re.IGNORECASE)
@@ -3022,6 +1795,7 @@ def main() -> int:
         nim_ssl=args.nim_ssl,
         whisperx_python=args.whisperx_python,
         nemo_python=args.nemo_python,
+        hf_python=args.hf_python,
         diarize=args.diarize,
         hf_token=args.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN"),
         min_speakers=args.min_speakers,

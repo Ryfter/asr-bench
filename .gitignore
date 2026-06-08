@@ -40,6 +40,7 @@ desktop.ini
 install-*.log
 .venv-whisperx/
 .venv-nemo/
+.venv-hf/
 smoke-*.json
 smoke-*.log
 smoke-*.wav
