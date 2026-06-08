@@ -179,6 +179,15 @@ MODELS: Dict[str, Dict] = {
         "fw_name": "large-v3-turbo",
         "notes": "Distilled large-v3. Accuracy close to large at medium-class speed.",
     },
+    "distil-large-v3.5": {
+        "engine": "faster-whisper",
+        "display": "Distil-Whisper Large V3.5",
+        "params": "756M",
+        "developer": "HuggingFace / distil-whisper",
+        "languages": "en",
+        "fw_name": "distil-large-v3.5",   # CT2 id resolves to distil-whisper/distil-large-v3.5-ct2
+        "notes": "Community distil fine-tune of large-v3 (English). faster-whisper/CT2.",
+    },
     "canary-nim": {
         "engine": "nim",
         "display": "Canary (NIM)",
@@ -361,6 +370,7 @@ _MODEL_VRAM_COST: Dict[str, Tuple[int, int]] = {
     "medium":         (int(1.8 * 1024**3), int(0.45 * 1024**3)),
     "large-v3":       (int(4.0 * 1024**3), int(0.90 * 1024**3)),
     "large-v3-turbo": (int(2.0 * 1024**3), int(0.45 * 1024**3)),
+    "distil-large-v3.5": (int(2.0 * 1024**3), int(0.45 * 1024**3)),  # ~turbo footprint
 }
 
 
