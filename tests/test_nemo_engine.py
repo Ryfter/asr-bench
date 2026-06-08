@@ -83,3 +83,40 @@ def test_all_clips_failed_sets_note(tmp_path, monkeypatch):
 
 def test_nemo_registered():
     assert "nemo" in asr_bench.ENGINES
+
+
+def test_config_to_dict_includes_nemo_python_non_secret():
+    cfg = asr_bench.RunConfig(device="cpu", compute_type="int8", nemo_python="/x/py")
+    d = asr_bench._config_to_dict(cfg)
+    assert d["nemo_python"] == "/x/py"
+
+
+def test_runconfig_defaults_nemo_python_none():
+    cfg = asr_bench.RunConfig(device="cpu", compute_type="int8")
+    assert cfg.nemo_python is None
+
+
+def test_main_skips_nemo_when_no_venv(tmp_path, monkeypatch, capsys):
+    # NeMo requested but no venv → warn + skip NeMo, still run the whisper model.
+    audio = tmp_path / "Lec.mp4"; audio.write_bytes(b"x")
+    ref = tmp_path / "Lec.txt"; ref.write_text("hello world", encoding="utf-8")
+    monkeypatch.setattr(asr_bench, "_default_nemo_python", lambda: None)
+
+    # Stub the faster-whisper engine so the test needs no model download.
+    canned = asr_bench.ModelResult(
+        model_id="small", display="Whisper Small", fw_name="small", params="244M",
+        developer="OpenAI", languages="99", notes="x", disk_bytes=None, load_sec=0.0)
+    class StubFW(asr_bench.Engine):
+        name = "faster-whisper"
+        def run(self, entry, pairs, cfg): return canned
+    monkeypatch.setitem(asr_bench.ENGINES, "faster-whisper", StubFW)
+
+    out = tmp_path / "r.md"
+    monkeypatch.setattr("sys.argv", [
+        "asr_bench.py", "--corpus", str(tmp_path),
+        "--models", "small,canary-qwen-2.5b", "--device", "cpu", "--output", str(out)])
+    rc = asr_bench.main()
+    assert rc == 0
+    err = capsys.readouterr().err
+    assert "canary-qwen-2.5b" in err and "setup_nemo_venv" in err
+    assert out.is_file()

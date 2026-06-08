@@ -2294,7 +2294,8 @@ def _config_to_dict(cfg: "RunConfig") -> Dict:
         "vad_filter": cfg.vad_filter,
         "nim_url": cfg.nim_url, "nim_model": cfg.nim_model,
         "nim_language": cfg.nim_language, "nim_ssl": cfg.nim_ssl,
-        "whisperx_python": cfg.whisperx_python, "diarize": cfg.diarize,
+        "whisperx_python": cfg.whisperx_python, "nemo_python": cfg.nemo_python,
+        "diarize": cfg.diarize,
         "min_speakers": cfg.min_speakers, "max_speakers": cfg.max_speakers,
     }
 
@@ -2821,6 +2822,9 @@ def main() -> int:
     ap.add_argument("--whisperx-python", default=None,
                     help="Path to a 3.12 venv python with whisperx+torch+pyannote "
                          "(for the subprocess adapter; auto-detects ./.venv-whisperx if omitted).")
+    ap.add_argument("--nemo-python", default=None,
+                    help="Path to a 3.12 venv python with torch (cu128) + nemo_toolkit "
+                         "(subprocess adapter; auto-detects ./.venv-nemo if omitted).")
     ap.add_argument("--diarize", action=argparse.BooleanOptionalAction, default=True,
                     help="Run pyannote speaker diarization for whisperx models (default on). "
                          "Without an HF token it warns and falls back to alignment-only.")
@@ -2936,6 +2940,19 @@ def main() -> int:
               "WhisperX will run alignment-only. Get a free token and accept the gated "
               "pyannote/speaker-diarization-3.1 model to enable diarization.", file=sys.stderr)
 
+    # Pre-flight: NeMo models need a .venv-nemo (or --nemo-python). Skip just those
+    # models (not the whole run) when absent, so Whisper/NIM models still benchmark.
+    nemo_requested = [m for m in requested if resolve_model_entry(m)["engine"] == "nemo"]
+    if nemo_requested and not (args.nemo_python or _default_nemo_python()):
+        print(f"WARNING: NeMo model(s) {', '.join(nemo_requested)} requested but no "
+              f".venv-nemo found and --nemo-python not given. Skipping them. "
+              f"Run setup_nemo_venv.ps1 to enable NeMo.", file=sys.stderr)
+        requested = [m for m in requested if m not in nemo_requested]
+        if not requested:
+            print("ERROR: no runnable models left after skipping NeMo "
+                  "(no .venv-nemo). See setup_nemo_venv.ps1.", file=sys.stderr)
+            return 2
+
     pairs = discover_pairs(corpus)
     if args.include:
         include_re = re.compile(args.include, re.IGNORECASE)
@@ -3004,6 +3021,7 @@ def main() -> int:
         nim_api_key=args.nim_api_key,
         nim_ssl=args.nim_ssl,
         whisperx_python=args.whisperx_python,
+        nemo_python=args.nemo_python,
         diarize=args.diarize,
         hf_token=args.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN"),
         min_speakers=args.min_speakers,
