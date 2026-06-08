@@ -11,3 +11,9 @@ ENGINES["faster-whisper"] = FasterWhisperEngine
 
 from engines.nim import NimEngine  # noqa: E402
 ENGINES["nim"] = NimEngine
+
+from engines.whisperx import WhisperXEngine  # noqa: E402
+ENGINES["whisperx"] = WhisperXEngine
+
+from engines.nemo import NeMoEngine  # noqa: E402
+ENGINES["nemo"] = NeMoEngine

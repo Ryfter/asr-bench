@@ -1,5 +1,6 @@
 # tests/test_nemo_engine.py
 import asr_bench
+import engines.nemo
 from asr_bench import RunConfig, Pair, NeMoResult
 
 
@@ -17,8 +18,8 @@ def test_parakeet_shape_writes_vtt_and_scores(tmp_path, monkeypatch):
         "words": [{"word": "hello", "start": 0.0, "end": 0.5}],
         "transcribe_sec": 1.0, "vram_peak_bytes": 2_000_000_000, "language": "en",
     })
-    monkeypatch.setattr(asr_bench, "make_nemo_adapter", lambda cfg: asr_bench.FakeNeMoAdapter(canned))
-    monkeypatch.setattr(asr_bench, "_audio_duration_sec", lambda p: 4.0)
+    monkeypatch.setattr(engines.nemo, "make_nemo_adapter", lambda cfg: asr_bench.FakeNeMoAdapter(canned))
+    monkeypatch.setattr(engines.nemo, "_audio_duration_sec", lambda p: 4.0)
 
     entry = asr_bench.resolve_model_entry("parakeet-tdt-0.6b-v2")
     mr = asr_bench.NeMoEngine().run(entry, [Pair(audio=audio, reference=ref)], _cfg())
@@ -38,8 +39,8 @@ def test_canary_text_only_no_vtt(tmp_path, monkeypatch):
     audio = tmp_path / "Lec.mp4"; audio.write_bytes(b"x")
     ref = tmp_path / "Lec.txt"; ref.write_text("hello world", encoding="utf-8")
     canned = NeMoResult.from_dict({"text": "hello world", "transcribe_sec": 2.0})
-    monkeypatch.setattr(asr_bench, "make_nemo_adapter", lambda cfg: asr_bench.FakeNeMoAdapter(canned))
-    monkeypatch.setattr(asr_bench, "_audio_duration_sec", lambda p: 10.0)
+    monkeypatch.setattr(engines.nemo, "make_nemo_adapter", lambda cfg: asr_bench.FakeNeMoAdapter(canned))
+    monkeypatch.setattr(engines.nemo, "_audio_duration_sec", lambda p: 10.0)
 
     entry = asr_bench.resolve_model_entry("canary-qwen-2.5b")
     mr = asr_bench.NeMoEngine().run(entry, [Pair(audio=audio, reference=ref)], _cfg())
@@ -56,8 +57,8 @@ def test_run_falls_back_to_wall_clock_when_no_transcribe_sec(tmp_path, monkeypat
     audio = tmp_path / "Lec.mp4"; audio.write_bytes(b"x")
     ref = tmp_path / "Lec.txt"; ref.write_text("hi", encoding="utf-8")
     canned = NeMoResult.from_dict({"text": "hi"})   # no transcribe_sec
-    monkeypatch.setattr(asr_bench, "make_nemo_adapter", lambda cfg: asr_bench.FakeNeMoAdapter(canned))
-    monkeypatch.setattr(asr_bench, "_audio_duration_sec", lambda p: 1.0)
+    monkeypatch.setattr(engines.nemo, "make_nemo_adapter", lambda cfg: asr_bench.FakeNeMoAdapter(canned))
+    monkeypatch.setattr(engines.nemo, "_audio_duration_sec", lambda p: 1.0)
     mr = asr_bench.NeMoEngine().run(
         asr_bench.resolve_model_entry("canary-qwen-2.5b"),
         [Pair(audio=audio, reference=ref)], _cfg())
@@ -73,7 +74,7 @@ def test_all_clips_failed_sets_note(tmp_path, monkeypatch):
         def transcribe(self, *a, **k):
             raise RuntimeError("kaboom")
 
-    monkeypatch.setattr(asr_bench, "make_nemo_adapter", lambda cfg: Boom())
+    monkeypatch.setattr(engines.nemo, "make_nemo_adapter", lambda cfg: Boom())
     mr = asr_bench.NeMoEngine().run(
         asr_bench.resolve_model_entry("canary-qwen-2.5b"),
         [Pair(audio=audio, reference=ref)], _cfg())
