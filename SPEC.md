@@ -76,9 +76,9 @@ Fusion is fully unit-tested via `FakeLLMBackend` but **not yet validated against
 **Remaining v0.3-era item (not yet implemented):**
 - Speaker labels in reference sets for DER ground-truth preparation
 
-### v0.4 — NVIDIA NeMo (Canary-Qwen + Parakeet) — code-complete on `feat/v0.4-nemo`, pending live validation
+### v0.4 — NVIDIA NeMo (Canary-Qwen + Parakeet) — **live-validated on `feat/v0.4-nemo`, ready to merge**
 
-> **Status: NOT shipped / NOT merged / NOT live-validated.** Implemented and unit-tested (262 pass, 2 skipped) but never run against a real model — no GPU/venv in the dev environment. Framed like NIM: implemented + unit-tested; live validation on the RTX 5090 pending. The validated `(Python 3.12, torch+cu128, nemo_toolkit)` version triple and measured VRAM are _to be recorded after live validation_. Spec: `docs/superpowers/specs/2026-06-08-v0.4-nemo-engine-design.md`; plan: `docs/superpowers/plans/2026-06-08-v0.4-nemo-engine.md`.
+> **Status: live-validated on the RTX 5090 (2026-06-07); NOT yet merged to main.** Both models run end-to-end through the full asr_bench pipeline. Validated version triple: **Python 3.12 · torch 2.11.0+cu128 · nemo_toolkit 2.7.3**. Peak VRAM: **Parakeet ~8.3 GB, Canary-Qwen ~9.8 GB**. First-run results (6.8-min lecture, proxy ref): Parakeet WER 6.2% / RTFx 201.8× / VTT written; Canary-Qwen WER 7.2% / RTFx 5.57× / WER-only; alongside Whisper Large V3 Turbo WER 6.7% / RTFx 111×. 263 tests pass, 2 skipped. Four live-run fixes (PS-script ASCII, pyarrow pre-import segfault, SALM `audio_lens` API, ffmpeg mp4 decode) — see decision log. Spec: `docs/superpowers/specs/2026-06-08-v0.4-nemo-engine-design.md`; plan: `docs/superpowers/plans/2026-06-08-v0.4-nemo-engine.md`.
 
 [NVIDIA NeMo](https://github.com/NVIDIA/NeMo) — separate ASR stack with strong English models, added as the fourth `Engine` family (`NeMoEngine` + standalone `nemo_runner.py`).
 
@@ -258,7 +258,29 @@ v0.3 adds:
   `nemo_python` in the sidecar config (non-secret). Additive only — `schema_version`
   stays 1, `render_markdown` + JSON sidecar byte-stable, core stays torch-free.
   **NeMo was added in-file; the `engines/` package split + PyInstaller binaries
-  remain deferred** to separate later work. Status: **implemented + unit-tested (262
-  pass, 2 skipped) but NEVER run against a real model — live validation on the RTX
-  5090 is pending, analogous to NIM.** Validated `(Python 3.12, torch+cu128,
-  nemo_toolkit)` triple + measured VRAM _to be recorded after live validation_.
+  remain deferred** to separate later work. Status: implemented + unit-tested, then
+  **live-validated on the RTX 5090 (2026-06-07)** — see the 2026-06-07 entry below.
+
+- **2026-06-07 (v0.4 — LIVE-VALIDATED on RTX 5090, ready to merge)** — Ran the full
+  setup + benchmark on the reference box. Validated version triple: **Python 3.12 ·
+  torch 2.11.0+cu128 · nemo_toolkit 2.7.3**. Peak VRAM: **Parakeet ~8.3 GB,
+  Canary-Qwen ~9.8 GB**. First-real-run results on a 6.8-min lecture (proxy
+  reference): **Parakeet WER 6.2% / RTFx 201.8× / VTT written** (won this lecture on
+  both WER and speed), **Canary-Qwen WER 7.2% / RTFx 5.57× / WER-only (no VTT)**, both
+  alongside Whisper Large V3 Turbo (WER 6.7% / RTFx 111×) in one report + JSON
+  sidecar. **Four bugs the live run forced (none caught by unit tests — exactly why
+  the live gate exists):** **(a)** both `setup_*_venv.ps1` were UTF-8-no-BOM with
+  em-dashes; under Windows PowerShell 5.1 the em-dash's `0x94` byte decodes as a curly
+  quote PS treats as a string delimiter → cascading parse errors. Fixed to pure ASCII
+  (`e9013d3`). **(b)** `import nemo.collections.asr` **segfaults (0xC0000005)** on
+  Windows — NeMo's chain (sklearn→pandas→pyarrow) loads pyarrow's native libs after a
+  conflicting native dep; pre-importing pyarrow at the top of `run_nemo` loads it
+  cleanly first (guarded; keeps the module import torch-free *and* pyarrow-free for
+  core-venv tests) (`cbcbc38`). **(c)** SALM (Canary) `generate()` needs a
+  **torch.Tensor float32 (B, T)** + **`audio_lens`** (int64) — was passing numpy +
+  `audio_lengths=` which silently fell into `**generation_kwargs`, leaving
+  `audio_lens=None` and tripping perception's validation (`cbcbc38`). **(d)** NeMo/lhotse
+  decode via **`torchaudio.io`, removed in torchaudio ≥ 2.11** → can't open mp4;
+  `nemo_runner` now decodes any non-wav input to a temp 16 kHz mono WAV via the ffmpeg
+  CLI up front, mirroring WhisperX's self-contained decode (`9696e8d`). 263 tests pass,
+  2 skipped. Merge to main now unblocked.

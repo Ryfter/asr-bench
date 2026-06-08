@@ -39,6 +39,7 @@ desktop.ini
 .hf_token
 install-*.log
 .venv-whisperx/
+.venv-nemo/
 smoke-*.json
 smoke-*.log
 smoke-*.wav
