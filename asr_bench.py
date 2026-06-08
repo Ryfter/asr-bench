@@ -588,7 +588,11 @@ def gpu_name() -> Optional[str]:
 # Rough VRAM cost per model at compute_type=float16, including a base + per-batch-item slope.
 # Numbers come from observed peaks; conservative so the recommendation doesn't OOM.
 _MODEL_VRAM_COST: Dict[str, Tuple[int, int]] = {
-    # model_id -> (base_bytes, per_batch_item_bytes)
+    # model_id -> (base_bytes, per_batch_item_bytes). faster-whisper only — it is
+    # the only engine that uses --batch-size. nim/whisperx/nemo are intentionally
+    # absent: they manage their own batching (in-container or in the subprocess
+    # runner), so recommend_batch_size correctly ignores them. NeMo peak VRAM is
+    # measured live by the runner (torch.cuda.max_memory_allocated), not sized here.
     "small":          (int(0.8 * 1024**3), int(0.18 * 1024**3)),
     "medium":         (int(1.8 * 1024**3), int(0.45 * 1024**3)),
     "large-v3":       (int(4.0 * 1024**3), int(0.90 * 1024**3)),
