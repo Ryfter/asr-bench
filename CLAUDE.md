@@ -161,7 +161,7 @@ These need to be true on any machine that runs asr-bench against GPU. Document e
 
 - **GPU**: NVIDIA RTX 5090, 34 GB VRAM
 - **Python**: 3.14.0 on PATH as `python` (has `faster_whisper`); 3.12.10 on PATH as `python3` (does NOT have faster_whisper). asr-bench's auto-detection picks the right one, but be aware.
-- **ffmpeg**: at `C:\Users\krank\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\ffmpeg.exe`. Not on bash's PATH; on PowerShell PATH. Not strictly needed for the bench itself (faster-whisper handles decoding internally via pyav).
+- **ffmpeg**: at `~/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1.1-full_build/bin/ffmpeg.exe`. Not on bash's PATH; on PowerShell PATH. Not strictly needed for the bench itself (faster-whisper handles decoding internally via pyav).
 - **CUDA runtime libs**: from pip wheels (`nvidia-cublas-cu12`, `nvidia-cudnn-cu12`). asr-bench's `_add_nvidia_dll_directories()` auto-adds them to PATH at startup — both via `os.environ['PATH']` (universal) and `os.add_dll_directory()` (belt-and-suspenders for native loaders).
 - **NVML DLL**: at `C:\Windows\System32\nvml.dll` (modern install). The deprecated `nvidia-ml-py3` package looks at `C:\Program Files\NVIDIA Corporation\NVSMI\` which is the old layout — use `nvidia-ml-py` (no `3`) instead.
 - **nvidia-riva-client** (for NIM engine): `pip install nvidia-riva-client`. Lazy-imported — only required when a `nim`-engine model (e.g. `canary-nim`, `nim:<name>`) is requested. Whisper-only runs don't need it.
@@ -202,7 +202,7 @@ These need to be true on any machine that runs asr-bench against GPU. Document e
 
 ### Install as a package (optional — `asr-bench` console command)
 ```powershell
-cd D:\dev\asr-bench
+cd ~/dev/asr-bench
 pip install -e .              # editable; core (CPU) deps only
 pip install -e ".[gpu]"       # + NVML VRAM tracking + CUDA wheels
 pip install -e ".[nim]"       # + nvidia-riva-client for NIM runs
@@ -213,7 +213,7 @@ The flat `py-modules` layout means `python asr_bench.py` keeps working identical
 
 ### Run the full benchmark (default models, current defaults)
 ```powershell
-cd D:\dev\asr-bench
+cd ~/dev/asr-bench
 python asr_bench.py
 ```
 Defaults:

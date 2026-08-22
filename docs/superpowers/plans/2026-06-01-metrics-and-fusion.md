@@ -1751,7 +1751,7 @@ git commit -m "feat: wire --fuse/--profile/--llm/--init-context into main()"
 
 **Files:**
 - Modify: `CLAUDE.md`, `SPEC.md`, `README.md`
-- Create: `C:\Users\krank\.claude\projects\D--Dev-asr-bench\memory\fusion-llm-validation.md` + index line in `MEMORY.md`
+- Create: `~/.claude/projects/D--Dev-asr-bench/memory/fusion-llm-validation.md` + index line in `MEMORY.md`
 
 - [ ] **Step 1: Update `CLAUDE.md`**
   - Bump Status heading to **v0.2** and add a "What's new in v0.2" bullet list: MER/WIL/HSDI metrics, `--show-alignment`, fusion stage (verbatim + kb profiles), pluggable LLM backend, `--init-context`.
@@ -1764,7 +1764,7 @@ git commit -m "feat: wire --fuse/--profile/--llm/--init-context into main()"
 
 - [ ] **Step 4: Write the memory note**
 
-Create `C:\Users\krank\.claude\projects\D--Dev-asr-bench\memory\fusion-llm-validation.md`:
+Create `~/.claude/projects/D--Dev-asr-bench/memory/fusion-llm-validation.md`:
 
 ```markdown
 ---

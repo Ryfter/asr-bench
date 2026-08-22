@@ -13,7 +13,7 @@
 **Branch:** `feat/nim-engine-support` (already created).
 
 **Conventions for every task below:**
-- Run all `pytest` and `python` commands from the repo root `D:\Dev\asr-bench`.
+- Run all `pytest` and `python` commands from the repo root `~/dev/asr-bench`.
 - The existing 4 Whisper models must keep producing identical reports — several tasks are refactors and must not change Whisper behavior.
 
 ---
