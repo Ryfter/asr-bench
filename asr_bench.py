@@ -143,6 +143,15 @@ from engines.hf import (  # noqa: E402,F401
     HFResult, HFAdapter, FakeHFAdapter, SubprocessHF,
     make_hf_adapter, _default_hf_python, HFTransformersEngine,
 )
+from engines.mlx_wtm import (  # noqa: E402,F401
+    WtmResult, WtmAdapter, FakeWtmAdapter, SubprocessWtm,
+    make_wtm_adapter, _default_wtm_python, _wtm_runner_args, _WTM_RUNNER_PATH,
+    WtmEngine,
+)
+from consensus import (  # noqa: E402,F401
+    build_consensus_clip, write_consensus_vtt, write_disagreement_report,
+    vote_window_texts,
+)
 
 
 # ---- Model registry ---------------------------------------------------------
@@ -182,6 +191,15 @@ MODELS: Dict[str, Dict] = {
         "languages": "99 (multilingual)",
         "fw_name": "large-v3-turbo",
         "notes": "Distilled large-v3. Accuracy close to large at medium-class speed.",
+    },
+    "large-v3-turbo-mlx": {
+        "engine": "mlx-wtm",
+        "display": "Whisper Large V3 Turbo (MLX / wtm)",
+        "params": "809M",
+        "developer": "OpenAI via JosefAlbers/wtm",
+        "languages": "en (multilingual optional)",
+        "fw_name": "large-v3-turbo",
+        "notes": "Apple Silicon MLX path (whisper-turbo-mlx). Subprocess via .venv-wtm.",
     },
     "distil-large-v3.5": {
         "engine": "faster-whisper",
@@ -849,6 +867,115 @@ def run_fusion_stage(
     return "\n".join(lines), rescored
 
 
+def run_consensus_stage(
+    results: List["ModelResult"],
+    pairs: List[Pair],
+    *,
+    window: float,
+    overlap: float,
+    min_agreement: float,
+    include_reference: bool,
+    rescore: bool,
+) -> Tuple[str, Optional[List["ModelResult"]]]:
+    """Vote across model VTTs (Panopto optional) → consensus captions + disagreement report."""
+    lines: List[str] = ["## Multi-model consensus", ""]
+    lines.append(
+        f"- Voters: model outputs only"
+        + (" + Panopto/reference cues" if include_reference else " (Panopto excluded from voting)")
+    )
+    lines.append(
+        f"- Window: {window:.0f}s · min agreement: {min_agreement * 100:.0f}% · "
+        "reference-free majority vote (not LLM fusion)"
+    )
+    lines.append("")
+    lines.append(
+        "> **Note:** Consensus is built from the same models being scored unless you "
+        "treat Panopto as an independent voter with `--consensus-include-reference`. "
+        "Use `--rescore-against-consensus` to measure divergence from the voted transcript."
+    )
+    lines.append("")
+
+    verbatim_ref_by_clip: Dict[str, List[Cue]] = {}
+    pair_by_audio = {p.audio.name: p for p in pairs}
+
+    for clip_idx in range(len(results[0].clips) if results else 0):
+        audio_name = results[0].clips[clip_idx].audio
+        pair = pair_by_audio.get(audio_name)
+        if pair is None:
+            continue
+        audio_path = pair.audio
+        duration = results[0].clips[clip_idx].audio_sec or 1.0
+
+        sources: Dict[str, List[Cue]] = {}
+        for r in results:
+            if clip_idx < len(r.clips) and r.clips[clip_idx].vtt_path:
+                vp = Path(r.clips[clip_idx].vtt_path)
+                if vp.is_file():
+                    sources[r.model_id] = parse_caption_cues(vp)
+        if include_reference:
+            try:
+                ref_cues = parse_caption_cues(pair.reference)
+                if ref_cues:
+                    sources["Panopto"] = ref_cues
+            except Exception:
+                pass
+
+        if len(sources) < 2:
+            lines.append(f"- **{audio_name}** — need ≥2 parseable model VTTs (got {len(sources)}) — skipped")
+            continue
+
+        res = build_consensus_clip(
+            duration=duration,
+            sources=sources,
+            window=window,
+            overlap=overlap,
+            min_agreement=min_agreement,
+        )
+        written: List[str] = []
+        if res.cues:
+            vtt_out = write_consensus_vtt(audio_path, res.cues)
+            verbatim_ref_by_clip[audio_name] = res.cues
+            written.append(vtt_out.name)
+        if res.flags:
+            written.append(
+                write_disagreement_report(audio_path, res.flags, res.mean_agreement).name
+            )
+        lines.append(
+            f"- **{audio_name}** → {', '.join(f'`{w}`' for w in written) or '(nothing written)'} "
+            f"(mean agreement {res.mean_agreement * 100:.1f}%)"
+        )
+        for flag in res.flags[:12]:
+            lines.append(f"  - ⚠️ {flag}")
+        if len(res.flags) > 12:
+            lines.append(f"  - … {len(res.flags) - 12} more (see disagreement report)")
+    lines.append("")
+
+    rescored = None
+    if rescore and verbatim_ref_by_clip:
+        rescored = rescore_against_reference(results, verbatim_ref_by_clip)
+    return "\n".join(lines), rescored
+
+
+def render_consensus_rescore_table(results: List["ModelResult"]) -> str:
+    lines: List[str] = []
+    lines.append("## Scores vs multi-model consensus reference")
+    lines.append("")
+    lines.append(
+        "> **Reference = majority-vote consensus across model outputs (agreement-biased).** "
+        "Not independent ground truth — measures alignment with the voted transcript."
+    )
+    lines.append("")
+    lines.append("| Model | WER% | MER% | WIL% |")
+    lines.append("|---|---|---|---|")
+    for r in results:
+        wer = _fmt_pct(r.avg_wer) if r.clips else "—"
+        mer = _fmt_pct(r.avg_mer) if r.clips else "—"
+        wil = _fmt_pct(r.avg_wil) if r.clips else "—"
+        lines.append(f"| {r.display} | {wer} | {mer} | {wil} |")
+    lines.append("")
+    return "\n".join(lines)
+
+
 # ---- LLM backends -----------------------------------------------------------
 class LLMBackend(ABC):
     """Minimal contract: turn a prompt into text. Fusion builds the prompt; the
@@ -1051,7 +1178,8 @@ def _config_to_dict(cfg: "RunConfig") -> Dict:
         "nim_url": cfg.nim_url, "nim_model": cfg.nim_model,
         "nim_language": cfg.nim_language, "nim_ssl": cfg.nim_ssl,
         "whisperx_python": cfg.whisperx_python, "nemo_python": cfg.nemo_python,
-        "hf_python": cfg.hf_python,
+        "hf_python": cfg.hf_python, "wtm_python": cfg.wtm_python,
+        "wtm_quick": cfg.wtm_quick, "wtm_multilingual": cfg.wtm_multilingual,
         "diarize": cfg.diarize,
         "min_speakers": cfg.min_speakers, "max_speakers": cfg.max_speakers,
     }
@@ -1585,6 +1713,13 @@ def main() -> int:
     ap.add_argument("--hf-python", default=None,
                     help="Path to a 3.12 venv python with torch (cu128) + transformers "
                          "(subprocess adapter; auto-detects ./.venv-hf if omitted).")
+    ap.add_argument("--wtm-python", default=None,
+                    help="Path to a venv python with whisper-turbo-mlx (Apple Silicon; "
+                         "auto-detects ./.venv-wtm if omitted).")
+    ap.add_argument("--wtm-quick", action="store_true",
+                    help="MLX wtm: faster but choppier segments.")
+    ap.add_argument("--wtm-multilingual", action="store_true",
+                    help="MLX wtm: multilingual mode (default English).")
     ap.add_argument("--diarize", action=argparse.BooleanOptionalAction, default=True,
                     help="Run pyannote speaker diarization for whisperx models (default on). "
                          "Without an HF token it warns and falls back to alignment-only.")
@@ -1640,6 +1775,15 @@ def main() -> int:
                     help="Flag a fused window whose WER vs the base model exceeds this (1.0 = 100%%).")
     ap.add_argument("--rescore-against-fused", action="store_true",
                     help="Re-score every model against the verbatim fused reference (agreement-biased; labeled as such).")
+    ap.add_argument("--consensus", action="store_true",
+                    help="After benchmarking, majority-vote across model VTTs into a consensus transcript "
+                         "(no LLM). Writes _Captions_Consensus.vtt + disagreement report.")
+    ap.add_argument("--consensus-min-agreement", type=float, default=0.5,
+                    help="Fraction of models that must agree on a word to keep it (0.5 = majority).")
+    ap.add_argument("--consensus-include-reference", action="store_true",
+                    help="Include Panopto/reference cues as an extra voter in consensus (default: models only).")
+    ap.add_argument("--rescore-against-consensus", action="store_true",
+                    help="Re-score models against the consensus VTT (agreement-biased; labeled as such).")
     ap.add_argument("--init-context", nargs="?", const="context.md", default=None,
                     metavar="PATH", help="Write a context.md template to PATH (default context.md) and exit.")
     args = ap.parse_args()
@@ -1726,6 +1870,17 @@ def main() -> int:
                   "(no .venv-hf). See setup_hf_venv.ps1.", file=sys.stderr)
             return 2
 
+    wtm_requested = [m for m in requested if resolve_model_entry(m)["engine"] == "mlx-wtm"]
+    if wtm_requested and not (args.wtm_python or _default_wtm_python()):
+        print(f"WARNING: MLX WTM model(s) {', '.join(wtm_requested)} requested but no "
+              f".venv-wtm found and --wtm-python not given. Skipping them. "
+              f"Run setup_wtm_venv.sh on Apple Silicon.", file=sys.stderr)
+        requested = [m for m in requested if m not in wtm_requested]
+        if not requested:
+            print("ERROR: no runnable models left after skipping MLX WTM "
+                  "(no .venv-wtm). See setup_wtm_venv.sh.", file=sys.stderr)
+            return 2
+
     pairs = discover_pairs(corpus)
     if args.include:
         include_re = re.compile(args.include, re.IGNORECASE)
@@ -1796,6 +1951,9 @@ def main() -> int:
         whisperx_python=args.whisperx_python,
         nemo_python=args.nemo_python,
         hf_python=args.hf_python,
+        wtm_python=args.wtm_python,
+        wtm_quick=args.wtm_quick,
+        wtm_multilingual=args.wtm_multilingual,
         diarize=args.diarize,
         hf_token=args.hf_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN"),
         min_speakers=args.min_speakers,
@@ -1824,6 +1982,23 @@ def main() -> int:
         md = md + "\n" + fusion_md
         if rescored is not None:
             md = md + "\n" + render_fused_rescore_table(rescored)
+
+    if args.consensus:
+        if len(results) < 2:
+            print("WARNING: --consensus needs at least two model results with VTT output.", file=sys.stderr)
+        else:
+            consensus_md, rescored = run_consensus_stage(
+                results=results,
+                pairs=pairs,
+                window=args.window,
+                overlap=args.overlap,
+                min_agreement=args.consensus_min_agreement,
+                include_reference=args.consensus_include_reference,
+                rescore=args.rescore_against_consensus,
+            )
+            md = md + "\n" + consensus_md
+            if rescored is not None:
+                md = md + "\n" + render_consensus_rescore_table(rescored)
 
     print()
     print(md)

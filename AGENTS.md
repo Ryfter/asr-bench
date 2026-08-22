@@ -29,6 +29,9 @@ Independent benchmarking tool for local speech recognition models. CLI, markdown
 | `wav2vec2-large-960h` | 315M | model cache (~n/a) | HF transformers (subprocess venv) |
 | `wav2vec2-conformer-large` | 600M | model cache (~n/a) | HF transformers (subprocess venv) |
 | `hf:<model>` | n/a | model cache (~n/a) | HF transformers (ad-hoc) |
+| `large-v3-turbo-mlx` | 809M | model cache (~n/a) | MLX wtm (subprocess `.venv-wtm`, Apple Silicon) |
+
+**v0.6 (in progress on `feat/mlx-wtm-consensus`):** adds **`large-v3-turbo-mlx`** — Whisper Large V3 Turbo via [whisper-turbo-mlx](https://github.com/JosefAlbers/whisper-turbo-mlx) as the sixth `Engine` family (`WtmEngine` + `wtm_runner.py`, provision with `setup_wtm_venv.sh`, auto-detects `./.venv-wtm`, `--wtm-python`/`--wtm-quick`/`--wtm-multilingual`). Also adds deterministic **multi-model consensus** (`--consensus`, `--consensus-min-agreement`, `--consensus-include-reference`, `--rescore-against-consensus`) — a reference-free majority vote across model VTTs (no LLM), complementing the existing `--fuse` LLM stage; writes `_Captions_Consensus.vtt` and a disagreement report per clip.
 
 NeMo rows are **live-validated on the RTX 5090 (2026-06-07)**, merged to main. **Canary-Qwen is WER-only — no VTT** (no native timestamps; text-only row like NIM's `n/a`). The v0.5 community rows (`distil-large-v3.5`, the two `wav2vec2*` HF models) are **live-validated on the RTX 5090 (2026-06-08)** on `feat/v0.5-community-models`, ready to merge (see the v0.5 section + decision log). **distil-large-v3.5 matched Whisper Turbo's WER (6.8% vs 6.7%) at 1.5× the speed and 60% the VRAM** — the standout; the wav2vec2/Conformer CTC models score higher WER (no LM) but are very fast.
 

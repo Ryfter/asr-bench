@@ -20,3 +20,6 @@ ENGINES["nemo"] = NeMoEngine
 
 from engines.hf import HFTransformersEngine  # noqa: E402
 ENGINES["hf"] = HFTransformersEngine
+
+from engines.mlx_wtm import WtmEngine  # noqa: E402
+ENGINES["mlx-wtm"] = WtmEngine

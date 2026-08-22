@@ -511,6 +511,10 @@ class RunConfig:
     nemo_python: Optional[str] = None
     # hf only
     hf_python: Optional[str] = None
+    # mlx-wtm only (Apple Silicon)
+    wtm_python: Optional[str] = None
+    wtm_quick: bool = False
+    wtm_multilingual: bool = False
 
 
 class Engine(ABC):
